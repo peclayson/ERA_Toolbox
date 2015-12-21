@@ -186,7 +186,7 @@ switch analysis
         fit.block();
         print(fit);    
         
-        REL.stanfit = fit;
+        Rel.stanfit = fit;
         
         REL.out.mu = fit.extract('pars','mu').mu;
         REL.out.sig_u = fit.extract('pars','sig_u').sig_u;
@@ -368,29 +368,20 @@ switch analysis
         fit.block();
         print(fit);    
 
-        REL.stanfit = fit;
-        REL.out = [];
-        REL.out.mu = [];
-        REL.out.sig_u = [];
-        REL.out.sig_e = [];
+        Rel.stanfit = fit;
         
         for i=1:ngroup
             measname = sprintf('mu_G%d',i);
             measvalue = fit.extract('pars',measname).(measname);
-            REL.out.mu(:,end+1) = measvalue;           
+            
+            measvalue = datatable{ismember(datatable.group,...
+                groupnames(i)),{'meas'}};
+            data.(fieldname) = fieldvalue;
         end
         
-        for i=1:ngroup
-            measname = sprintf('sig_u_G%d',i);
-            measvalue = fit.extract('pars',measname).(measname);
-            REL.out.sig_u(:,end+1) = measvalue;           
-        end
-        
-        for i=1:ngroup
-            measname = sprintf('sig_e_G%d',i);
-            measvalue = fit.extract('pars',measname).(measname);
-            REL.out.sig_e(:,end+1) = measvalue;           
-        end
+        REL.out.mu = fit.extract('pars','mu').mu;
+        REL.out.sig_u = fit.extract('pars','sig_u').sig_u;
+        REL.out.sig_e = fit.extract('pars','sig_e').sig_e; 
         
     case 3 %possible event types but no groups to consider
 

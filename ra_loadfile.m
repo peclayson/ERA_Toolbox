@@ -26,7 +26,6 @@ function dataout = ra_loadfile(varargin)
 %  meas: Measurement
 %  group: Group (only when specified)
 %  event: Event Type (only when specified)
-%  id2: Numeric, Sequential, Subject ID for CmdStan
 %
 %History 
 % by Peter Clayson (12/15/15)
@@ -234,25 +233,6 @@ if exist('headerror','var')
     'Please specify the headers for\n',char(strjoin(headerror,', ')),'\n',...
     'See help ra_loadfile \n'));
 end
-
-% cmdstan requires the id variable to be numeric and sequential. An id2
-% variable is created to satisfy this requirement.
-dataout = sortrows(dataout,'id');
-id2 = zeros(0,length(dataout.id));
-
-for i = 1:length(dataout.id)
-    if i == 1
-        id2(1) = 1;
-        count = 1;
-    elseif i > 1 && strcmp(char(dataout.id(i)), char(dataout.id(i-1)))
-        id2(i) = count;
-    elseif i > 1 && ~strcmp(dataout.id(i), dataout.id(i-1))
-        count = count+1;
-        id2(i) = count;
-    end
-end
-
-dataout.id2 = id2(:);
 
 
 end
