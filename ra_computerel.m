@@ -78,6 +78,8 @@ if exist('headerror','var')
     'See help ra_loadfile for data table format \n'));
 end
 
+
+%%%%%%%%%PUT THIS LOWER%%%%%%%%%%%
 %check whether groups or events are in the table
 if sum(strcmpi(colnames,'group'))
     groupnames = unique(datatable.group(:));
@@ -88,6 +90,8 @@ if sum(strcmpi(colnames,'event'))
     eventnames = unique(datatable.event(:));
     nevent = length(eventnames);
 end
+%%%%%%%%%PUT THIS LOWER%%%%%%%%%%%
+
 
 %determine how cmstan will be set up
 %analysis variable will indicate whether group or events need to be
@@ -191,9 +195,14 @@ switch analysis
         REL.out.mu = fit.extract('pars','mu').mu;
         REL.out.sig_u = fit.extract('pars','sig_u').sig_u;
         REL.out.sig_e = fit.extract('pars','sig_e').sig_e; 
-
+        REL.out.label = 'measure';
+        
+        
+        
     case 2 %possible multiple groups 
 
+        
+        
         %cmdstan requires the id variable to be numeric and sequential. 
         %an id2 variable is created to satisfy this requirement.
          
@@ -227,6 +236,8 @@ switch analysis
         datatable.id2 = id2(:);
         
         REL.data = datatable;
+        groupnames = unique(datatable.group(:));
+        ngroup = length(groupnames);
         REL.groups = groupnames;
         REL.events = 'none';
 
@@ -373,6 +384,7 @@ switch analysis
         REL.out.mu = [];
         REL.out.sig_u = [];
         REL.out.sig_e = [];
+        REL.out.labels = [];  
         
         for i=1:ngroup
             measname = sprintf('mu_G%d',i);
@@ -391,11 +403,237 @@ switch analysis
             measvalue = fit.extract('pars',measname).(measname);
             REL.out.sig_e(:,end+1) = measvalue;           
         end
+       
+        for i=1:ngroup
+            REL.out.labels(:,end+1) = groupnames(i);           
+        end
+        
+        
         
     case 3 %possible event types but no groups to consider
 
+        
+        
+        %cmdstan requires the id variable to be numeric and sequential. 
+        %an id2 variable is created to satisfy this requirement.
+         
+        datatable = sortrows(datatable,{'id','event'}); 
+        
+        eventnames = unique(datatable.event(:));
+        nevent = length(eventnames);
+        REL.events = eventnames;
+        REL.groups = 'none';
+        
+        eventarray = struct;
+        eventarray.data = [];
+        
+        for i = 1:nevent
+            
+            dummytable = datatable(ismember(datatable.event,...
+                char(eventnames(i))),:);
+            eventarray.data{end+1} = dummytable;
+            
+        end
+        
+        for j = 1:nevent
+            
+            id2 = zeros(0,height(eventarray.data{j}));
+            
+            for i = 1:height(eventarray.data{j})
+                if i == 1
+                    id2(1) = 1;
+                    count = 1;
+                elseif i > 1 && strcmp(char(datatable.id(i)),...
+                        char(datatable.id(i-1)))
+                    id2(i) = count;
+                elseif i > 1 && ~strcmp(char(datatable.id(i)),...
+                        char(datatable.id(i-1)))
+                    count = count+1;
+                    id2(i) = count;
+                end
+            end
+            
+            eventarray.data{j}.id2 = id2';
+            
+        end
+        
+        REL.data = eventarray.data;
+        
+        REL.out = [];
+        REL.out.mu = [];
+        REL.out.sig_u = [];
+        REL.out.sig_e = [];
+        REL.out.labels = [];
+        
+        stan_in{1,1} = 'data {';
 
+        for i=1:nevent
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=0> NE%d; //number of obs in E%d',i,i);
+        end
 
+        for i=1:nevent
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=0> JE%d; //number of subj in E%d',i,i);
+        end
+
+        for i=1:nevent
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=0, upper=JE%d> id_E%d[NE%d]; //subject id E%d;',...
+                i,i,i,i);
+        end
+
+        for i=1:nevent
+            stan_in{end+1,1} = ...
+                sprintf('  real meas_E%d[NE%d];',i,i);
+        end    
+
+        stan_in{end+1,1} = '}';
+        stan_in{end+1,1} = 'parameters {';
+
+        for i=1:nevent
+            stan_in{end+1,1} = ...
+                sprintf('  real mu_E%d;',i);
+        end 
+
+        for i=1:nevent
+            stan_in{end+1,1} = ...
+                sprintf('  real<lower=0> sig_u_E%d;',i);
+        end 
+
+        for i=1:nevent
+            stan_in{end+1,1} = ...
+                sprintf('  real<lower=0> sig_e_E%d;',i);
+        end 
+
+        for i=1:nevent
+            stan_in{end+1,1} = ...
+                sprintf('  vector[JE%d] u_raw_E%d;',i,i);
+        end 
+
+        stan_in{end+1,1} = '}';
+        stan_in{end+1,1} = 'transformed parameters {';
+
+        for i=1:nevent
+            stan_in{end+1,1} = ...
+                sprintf('  vector[JE%d] u_E%d;',i,i);
+        end
+
+        for i=1:nevent
+            stan_in{end+1,1} = ...
+                sprintf('  u_E%d <- mu_E%d + sig_u_E%d*u_raw_E%d;',...
+                i,i,i,i);
+        end
+
+        stan_in{end+1,1} = '}';
+        stan_in{end+1,1} = 'model {';
+
+        for i=1:nevent
+            stan_in{end+1,1} = ...
+                sprintf('  u_raw_E%d ~ normal(0,1);',i);
+            stan_in{end+1,1} = ...
+                sprintf('  for (i in 1:NE%d) {;',i);
+            stan_in{end+1,1} = ...
+                sprintf('    meas_E%d[i] ~ normal(u_E%d[id_E%d[i]], sig_e_E%d);',...
+                i,i,i,i);
+            stan_in{end+1,1} = '  }';
+        end
+
+        stan_in{end+1,1} = '  ';
+
+        for i=1:nevent
+            stan_in{end+1,1} = ...
+                sprintf('  mu_E%d ~ normal(0,100);',i);
+        end
+
+        for i=1:nevent
+            stan_in{end+1,1} = ...
+                sprintf('  sig_u_E%d ~ cauchy(0,40);',i);
+        end
+        
+        for i=1:nevent
+            stan_in{end+1,1} = ...
+                sprintf('  sig_e_E%d ~ cauchy(0,40);',i);
+        end
+        
+        stan_in{end+1,1} = '}';
+        
+        REL.stan_in = stan_in;
+        
+        %create structure array for the data to be sent to cmdstan
+        data = struct;
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%use arraytable!
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        for i=1:nevent
+            fieldname = sprintf('NE%d',i);
+            fieldvalue = height(datatable(ismember(datatable.event,...
+                eventnames(i)),1)); 
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i=1:nevent
+            fieldname = sprintf('JE%d',i);
+            dummy = datatable(ismember(datatable.event,...
+                groupnames(i)),:);
+            fieldvalue = length(unique(dummy.id));
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i=1:ngroup
+            fieldname = sprintf('id_G%d',i);
+            fieldvalue = datatable{ismember(datatable.group,...
+                groupnames(i)),{'id2'}};
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i=1:ngroup
+            fieldname = sprintf('meas_G%d',i);
+            fieldvalue = datatable{ismember(datatable.group,...
+                groupnames(i)),{'meas'}};
+            data.(fieldname) = fieldvalue;
+        end
+        
+        %execute model code 
+        
+        modelname = strcat('cmstan',char(date));
+        
+        fit = stan('model_code', stan_in, 'model_name', modelname,...
+            'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
+            niter/10, 'verbose', true, 'file_overwrite', true);
+
+        fit.block();
+        print(fit);    
+
+        REL.stanfit = fit;
+        REL.out = [];
+        REL.out.mu = [];
+        REL.out.sig_u = [];
+        REL.out.sig_e = [];
+        REL.out.labels = [];  
+        
+        for i=1:ngroup
+            measname = sprintf('mu_G%d',i);
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.mu(:,end+1) = measvalue;           
+        end
+        
+        for i=1:ngroup
+            measname = sprintf('sig_u_G%d',i);
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.sig_u(:,end+1) = measvalue;           
+        end
+        
+        for i=1:ngroup
+            measname = sprintf('sig_e_G%d',i);
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.sig_e(:,end+1) = measvalue;           
+        end
+       
+        for i=1:ngroup
+            REL.out.labels(:,end+1) = groupnames(i);           
+        end
+       
+        
     case 4 %possible gruops and event types to consider
 
 
