@@ -22,10 +22,10 @@ function dataout = ra_loadfile(varargin)
 %Output:
 % dataout - matlab table with prepared data for reliability analysis.
 %  Depending on specifications, the table will have 2 to 4 columns.
-%  id: Subject ID
+%  id: Subject ID (string variable)
 %  meas: Measurement
-%  group: Group (only when specified)
-%  event: Event Type (only when specified)
+%  group: Group (only when specified, string variable)
+%  event: Event Type (only when specified, string variable)
 %
 %History 
 % by Peter Clayson (12/15/15)
@@ -234,5 +234,22 @@ if exist('headerror','var')
     'See help ra_loadfile \n'));
 end
 
+if isnumeric(dataout.id(:))
+    newid = cellstr(num2str(dataout.id(:)));
+    dataout.id = [];
+    dataout.id(:) = newid(:);
+end
+
+if ~isempty(groupcolname) && isnumeric(dataout.group(:))
+    newgroup = cellstr(num2str(dataout.group(:)));
+    dataout.group = [];
+    dataout.group = newgroup(:);
+end
+
+if ~isempty(eventcolname) && isnumeric(dataout.event(:)) 
+    newevent = cellstr(num2str(dataout.event(:)));
+    dataout.event = [];
+    dataout.event(:) = newevent(:);
+end
 
 end

@@ -6,7 +6,7 @@ function RELout = ra_computerel(varargin)
 %  for more information about table format)
 %
 %Outputs:
-%
+% RELout - structure array with the following fields.
 %
 %
 %
@@ -46,6 +46,15 @@ if ~isempty(varargin)
         'Please input the full path specifying the file to be loaded \n'));
     end
    
+    %check if a location for the file to be loaded was specified. 
+    %If it is not found, set display error.
+    ind = find(strcmp('allowinp',varargin),1);
+    if ~isempty(ind)
+        allowinp = varargin{ind+1}; 
+    else 
+        allowinp = 0;
+    end
+    
 elseif ~isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
@@ -132,7 +141,9 @@ switch analysis
         
         %cmdstan requires the id variable to be numeric and sequential. 
         %an id2 variable is created to satisfy this requirement.
-         
+        
+        fprintf('\nPreparing data for analysis...\n');
+        
         datatable = sortrows(datatable,'id');
         id2 = zeros(0,length(datatable.id));
 
@@ -192,9 +203,10 @@ switch analysis
         fit = stan('model_code', stan_in, 'model_name', 'test1',...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
             niter/10, 'verbose', true, 'file_overwrite', true);
-
+        
         fit.block();
-        print(fit);    
+        
+           
         
         REL.stanfit = fit;
         
@@ -211,7 +223,9 @@ switch analysis
         
         %cmdstan requires the id variable to be numeric and sequential. 
         %an id2 variable is created to satisfy this requirement.
-         
+        
+        fprintf('\nPreparing data for analysis...\n');
+        
         datatable = sortrows(datatable,{'group','id'});
         id2 = zeros(0,length(datatable.id));
 
@@ -388,14 +402,15 @@ switch analysis
             niter/10, 'verbose', true, 'file_overwrite', true);
 
         fit.block();
-        print(fit);    
+        
+           
 
         REL.stanfit = fit;
         REL.out = [];
         REL.out.mu = [];
         REL.out.sig_u = [];
         REL.out.sig_e = [];
-        REL.out.labels = [];  
+        REL.out.labels = {};  
         
         for i=1:ngroup
             measname = sprintf('mu_G%d',i);
@@ -427,7 +442,9 @@ switch analysis
         
         %cmdstan requires the id variable to be numeric and sequential. 
         %an id2 variable is created to satisfy this requirement.
-         
+        
+        fprintf('\nPreparing data for analysis...\n');
+        
         datatable = sortrows(datatable,{'id','event'}); 
         
         eventnames = unique(datatable.event(:));
@@ -474,34 +491,6 @@ switch analysis
             
         end
         
-        for j = 1:nevent
-
-            id2 = zeros(0,height(eventarray.data{j}));
-            
-            for i = 1:height(eventarray.data{j})
-                if i == 1
-                    id2(1) = 1;
-                    count = 1;
-                elseif i > 1 &&...
-                        strcmp(char(datatable.id(i)), char(datatable.id(i-1)))...
-                        &&...
-                        strcmp(char(datatable.group(i)), char(datatable.group(i-1)))
-                    id2(i) = count;
-                elseif i > 1 &&...
-                        ~strcmp(char(datatable.id(i)), char(datatable.id(i-1)))...
-                        &&...
-                        strcmp(char(datatable.group(i)), char(datatable.group(i-1)))
-                    count = count+1;
-                    id2(i) = count;
-                elseif i > 1 &&...
-                        ~strcmp(char(datatable.id(i)), char(datatable.id(i-1)))...
-                        &&...
-                        ~strcmp(char(datatable.group(i)), char(datatable.group(i-1)))
-                    count = 1;
-                    id2(i) = 1;
-                end
-            end
-        end
         REL.data = eventarray.data;
         
         REL.out = [];
@@ -643,9 +632,9 @@ switch analysis
         fit = stan('model_code', stan_in, 'model_name', modelname,...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
             niter/10, 'verbose', true, 'file_overwrite', true);
-
+        
         fit.block();
-        print(fit);    
+           
 
         REL.stanfit = fit;  
     
@@ -680,7 +669,9 @@ switch analysis
         
         %cmdstan requires the id variable to be numeric and sequential. 
         %an id2 variable is created to satisfy this requirement.
-         
+        
+        fprintf('\nPreparing data for analysis...\n');
+        
         datatable = sortrows(datatable,{'group','id','event'});
         eventnames = unique(datatable.event(:));
         if isnumeric(eventnames)
@@ -751,9 +742,11 @@ switch analysis
         REL.out.sig_u = [];
         REL.out.sig_e = [];
         REL.out.labels = {};
+        REL.stanfit = {};
         
         for j=1:nevent
-        
+            
+            clear stan_in
             stan_in{1,1} = 'data {';
 
             for i=1:ngroup
@@ -854,7 +847,7 @@ switch analysis
 
             for i=1:ngroup
                 fieldname = sprintf('NG%d',i);
-                fieldvalue = height(eventarray.data{j}(ismember(eventarray.data{j}.group,...
+                fieldvalue = length(eventarray.data{j}.group(ismember(eventarray.data{j}.group,...
                     groupnames(i)),1)); 
                 data.(fieldname) = fieldvalue;
             end
@@ -888,10 +881,12 @@ switch analysis
             fit = stan('model_code', stan_in, 'model_name', modelname,...
                 'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
                 niter/10, 'verbose', true, 'file_overwrite', true);
-
+            
             fit.block();
-            print(fit);     
-
+                
+            
+            REL.stanfit{end+1} = fit; 
+            
             for i=1:ngroup
                 measname = sprintf('mu_G%d',i);
                 measvalue = fit.extract('pars',measname).(measname);
@@ -919,9 +914,7 @@ switch analysis
 
 end
 
-
-
-
+RELout = REL;
 
 end
 
