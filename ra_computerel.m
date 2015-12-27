@@ -8,18 +8,9 @@ function RELout = ra_computerel(varargin)
 %Outputs:
 % RELout - structure array with the following fields.
 %
-%
-%
-%
-%
 %History
 % by Peter Clayson (12/15/15)
 % peter.clayson@gmail.com
-
-%Todos
-%add output update, time stamp, what's going on to examiner
-%convert everything to string in case numeric inputs are used for group or
-% event type
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -46,15 +37,6 @@ if ~isempty(varargin)
         'Please input the full path specifying the file to be loaded \n'));
     end
    
-    %check if a location for the file to be loaded was specified. 
-    %If it is not found, set display error.
-    ind = find(strcmp('allowinp',varargin),1);
-    if ~isempty(ind)
-        allowinp = varargin{ind+1}; 
-    else 
-        allowinp = 0;
-    end
-    
 elseif ~isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
@@ -114,7 +96,7 @@ end
 %1 - no groups or event types to consider
 %2 - possible multiple groups but no event types to consider
 %3 - possible event types but no groups to consider
-%4 - possible gruops and event types to consider
+%4 - possible groups and event types to consider
 
 if ~exist('ngroup','var') && ~exist('nevent','var')
     analysis = 1;
@@ -199,10 +181,13 @@ switch analysis
             'NSUB', length(unique(datatable.id)),... %number of participants
             'id', datatable.id2,... %id variable
             'meas', datatable.meas); %measurement variable
-
+        
+        fprintf('\nModel is being run in cmdstan\n');
+        fprintf('\nThis may take a while depending on the amount of data\n');
+        
         fit = stan('model_code', stan_in, 'model_name', 'test1',...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-            niter/10, 'verbose', true, 'file_overwrite', true);
+            niter/10, 'verbose', false, 'file_overwrite', true);
         
         fit.block();
         
@@ -397,9 +382,12 @@ switch analysis
         
         modelname = strcat('cmstan',char(date));
         
+        fprintf('\nModel is being run in cmdstan\n');
+        fprintf('\nThis may take a while depending on the amount of data\n');
+        
         fit = stan('model_code', stan_in, 'model_name', modelname,...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-            niter/10, 'verbose', true, 'file_overwrite', true);
+            niter/10, 'verbose', false, 'file_overwrite', true);
 
         fit.block();
         
@@ -629,9 +617,12 @@ switch analysis
         
         modelname = strcat('cmstan',char(date));
         
+        fprintf('\nModel is being run in cmdstan\n');
+        fprintf('\nThis may take a while depending on the amount of data\n');
+        
         fit = stan('model_code', stan_in, 'model_name', modelname,...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-            niter/10, 'verbose', true, 'file_overwrite', true);
+            niter/10, 'verbose', false, 'file_overwrite', true);
         
         fit.block();
            
@@ -878,9 +869,12 @@ switch analysis
 
             modelname = strcat('cmstan',char(date));
 
+            fprintf('\nModel is being run in cmdstan\n');
+            fprintf('\nThis may take a while depending on the amount of data\n');
+            
             fit = stan('model_code', stan_in, 'model_name', modelname,...
                 'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-                niter/10, 'verbose', true, 'file_overwrite', true);
+                niter/10, 'verbose', false, 'file_overwrite', true);
             
             fit.block();
                 
