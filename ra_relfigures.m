@@ -219,6 +219,9 @@ end
 fprintf('\n\n\n');
 
 
+%%%%%%load file from R to make sure that I am using the correct variance
+%%%%%%estimates
+lmeout = fitlme(REL.data{1,1}, 'meas ~ 1 + (1|id)');
 
 end
 
