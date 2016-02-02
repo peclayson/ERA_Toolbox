@@ -166,7 +166,7 @@ for eloc=1:nevents
     hline = refline(0,.7);
     hline.Color = 'b';
     hline.LineStyle = ':';
-    leg = legend(enames{:},'Location','southeast');
+    leg = legend(gnames{:},'Location','southeast');
     set(leg,'FontSize',fsize);
 end
 
@@ -221,7 +221,16 @@ fprintf('\n\n\n');
 
 %%%%%%load file from R to make sure that I am using the correct variance
 %%%%%%estimates
-lmeout = fitlme(REL.data{1,1}, 'meas ~ 1 + (1|id)');
+
+%perform calculations separately for each group and event
+lmeout = fitlme(REL.data{1,1}, 'meas ~ 1 + (1|id)','FitMethod','REML');
+
+%can try converting the data to a table to filter data by number of trials
+%grpstats(CARel,'Participant') will give number of rows per participant
+
+[obsvar,resvar] = covarianceParameters(lmeout);
+
+
 
 end
 
