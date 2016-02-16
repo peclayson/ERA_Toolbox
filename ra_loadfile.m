@@ -18,6 +18,8 @@ function dataout = ra_loadfile(varargin)
 %  it is assumed that there is only one group in the data file.
 % eventcol - column label for the event variable. If no label is provided
 %  it is assumed there is only one event type in the data file.
+% dataraw - raw data table outputted from ra_startproc (so Matlab doesn't
+%  have to re-load entire table)
 %
 %Output:
 % dataout - matlab table with prepared data for reliability analysis.
@@ -102,6 +104,15 @@ if ~isempty(varargin)
         eventcolname = '';
     end
     
+    %check if dataraw was specified 
+    %If it is not found, create an empty variable
+    ind = find(strcmp('dataraw',varargin),1);
+    if ~isempty(ind)
+        dataraw = varargin{ind+1}; 
+    else 
+        dataraw = '';
+    end
+    
 elseif ~isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
@@ -127,8 +138,10 @@ if sum(strcmp(ext,supportedfiles)) ~= 1
 
 end
 
-%load file
-dataraw = readtable(file);
+%load file if it has not been done already
+if isempty(dataraw)
+    dataraw = readtable(file);
+end
 
 %make sure all of the necessary headers are present in the file then load
 %the data into a table to be outputted for analysis
