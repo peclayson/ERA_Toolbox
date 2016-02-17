@@ -4,19 +4,27 @@ function ra_relfigures(varargin)
 %
 %ra_relfigures('data',REL)
 %
+%Note: The Statistics and Machine Learning Toolbox is required
+%
 %Required Inputs:
 % data - structure array containing results of dependability analyses using
 %  cmdstan. See ra_computerel for more information.
+%
+%Optional Inputs:
+% relcutoff - reliability level to use for cutoff when deciding the
+%  minimum number of trials needed to achieve this specified level of
+%  reliability
 %
 %Output:
 % One figure is plotted that displays the dependability of measurements as
 %  the number of trials increases. If there is separate information for
 %  groups, events, or groups and events, the dependability estimates will
-%  be displayed accordingtly.
-%
+%  be displayed accordingly.
+
 %History 
 % by Peter Clayson (12/23/15)
 % peter.clayson@gmail.com
+%
 
 %TODOS
 %ensure that everything works with 1 group or 1 event or no group or event
@@ -46,6 +54,15 @@ if ~isempty(varargin)
         'Please input the full path specifying the file to be loaded \n'));
     end
    
+    %check if a location for the file to be loaded was specified. 
+    %If it is not found, set display error.
+    ind = find(strcmp('relcutoff',varargin),1);
+    if ~isempty(ind)
+        relcutoff = cell2mat(varargin{ind+1}); 
+    else 
+        relcutoff = .70; %default level is .70
+    end
+    
 elseif ~isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
@@ -188,16 +205,33 @@ elseif ngroups > 1 && nevents > 1
     analysis = 4;
 end
 
-fprintf('\n\n\nIn order to achieve a .70 level of dependability');
-fprintf('\nthe following cutoffs should be used\n');
+fprintf(...
+    '\n\n\nIn order to achieve a %0.2f level of dependability',relcutoff);
+fprintf('\nthe following cutoffs should be used...\n');
+
+%make a dlg variable to store text that summarizes overall realiability
+dlg = {'Using these cutoffs and excluding those individuals\n';...
+    'with an insufficient number of trials\n';...
+    'The overall dependability and final n"s would be...\n';};
+
+relsummary.relcutoff = relcutoff;
 
 switch analysis
     case 1 %no groups or event types to consider
     case 2 %possible multiple groups but no event types to consider
     case 3 %possible event types but no groups to consider
     case 4 %groups and event types to consider
+        
         for eloc=1:nevents
+            
             for gloc=1:ngroups
+                
+                if gloc == 1
+                    relsummary(1).group.name = gnames{gloc};
+                end
+               
+                relsummary(gloc).group(eloc).event.name = enames{eloc};
+                
                 for trial=1:ntrials
                     mrel(trial) = ...
                         mean(reliab(data(gloc).g(eloc).sig_u.raw,...
@@ -209,14 +243,72 @@ switch analysis
                         data(gloc).g(eloc).sig_u.raw,...
                         data(gloc).g(eloc).sig_e.raw,trial),.975);
                 end
-                trlcutoff = find(mrel >= .70, 1);
-                fprintf('\n%s %s: %d trials, dependability CI[%0.2f, %0.2f]',...
-                    enames{eloc},gnames{gloc},...
-                    trlcutoff,llrel(trlcutoff),ulrel(trlcutoff));
+                
+                %find the number of trials to reach cutoff based on the
+                %point estimate for dependability
+                trlcutoff = find(mrel >= relcutoff, 1);
+                
+                relsummary(gloc).group(eloc).event.trlcutoff = trlcutoff;
+                relsummary(gloc).group(eloc).event.mrel = mrel(trlcutoff);
+                relsummary(gloc).group(eloc).event.llrel = llrel(trlcutoff);
+                relsummary(gloc).group(eloc).event.ulrel = ulrel(trlcutoff);
+                
+                %%%%%Be sure to run data only on those people with enough
+                %%%%%trials  
+                
+                
+                
+                
+                %put all of the inputs into a data structure
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                datatable = REL.data{eloc};
+                ind = strcmp(datatable.group,gnames{gloc});
+                data = datatable(ind,:);
+   
+                trltable = varfun(@length,data,...
+                    'GroupingVariables',{'id'});
+                
+                ind2include = find(trltable.GroupCount >= relcutoff, 1);
+                
+                trlmean = mean(trltable.GroupCount);
+               
+                %perform calculations separately for each group and event
+                lmeout = fitlme(data, 'meas ~ 1 + (1|id)',...
+                    'FitMethod','REML');
+                
+                dep = depall(lmeout,trlmean);
+                
+                dlg{end+1} = {sprintf('\n%s %s, Overall dependability is %0.2f', dep)};
+                
             end
         end
-end
+        
+        
+end %switch analysis
 fprintf('\n\n\n');
+
+if ~isempty(trlcutoff)
+                    fprintf(...
+                        '\n%s %s: %d trials, dependability %0.2f CI[%0.2f, %0.2f]',...
+                        enames{eloc},gnames{gloc},...
+                        trlcutoff,mrel(trlcutoff),...
+                        llrel(trlcutoff),ulrel(trlcutoff));
+                elseif isempty(trlcutoff)
+                    fprintf(...
+                        '\n%s %s: Level of dependability not obtained',...
+                        enames{eloc},gnames{gloc});
+                end
+
 
 
 %%%%%%load file from R to make sure that I am using the correct variance
@@ -243,5 +335,13 @@ end
 function iccout = icc(var_u,var_e)
 
 iccout = var_u.^2 ./ (var_u.^2 + var_e.^2);
+
+end
+
+function dep = depall(lme,num)
+
+[obsvar,resvar] = covarianceParameters(lme);
+
+dep = cell2mat(obsvar)/(cell2mat(obsvar)+(resvar/num));
 
 end

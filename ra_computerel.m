@@ -479,6 +479,7 @@ switch analysis
             
         end
         
+        
         REL.data = eventarray.data;
         
         REL.out = [];
