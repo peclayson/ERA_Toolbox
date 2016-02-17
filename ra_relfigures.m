@@ -181,8 +181,7 @@ for eloc=1:nevents
     ylabel('Dependability','FontSize',fsize);
     xlabel('Number of Observations','FontSize',fsize);
     hline = refline(0,.7);
-    hline.Color = 'b';
-    hline.LineStyle = ':';
+    set(hline,'Color','b','LineStyle',':');
     leg = legend(gnames{:},'Location','southeast');
     set(leg,'FontSize',fsize);
 end
@@ -226,11 +225,11 @@ switch analysis
             
             for gloc=1:ngroups
                 
-                if gloc == 1
-                    relsummary(1).group.name = gnames{gloc};
+                if eloc == 1
+                    relsummary.group(gloc).name = gnames{gloc};
                 end
                
-                relsummary(gloc).group(eloc).event.name = enames{eloc};
+                relsummary.group(gloc).event(eloc).name = enames{eloc};
                 
                 for trial=1:ntrials
                     mrel(trial) = ...
@@ -245,27 +244,94 @@ switch analysis
                 end
                 
                 %find the number of trials to reach cutoff based on the
-                %point estimate for dependability
-                trlcutoff = find(mrel >= relcutoff, 1);
+                %lower limit of the confidence interval
+                trlcutoff = find(llrel >= relcutoff, 1);
                 
-                relsummary(gloc).group(eloc).event.trlcutoff = trlcutoff;
-                relsummary(gloc).group(eloc).event.mrel = mrel(trlcutoff);
-                relsummary(gloc).group(eloc).event.llrel = llrel(trlcutoff);
-                relsummary(gloc).group(eloc).event.ulrel = ulrel(trlcutoff);
-                
-                %%%%%Be sure to run data only on those people with enough
-                %%%%%trials  
+                relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                relsummary.group(gloc).event(eloc).mrel = mrel(trlcutoff);
+                relsummary.group(gloc).event(eloc).llrel = llrel(trlcutoff);
+                relsummary.group(gloc).event(eloc).ulrel = ulrel(trlcutoff);
                 
                 
+                %Only calculate overall dependability on the ids with
+                %enough trials
+                
+                datatrls = REL.data{eloc};
+                ind = strcmp(datatrls.group,gnames{gloc});
+                datatrls = datatrls(ind,:);
+                
+                trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+                
+                ind2include = trltable.GroupCount >= trlcutoff;
+                
+                relsummary.group(gloc).event(eloc).eventgoodids = trltable.id(ind2include);
+                 
+            end
+        end
+        
+        %find the ids that have enough trials for each event type
+         for gloc=1:ngroups
+            tempids = {};
+            badids = [];
+            for eloc=1:nevents
+                tempids{end+1} = relsummary.group(gloc).event(eloc).eventgoodids;
+                
+                if eloc > 1
+                    [~,ind]=setdiff(tempids{1},tempids{eloc});
+                    new = tempids{1};
+                    badids = [badids new(ind)];
+                    new(ind) = [];
+                    tempids{1} = new;
+                end
+                
+            end
+            
+            relsummary.group(gloc).goodids = tempids{1};
+            relsummary.group(gloc).badids = badids;
+            
+         end
+         
+            
+                      
+                
+        
+        [elements,indices,~] = unique(A);              % get each value with index once
+        counts = hist(A(:), elements);                 % count occurrences of elements within a
+        uniqueElements = elements(counts==1);          % find unique elements
+        uniqueIndices  =  indices(counts==1);          % find unique indices
+        [uRow, uCol] = ind2sub(size(A),uniqueIndices); % get row/column representation
+    
+        
+        
+        
+        for eloc=1:nevents
+
+            for gloc=1:ngroups
+                
+                 datatable = REL.data{eloc};
+                ind = strcmp(datatable.group,gnames{gloc});
+                data = datatable(ind,:);
+                
+                trltable = varfun(@length,data,'GroupingVariables',{'id'});
+                
+                data = join(data,trltable,'Keys','id','RightVariables',...
+                    'GroupCount');
+                
+                ind2include = find(data.GroupCount >= relcutoff, 1);
                 
                 
-                %put all of the inputs into a data structure
+                trlmean = mean(data.GroupCount);
                 
+                %perform calculations for overall reliability
+                lmeout = fitlme(data, 'meas ~ 1 + (1|id)',...
+                    'FitMethod','REML');
                 
+                dep = depall(lmeout,trlmean);
                 
+                relsummary(eloc);
                 
-                
-                
+            end
+        end
                 
                 
                 
@@ -275,8 +341,7 @@ switch analysis
                 ind = strcmp(datatable.group,gnames{gloc});
                 data = datatable(ind,:);
    
-                trltable = varfun(@length,data,...
-                    'GroupingVariables',{'id'});
+                trltable = varfun(@length,data,'GroupingVariables',{'id'});
                 
                 ind2include = find(trltable.GroupCount >= relcutoff, 1);
                 
@@ -290,8 +355,6 @@ switch analysis
                 
                 dlg{end+1} = {sprintf('\n%s %s, Overall dependability is %0.2f', dep)};
                 
-            end
-        end
         
         
 end %switch analysis
