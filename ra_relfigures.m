@@ -1,4 +1,4 @@
-function ra_relfigures(varargin)
+function RELout = ra_relfigures(varargin)
 %Creates figures depicting dependability estimates and displays information
 % about optimal cutoffs and overall dependability
 %
@@ -614,79 +614,118 @@ end %switch analysis
 %4 - possible groups and event types to consider
 
 %Create table to display both sets of data
-Label = {};
-Trial_Cutoff = {};
-Dependability = {};
-%Individual Trial Analyses
+label = {};
+trlcutoff = {};
+dep = {};
+overalldep = {};
+mintrl = {};
+maxtrl = {};
+meantrl = {};
+goodn = {};
+badn = {};
+
+%put data together in tables to display
 
 for gloc=1:ngroups
     for eloc=1:nevents
         switch analysis
             case 1
-                Label{end+1} = 'Measurement';
+                label{end+1} = 'Measurement';
             case 2
-                Label{end+1} = gnames{gloc};
+                label{end+1} = gnames{gloc};
             case 3
-                Label{end+1} = enames{eloc};
+                label{end+1} = enames{eloc};
             case 4
-                Label{end+1} = [gnames{gloc} ' - ' enames{eloc}];
+                label{end+1} = [gnames{gloc} ' - ' enames{eloc}];
         end
-        Trial_Cutoff{end+1} = relsummary.group(gloc).event(eloc).trlcutoff;
-        Dependability{end+1} = sprintf('%0.2f CI[%0.2f, %0.2f]',...
+        trlcutoff{end+1} = relsummary.group(gloc).event(eloc).trlcutoff;
+        dep{end+1} = sprintf('        %0.2f CI[ %0.2f, %0.2f]',...
             relsummary.group(gloc).event(eloc).mrel,...
             relsummary.group(gloc).event(eloc).llrel,...
             relsummary.group(gloc).event(eloc).ulrel);
+        
+        overalldep{end+1} = ...
+            str2num(sprintf('%0.2f',...
+            round(relsummary.group(gloc).event(eloc).dependability,2)));
+        mintrl{end+1} = relsummary.group(gloc).event(eloc).trlinfo.min;
+        maxtrl{end+1} = relsummary.group(gloc).event(eloc).trlinfo.max;
+        meantrl{end+1} = ...
+            round(relsummary.group(gloc).event(eloc).trlinfo.mean,2);
+        goodn{end+1} = relsummary.group(gloc).event(eloc).goodn;
+        badn{end+1} = length(relsummary.group(gloc).badids);
+        
     end 
 end
 
-indtable = table(Label',Trial_Cutoff',Dependability');
+inctrltable = table(label',trlcutoff',dep');
+
+overalltable = table(label',goodn',badn',overalldep',meantrl',...
+    mintrl',maxtrl');
+
 
 %define parameters for figure position
-figwidth = 600;
+figwidth = 429;
 figheight = 400;
 
 %define space between rows and first row location
 rowspace = 25;
 row = figheight - rowspace*2;
 
-ra_table= figure('unit','pix',...
+ra_inctrl= figure('unit','pix',...
   'position',[400 400 figwidth figheight],...
   'menub','no',...
-  'name','Results of Dependability Analyses',...
+  'name','Results of Increasing Trials on Dependability',...
   'numbertitle','off',...
   'resize','off');
 
 %Print the name of the loaded dataset
-uicontrol(ra_table,'Style','text','fontsize',16,...
+uicontrol(ra_inctrl,'Style','text','fontsize',16,...
     'HorizontalAlignment','center',...
     'String','Dependability Analyses',...
     'Position',[0 row figwidth 25]);          
 
-row = figheight - rowspace*2;
-
 %Start a table
-t = uitable('Parent',ra_table,'Position',...
+t = uitable('Parent',ra_inctrl,'Position',...
     [25 (rowspace*2) figwidth-50 figheight-(rowspace*5)],...
-    'Data',table2cell(indtable));
+    'Data',table2cell(inctrltable));
 set(t,'ColumnName',{'Label' 'Trial Cutoff' 'Dependability'});
 set(t,'ColumnWidth',{150 'auto' 150});
 set(t,'RowName',[]);
 set(t,'FontSize',12);
 
-if ~isempty(trlcutoff)
-                    fprintf(...
-                        '\n%s %s: %d trials, dependability %0.2f CI[%0.2f, %0.2f]',...
-                        enames{eloc},gnames{gloc},...
-                        trlcutoff,mrel(trlcutoff),...
-                        llrel(trlcutoff),ulrel(trlcutoff));
-                elseif isempty(trlcutoff)
-                    fprintf(...
-                        '\n%s %s: Level of dependability not obtained',...
-                        enames{eloc},gnames{gloc});
-                end
+%define parameters for figure position
+figwidth = 650;
+figheight = 400;
 
+%define space between rows and first row location
+rowspace = 25;
+row = figheight - rowspace*2;
 
+ra_overall= figure('unit','pix',...
+  'position',[400 400 figwidth figheight],...
+  'menub','no',...
+  'name','Dependability Analyses Including All Trials',...
+  'numbertitle','off',...
+  'resize','off');
 
+%Print the name of the loaded dataset
+uicontrol(ra_overall,'Style','text','fontsize',16,...
+    'HorizontalAlignment','center',...
+    'String','Overall Dependability',...
+    'Position',[0 row figwidth 25]);          
+
+%Start a table
+t = uitable('Parent',ra_overall,'Position',...
+    [25 (rowspace*2) figwidth-50 figheight-(rowspace*5)],...
+    'Data',table2cell(overalltable));
+set(t,'ColumnName',{'Label' 'n Included' 'n Excluded' ...
+    'Dependability' 'Mean # of Trials' 'Min # of Trials'...
+    'Max # of Trials'});
+set(t,'RowName',[]);
+set(t,'FontSize',12);
+
+RELout = REL;
+RELout.relsummary = relsummary;
 
 end
 
