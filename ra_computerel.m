@@ -185,13 +185,13 @@ switch analysis
         fprintf('\nModel is being run in cmdstan\n');
         fprintf('\nThis may take a while depending on the amount of data\n');
         
-        fit = stan('model_code', stan_in, 'model_name', 'test1',...
+        modelname = strcat('cmstan',char(date));
+        
+        fit = stan('model_code', stan_in, 'model_name', modelname,...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
             niter/10, 'verbose', false, 'file_overwrite', true);
         
         fit.block();
-        
-           
         
         REL.stanfit = fit;
         

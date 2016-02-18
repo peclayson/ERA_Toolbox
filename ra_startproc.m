@@ -24,7 +24,7 @@ end
 function ra_startproc_fig(collist,filepart,pathpart,dataraw)
 
 %define parameters for figure position
-figwidth = 400;
+figwidth = 500;
 figheight = 300;
 collist_nonone = collist;
 collist_nonone(end) = [];
@@ -187,17 +187,31 @@ end
 closereq;
 
 [savename, savepath] = uiputfile(fullfile(pathpart,'*.mat'),...
-    'Where would you like to save the output file?');
+    'Where would you like to save the output files?');
 
 dataout = ra_loadfile('file',fullfile(pathpart,filepart),...
     'idcol',idheader,'meascol',measheader,'groupcol',groupheader,...
     'eventcol',eventheader,'dataraw',dataraw);
 
-RELout = computerel(dataout);
+%Change working dir for Stan files
+
+mkdir(savepath,'Temp_StanFiles');
+
+origdir = cd(fullfile(savepath,'Temp_StanFiles'));
+
+RELout = ra_computerel('data',dataout);
+
+cd(origdir);
+rmdir(fullfile(savepath,'Temp_StanFiles'),'s');
 
 fprintf('\n\nSaving Processed Data...\n\n');
 
-save(fullfile(savepath,savename),RELout);
+%Matlab spits out various warnings when trying to save the StanFit part of
+%the structure. Turning off warnings brielfy so the user does not become
+%concerned
+warning('off','all');
+save(fullfile(savepath,savename),'RELout');
+warning('on','all');
 
 ra_startview(RELout);
 
