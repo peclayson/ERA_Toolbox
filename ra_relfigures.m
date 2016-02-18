@@ -26,10 +26,6 @@ function ra_relfigures(varargin)
 % peter.clayson@gmail.com
 %
 
-%TODOS
-%ensure that everything works with 1 group or 1 event or no group or event
-%add the overall level of dependability after implementing given cutoffs
-%store dependability estimates in REL structure array
 
 if ~isempty(varargin)
     
@@ -73,82 +69,111 @@ elseif ~isempty(varargin)
 end %if ~isempty(varargin)
 
 data = struct;
-% data.g.glabel = {};
-% data.g.elabel = {};
-% data.g.mu = [];
-% data.g.mu.raw = [];
-% data.g.mu.ll = [];
-% data.g.mu.ul = [];
-% data.g.sig_u = [];
-% data.g.sig_u.raw = [];
-% data.g.sig_u.ll = [];
-% data.g.sig_u.ul = [];
-% data.g.sig_e = [];
-% data.g.sig_e.raw = [];
-% data.g.sig_e.ll =[];
-% data.g.sig_e.ul = [];
 
-if strcmpi('REL.groups','none')
+if strcmpi(REL.groups,'none')
     ngroups = 1;
-    gnames = REL.groups;
+    gnames = cellstr(REL.groups);
 else
     ngroups = length(REL.groups);
     gnames = REL.groups(:);
 end
 
-if strcmpi('REL.events','none')
+if strcmpi(REL.events,'none')
     nevents = 1;
-    enames = REL.events;
+    enames = cellstr(REL.events);
 else
     nevents = length(REL.events);
     enames = REL.events(:);
 end
 
-for i=1:length(REL.out.labels)
-    
-    lblstr = strsplit(REL.out.labels{i},'_');
-    
-    eloc = find(ismember(enames,lblstr(1)));
-    gloc = find(ismember(gnames,lblstr(2)));
-    
-    if isempty(eloc); eloc = 1; end;
-    if isempty(gloc); gloc = 1; end;
-        
-    data(gloc).g(eloc).label = REL.out.labels(i);
-    data(gloc).g(eloc).mu.raw = REL.out.mu(:,i);
-    data(gloc).g(eloc).sig_u.raw = REL.out.sig_u(:,i);
-    data(gloc).g(eloc).sig_e.raw = REL.out.sig_e(:,i);
-    data(gloc).g(eloc).elabel = enames(eloc);
-    data(gloc).g(eloc).glabel = gnames(gloc);
-    
+
+%figure out whether groups or events need to be considered
+%1 - no groups or event types to consider
+%2 - possible multiple groups but no event types to consider
+%3 - possible event types but no groups to consider
+%4 - possible groups and event types to consider
+
+if ngroups == 1 && nevents == 1
+    analysis = 1;
+elseif ngroups > 1 && nevents == 1
+    analysis = 2;
+elseif ngroups == 1 && nevents > 1
+    analysis = 3;
+elseif ngroups > 1 && nevents > 1
+    analysis = 4;
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%fitdata = table(mu, sig_u, sig_e, lp);
-% 
-% mean_icc = mean(icc(sig_u(:), sig_e(:)));
-% ll_icc = quantile(icc(sig_u(:), sig_e(:)),.025);
-% ul_icc = quantile(icc(sig_u(:), sig_e(:)),.975);
-% 
-% mean_sig_u = mean(sig_u);
-% mean_sig_e = mean(sig_e);
-% mean_mu = mean(mu);
-% 
-% ll_sig_u = quantile(sig_u,.025);
-% ul_sig_u = quantile(sig_u,.975);
-% ll_sig_e = quantile(sig_e,.025);
-% ul_sig_e = quantile(sig_e,.975);
-% ll_mu = quantile(mu,.025);
-% ul_mu = quantile(mu,.975);
+switch analysis
+    case 1 %1 - no groups or event types to consider
+
+        gloc = 1;
+        eloc = 1;
+        
+        data.g(gloc).e(eloc).label = REL.out.labels(gloc);
+        data.g(gloc).e(eloc).mu.raw = REL.out.mu(:,gloc);
+        data.g(gloc).e(eloc).sig_u.raw = REL.out.sig_u(:,gloc);
+        data.g(gloc).e(eloc).sig_e.raw = REL.out.sig_e(:,gloc);
+        data.g(gloc).e(eloc).elabel = cellstr('none');
+        data.g(gloc).glabel = gnames(gloc);
+        
+    case 2 %2 - possible multiple groups but no event types to consider 
+        
+        eloc = 1;
+        
+        for gloc=1:length(REL.out.labels)
+            
+            data.g(gloc).e(eloc).label = REL.out.labels(gloc);
+            data.g(gloc).e(eloc).mu.raw = REL.out.mu(:,gloc);
+            data.g(gloc).e(eloc).sig_u.raw = REL.out.sig_u(:,gloc);
+            data.g(gloc).e(eloc).sig_e.raw = REL.out.sig_e(:,gloc);
+            data.g(gloc).e(eloc).elabel = cellstr('none');
+            data.g(gloc).glabel = gnames(gloc);
+    
+        end
+        
+    case 3 %3 - possible event types but no groups to consider
+        
+        gloc = 1;
+        
+        for eloc=1:length(REL.out.labels)
+
+            data.g(gloc).e(eloc).label = REL.out.labels(eloc);
+            data.g(gloc).e(eloc).mu.raw = REL.out.mu(:,eloc);
+            data.g(gloc).e(eloc).sig_u.raw = REL.out.sig_u(:,eloc);
+            data.g(gloc).e(eloc).sig_e.raw = REL.out.sig_e(:,eloc);
+            data.g(gloc).e(eloc).elabel = enames(eloc);
+            data.g(gloc).glabel = gnames(gloc);
+    
+        end
+        
+    case 4 %4 - possible groups and event types to consider
+        for i=1:length(REL.out.labels)
+    
+            lblstr = strsplit(REL.out.labels{i},'_');
+
+            eloc = find(ismember(enames,lblstr(1)));
+            gloc = find(ismember(gnames,lblstr(2)));
+
+            if isempty(eloc); eloc = 1; end;
+            if isempty(gloc); gloc = 1; end;
+
+            data.g(gloc).e(eloc).label = REL.out.labels(i);
+            data.g(gloc).e(eloc).mu.raw = REL.out.mu(:,i);
+            data.g(gloc).e(eloc).sig_u.raw = REL.out.sig_u(:,i);
+            data.g(gloc).e(eloc).sig_e.raw = REL.out.sig_e(:,i);
+            data.g(gloc).e(eloc).elabel = enames(eloc);
+            data.g(gloc).glabel = gnames(gloc);
+    
+        end
+end
+  
 
 
 %flexible number of trials to display (warn about extrapolating too far!)
 ntrials = 50;
 x = 1:ntrials;
 
-mrel = zeros(0,ntrials);
-llrel = zeros(0,ntrials);
-ulrel = zeros(0,ntrials);
+mrel = zeros(ntrials,0);
 
 if nevents > 2
     xplots = ceil(sqrt(nevents));
@@ -169,50 +194,302 @@ for eloc=1:nevents
     for gloc=1:ngroups
         for trial=1:ntrials
             mrel(trial,gloc) = ...
-                mean(reliab(data(gloc).g(eloc).sig_u.raw,...
-                data(gloc).g(eloc).sig_e.raw,trial)); 
+                mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,trial)); 
         end
     end
     subplot(yplots,xplots,eloc);
     plot(x,mrel);
     axis([0 ntrials 0 1]);
     set(gca,'fontsize',16);
-    title(enames{eloc},'FontSize',20);
+    
+    if ~strcmpi(enames{eloc},'none')
+        title(enames{eloc},'FontSize',20);
+    end
+    
     ylabel('Dependability','FontSize',fsize);
     xlabel('Number of Observations','FontSize',fsize);
     hline = refline(0,.7);
     set(hline,'Color','b','LineStyle',':');
-    leg = legend(gnames{:},'Location','southeast');
-    set(leg,'FontSize',fsize);
+    if analysis ~= 1 && analysis ~= 3
+        leg = legend(gnames{:},'Location','southeast');
+        set(leg,'FontSize',fsize);
+    end
 end
 
-%display in the command window the number of trials that should be included
-%to achieve a given level (.70) of dependability
-
-%1 - no groups or event types to consider
-%2 - possible multiple groups but no event types to consider
-%3 - possible event types but no groups to consider
-%4 - possible groups and event types to consider
-
-if ngroups == 1 && nevents == 1
-    analysis = 1;
-elseif ngroups > 1 && nevents == 1
-    analysis = 2;
-elseif ngroups == 1 && nevents > 1
-    analysis = 3;
-elseif ngroups > 1 && nevents > 1
-    analysis = 4;
-end
+mrel = zeros(0,ntrials);
+llrel = zeros(0,ntrials);
+ulrel = zeros(0,ntrials);
 
 relsummary.relcutoff = relcutoff;
 
 switch analysis
     case 1 %no groups or event types to consider
+        
+        eloc = 1;
+        gloc = 1;
+        
+        relsummary.group(gloc).name = gnames{gloc};
+        relsummary.group(gloc).event(eloc).name = 'measure';
+
+        for trial=1:ntrials
+            mrel(trial) = ...
+                mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,trial)); 
+            llrel(trial) = quantile(reliab(...
+                data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,trial),.025);
+            ulrel(trial) = quantile(reliab(...
+                data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,trial),.975);
+        end
+
+        %find the number of trials to reach cutoff based on the
+        %lower limit of the confidence interval
+        trlcutoff = find(llrel >= relcutoff, 1);
+
+        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+        relsummary.group(gloc).event(eloc).mrel = mrel(trlcutoff);
+        relsummary.group(gloc).event(eloc).llrel = llrel(trlcutoff);
+        relsummary.group(gloc).event(eloc).ulrel = ulrel(trlcutoff);
+
+
+        %Only calculate overall dependability on the ids with
+        %enough trials
+
+        datatrls = REL.data;
+
+        trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+
+        ind2include = trltable.GroupCount >= trlcutoff;
+        ind2exclude = trltable.GroupCount < trlcutoff;
+
+        relsummary.group(gloc).event(eloc).eventgoodids =...
+            trltable.id(ind2include);
+        relsummary.group(gloc).event(eloc).eventbadids =...
+            trltable.id(ind2exclude);
+        
+        relsummary.group(gloc).goodids = ...
+            relsummary.group(gloc).event(eloc).eventgoodids;
+        relsummary.group(gloc).badids = ...
+            relsummary.group(gloc).event(eloc).eventbadids;
+
+        datatable = REL.data;
+
+        goodids = table(relsummary.group(gloc).goodids);
+
+        lmedata = innerjoin(datatable, goodids,...
+            'LeftKeys', 'id', 'RightKeys', 'Var1',...
+            'LeftVariables', {'id' 'meas'});
+
+        trltable = varfun(@length,lmedata,...
+            'GroupingVariables',{'id'});
+
+        trlmean = mean(trltable.GroupCount);
+
+        %perform calculations for overall reliability
+        lmeout = fitlme(lmedata, 'meas ~ 1 + (1|id)',...
+            'FitMethod','REML');
+
+        dep = depall(lmeout,trlmean);
+
+        relsummary.group(gloc).event(eloc).dependability = dep;
+        relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
+        relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
+        relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
+        relsummary.group(gloc).event(eloc).goodn = height(goodids);
+   
     case 2 %possible multiple groups but no event types to consider
+        
+       	eloc = 1;
+
+        for gloc=1:ngroups
+
+            if eloc == 1
+                relsummary.group(gloc).name = gnames{gloc};
+            end
+
+            relsummary.group(gloc).event(eloc).name = enames{eloc};
+
+            for trial=1:ntrials
+                mrel(trial) = ...
+                    mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw,trial)); 
+                llrel(trial) = quantile(reliab(...
+                    data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw,trial),.025);
+                ulrel(trial) = quantile(reliab(...
+                    data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw,trial),.975);
+            end
+
+            %find the number of trials to reach cutoff based on the
+            %lower limit of the confidence interval
+            trlcutoff = find(llrel >= relcutoff, 1);
+
+            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+            relsummary.group(gloc).event(eloc).mrel = mrel(trlcutoff);
+            relsummary.group(gloc).event(eloc).llrel = llrel(trlcutoff);
+            relsummary.group(gloc).event(eloc).ulrel = ulrel(trlcutoff);
+
+
+            %Only calculate overall dependability on the ids with
+            %enough trials
+
+            datatrls = REL.data;
+            ind = strcmp(datatrls.group,gnames{gloc});
+            datatrls = datatrls(ind,:);
+
+            trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+
+            ind2include = trltable.GroupCount >= trlcutoff;
+            ind2exclude = trltable.GroupCount < trlcutoff;
+
+            relsummary.group(gloc).event(eloc).eventgoodids =...
+                trltable.id(ind2include);
+            relsummary.group(gloc).event(eloc).eventbadids =...
+                trltable.id(ind2exclude);
+        end
+
+        %find the ids that have enough trials for each event type
+        
+        for gloc=1:ngroups
+        
+            relsummary.group(gloc).goodids = ...
+                relsummary.group(gloc).event(eloc).eventgoodids;
+            relsummary.group(gloc).badids = ...
+                relsummary.group(gloc).event(eloc).eventbadids;
+            
+        end
+
+        for gloc=1:ngroups
+
+            datatable = REL.data;
+            ind = strcmp(datatable.group,gnames{gloc});
+            datasubset = datatable(ind,:);
+
+            goodids = table(relsummary.group(gloc).goodids);
+
+            lmedata = innerjoin(datasubset, goodids,...
+                'LeftKeys', 'id', 'RightKeys', 'Var1',...
+                'LeftVariables', {'id' 'meas'});
+
+            trltable = varfun(@length,lmedata,...
+                'GroupingVariables',{'id'});
+
+            trlmean = mean(trltable.GroupCount);
+
+            %perform calculations for overall reliability
+            lmeout = fitlme(lmedata, 'meas ~ 1 + (1|id)',...
+                'FitMethod','REML');
+
+            dep = depall(lmeout,trlmean);
+
+            relsummary.group(gloc).event(eloc).dependability = dep;
+            relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
+            relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
+            relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
+            relsummary.group(gloc).event(eloc).goodn = height(goodids);
+        end
+        
+        
     case 3 %possible event types but no groups to consider
         
+        gloc = 1;
+        for eloc=1:nevents
+                
+                if eloc == 1
+                    relsummary.group(gloc).name = gnames{gloc};
+                end
+               
+                relsummary.group(gloc).event(eloc).name = enames{eloc};
+                
+                for trial=1:ntrials
+                    mrel(trial) = ...
+                        mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                        data.g(gloc).e(eloc).sig_e.raw,trial)); 
+                    llrel(trial) = quantile(reliab(...
+                        data.g(gloc).e(eloc).sig_u.raw,...
+                        data.g(gloc).e(eloc).sig_e.raw,trial),.025);
+                    ulrel(trial) = quantile(reliab(...
+                        data.g(gloc).e(eloc).sig_u.raw,...
+                        data.g(gloc).e(eloc).sig_e.raw,trial),.975);
+                end
+                
+                %find the number of trials to reach cutoff based on the
+                %lower limit of the confidence interval
+                trlcutoff = find(llrel >= relcutoff, 1);
+                
+                relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                relsummary.group(gloc).event(eloc).mrel = mrel(trlcutoff);
+                relsummary.group(gloc).event(eloc).llrel = llrel(trlcutoff);
+                relsummary.group(gloc).event(eloc).ulrel = ulrel(trlcutoff);
+                
+                
+                %Only calculate overall dependability on the ids with
+                %enough trials
+                
+                datatrls = REL.data{eloc};
+                
+                trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+                
+                ind2include = trltable.GroupCount >= trlcutoff;
+                ind2exclude = trltable.GroupCount < trlcutoff;
+                
+                relsummary.group(gloc).event(eloc).eventgoodids = trltable.id(ind2include);
+                relsummary.group(gloc).event(eloc).eventbadids = trltable.id(ind2exclude);
+
+        end
         
+        tempids = {};
+        badids = [];
+        for eloc=1:nevents
+            tempids{end+1} = relsummary.group(gloc).event(eloc).eventgoodids;
+
+            if eloc > 1
+                [~,ind]=setdiff(tempids{1},tempids{eloc});
+                new = tempids{1};
+                badids = [badids...
+                    relsummary.group(gloc).event(eloc).eventbadids...
+                    new(ind)];
+                new(ind) = [];
+                tempids{1} = new;
+            end
+
+        end
+
+        relsummary.group(gloc).goodids = tempids{1};
+        relsummary.group(gloc).badids = unique(badids);
         
+        for eloc=1:nevents
+
+                datatable = REL.data{eloc};
+               
+                goodids = table(relsummary.group(gloc).goodids);
+                
+                lmedata = innerjoin(datatable, goodids,...
+                    'LeftKeys', 'id', 'RightKeys', 'Var1',...
+                    'LeftVariables', {'id' 'meas'});
+                
+                trltable = varfun(@length,lmedata,...
+                    'GroupingVariables',{'id'});
+                
+                trlmean = mean(trltable.GroupCount);
+                
+                %perform calculations for overall reliability
+                lmeout = fitlme(lmedata, 'meas ~ 1 + (1|id)',...
+                    'FitMethod','REML');
+                
+                dep = depall(lmeout,trlmean);
+                
+                relsummary.group(gloc).event(eloc).dependability = dep;
+                relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
+                relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
+                relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
+                relsummary.group(gloc).event(eloc).goodn = height(goodids);
+
+        end
+                
     case 4 %groups and event types to consider
         
         for eloc=1:nevents
@@ -227,14 +504,14 @@ switch analysis
                 
                 for trial=1:ntrials
                     mrel(trial) = ...
-                        mean(reliab(data(gloc).g(eloc).sig_u.raw,...
-                        data(gloc).g(eloc).sig_e.raw,trial)); 
+                        mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                        data.g(gloc).e(eloc).sig_e.raw,trial)); 
                     llrel(trial) = quantile(reliab(...
-                        data(gloc).g(eloc).sig_u.raw,...
-                        data(gloc).g(eloc).sig_e.raw,trial),.025);
+                        data.g(gloc).e(eloc).sig_u.raw,...
+                        data.g(gloc).e(eloc).sig_e.raw,trial),.025);
                     ulrel(trial) = quantile(reliab(...
-                        data(gloc).g(eloc).sig_u.raw,...
-                        data(gloc).g(eloc).sig_e.raw,trial),.975);
+                        data.g(gloc).e(eloc).sig_u.raw,...
+                        data.g(gloc).e(eloc).sig_e.raw,trial),.975);
                 end
                 
                 %find the number of trials to reach cutoff based on the
@@ -257,8 +534,11 @@ switch analysis
                 trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
                 
                 ind2include = trltable.GroupCount >= trlcutoff;
+                ind2exclude = trltable.GroupCount < trlcutoff;
                 
                 relsummary.group(gloc).event(eloc).eventgoodids = trltable.id(ind2include);
+                relsummary.group(gloc).event(eloc).eventbadids = trltable.id(ind2exclude);
+
                  
             end
         end
@@ -274,7 +554,9 @@ switch analysis
                 if eloc > 1
                     [~,ind]=setdiff(tempids{1},tempids{eloc});
                     new = tempids{1};
-                    badids = [badids new(ind)];
+                    badids = [badids...
+                        relsummary.group(gloc).event(eloc).eventbadids...
+                        new(ind)];
                     new(ind) = [];
                     tempids{1} = new;
                 end
@@ -284,7 +566,7 @@ switch analysis
             end
 
         relsummary.group(gloc).goodids = tempids{1};
-        relsummary.group(gloc).badids = badids;
+        relsummary.group(gloc).badids = unique(badids);
 
         end
          
@@ -324,7 +606,72 @@ switch analysis
                 
         
 end %switch analysis
-fprintf('\n\n\n');
+
+%reminder....
+%1 - no groups or event types to consider
+%2 - possible multiple groups but no event types to consider
+%3 - possible event types but no groups to consider
+%4 - possible groups and event types to consider
+
+%Create table to display both sets of data
+Label = {};
+Trial_Cutoff = {};
+Dependability = {};
+%Individual Trial Analyses
+
+for gloc=1:ngroups
+    for eloc=1:nevents
+        switch analysis
+            case 1
+                Label{end+1} = 'Measurement';
+            case 2
+                Label{end+1} = gnames{gloc};
+            case 3
+                Label{end+1} = enames{eloc};
+            case 4
+                Label{end+1} = [gnames{gloc} ' - ' enames{eloc}];
+        end
+        Trial_Cutoff{end+1} = relsummary.group(gloc).event(eloc).trlcutoff;
+        Dependability{end+1} = sprintf('%0.2f CI[%0.2f, %0.2f]',...
+            relsummary.group(gloc).event(eloc).mrel,...
+            relsummary.group(gloc).event(eloc).llrel,...
+            relsummary.group(gloc).event(eloc).ulrel);
+    end 
+end
+
+indtable = table(Label',Trial_Cutoff',Dependability');
+
+%define parameters for figure position
+figwidth = 600;
+figheight = 400;
+
+%define space between rows and first row location
+rowspace = 25;
+row = figheight - rowspace*2;
+
+ra_table= figure('unit','pix',...
+  'position',[400 400 figwidth figheight],...
+  'menub','no',...
+  'name','Results of Dependability Analyses',...
+  'numbertitle','off',...
+  'resize','off');
+
+%Print the name of the loaded dataset
+uicontrol(ra_table,'Style','text','fontsize',16,...
+    'HorizontalAlignment','center',...
+    'String','Dependability Analyses',...
+    'Position',[0 row figwidth 25]);          
+
+row = figheight - rowspace*2;
+
+%Start a table
+t = uitable('Parent',ra_table,'Position',...
+    [25 (rowspace*2) figwidth-50 figheight-(rowspace*5)],...
+    'Data',table2cell(indtable));
+set(t,'ColumnName',{'Label' 'Trial Cutoff' 'Dependability'});
+set(t,'ColumnWidth',{150 'auto' 150});
+set(t,'RowName',[]);
+set(t,'FontSize',12);
 
 if ~isempty(trlcutoff)
                     fprintf(...
@@ -338,18 +685,6 @@ if ~isempty(trlcutoff)
                         enames{eloc},gnames{gloc});
                 end
 
-
-
-%%%%%%load file from R to make sure that I am using the correct variance
-%%%%%%estimates
-
-%perform calculations separately for each group and event
-lmeout = fitlme(REL.data{1,1}, 'meas ~ 1 + (1|id)','FitMethod','REML');
-
-%can try converting the data to a table to filter data by number of trials
-%grpstats(CARel,'Participant') will give number of rows per participant
-
-[obsvar,resvar] = covarianceParameters(lmeout);
 
 
 

@@ -198,7 +198,7 @@ switch analysis
         REL.out.mu = fit.extract('pars','mu').mu;
         REL.out.sig_u = fit.extract('pars','sig_u').sig_u;
         REL.out.sig_e = fit.extract('pars','sig_e').sig_e; 
-        REL.out.label = 'measure';
+        REL.out.labels = 'measure';
         
         
         
