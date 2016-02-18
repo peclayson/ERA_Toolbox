@@ -298,6 +298,17 @@ switch analysis
         relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
         relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
         relsummary.group(gloc).event(eloc).goodn = height(goodids);
+        
+        
+        relsummary.group(gloc).event(eloc).micc = ...
+            mean(icc(data.g(gloc).e(eloc).sig_u.raw,...
+            data.g(gloc).e(eloc).sig_e.raw)); 
+        relsummary.group(gloc).event(eloc).llicc = ...
+            quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+            data.g(gloc).e(eloc).sig_e.raw),.025); 
+        relsummary.group(gloc).event(eloc).ulicc = ...
+            quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+            data.g(gloc).e(eloc).sig_e.raw),.975); 
    
     case 2 %possible multiple groups but no event types to consider
         
@@ -390,6 +401,18 @@ switch analysis
             relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
             relsummary.group(gloc).event(eloc).goodn = height(goodids);
+            
+            
+            relsummary.group(gloc).event(eloc).micc = ...
+                mean(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw)); 
+            relsummary.group(gloc).event(eloc).llicc = ...
+                quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw),.025); 
+            relsummary.group(gloc).event(eloc).ulicc = ...
+                quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw),.975); 
+            
         end
         
         
@@ -487,7 +510,17 @@ switch analysis
                 relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
                 relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
                 relsummary.group(gloc).event(eloc).goodn = height(goodids);
-
+                
+                
+                relsummary.group(gloc).event(eloc).micc = ...
+                    mean(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw)); 
+                relsummary.group(gloc).event(eloc).llicc = ...
+                    quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw),.025); 
+                relsummary.group(gloc).event(eloc).ulicc = ...
+                    quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw),.975); 
         end
                 
     case 4 %groups and event types to consider
@@ -601,11 +634,26 @@ switch analysis
                 relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
                 relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
                 relsummary.group(gloc).event(eloc).goodn = height(goodids);
+                
+                relsummary.group(gloc).event(eloc).micc = ...
+                    mean(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw)); 
+                relsummary.group(gloc).event(eloc).llicc = ...
+                    quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw),.025); 
+                relsummary.group(gloc).event(eloc).ulicc = ...
+                    quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw),.975); 
+               
+                
             end
         end
                 
         
 end %switch analysis
+
+RELout = REL;
+RELout.relsummary = relsummary;
 
 %reminder....
 %1 - no groups or event types to consider
@@ -623,6 +671,7 @@ maxtrl = {};
 meantrl = {};
 goodn = {};
 badn = {};
+icc = {};
 
 %put data together in tables to display
 
@@ -639,32 +688,39 @@ for gloc=1:ngroups
                 label{end+1} = [gnames{gloc} ' - ' enames{eloc}];
         end
         trlcutoff{end+1} = relsummary.group(gloc).event(eloc).trlcutoff;
-        dep{end+1} = sprintf('        %0.2f CI[ %0.2f, %0.2f]',...
+        dep{end+1} = sprintf('        %0.2f CI [%0.2f, %0.2f]',...
             relsummary.group(gloc).event(eloc).mrel,...
             relsummary.group(gloc).event(eloc).llrel,...
             relsummary.group(gloc).event(eloc).ulrel);
         
         overalldep{end+1} = ...
-            str2num(sprintf('%0.2f',...
-            round(relsummary.group(gloc).event(eloc).dependability,2)));
+            relsummary.group(gloc).event(eloc).dependability;
         mintrl{end+1} = relsummary.group(gloc).event(eloc).trlinfo.min;
         maxtrl{end+1} = relsummary.group(gloc).event(eloc).trlinfo.max;
-        meantrl{end+1} = ...
-            round(relsummary.group(gloc).event(eloc).trlinfo.mean,2);
+        meantrl{end+1} = relsummary.group(gloc).event(eloc).trlinfo.mean;
         goodn{end+1} = relsummary.group(gloc).event(eloc).goodn;
         badn{end+1} = length(relsummary.group(gloc).badids);
+        icc{end+1} = sprintf(' %0.2f CI [%0.2f, %0.2f]',...
+            relsummary.group(gloc).event(eloc).micc,...
+            relsummary.group(gloc).event(eloc).llicc,...
+            relsummary.group(gloc).event(eloc).ulicc);
         
     end 
 end
 
 inctrltable = table(label',trlcutoff',dep');
 
-overalltable = table(label',goodn',badn',overalldep',meantrl',...
+overalltable = table(label',goodn',badn',overalldep',icc',meantrl',...
     mintrl',maxtrl');
+
+overalltable.Properties.VariableNames = {'Label' ...
+    'n_Included' 'n_Excluded' ...
+    'Dependability' 'ICC' 'Mean_Num_Trials' 'Min_Num_Trials'...
+    'Max_Num_Trials'};
 
 
 %define parameters for figure position
-figwidth = 429;
+figwidth = 550;
 figheight = 400;
 
 %define space between rows and first row location
@@ -689,13 +745,12 @@ t = uitable('Parent',ra_inctrl,'Position',...
     [25 (rowspace*2) figwidth-50 figheight-(rowspace*5)],...
     'Data',table2cell(inctrltable));
 set(t,'ColumnName',{'Label' 'Trial Cutoff' 'Dependability'});
-set(t,'ColumnWidth',{150 'auto' 150});
+set(t,'ColumnWidth',{200 'auto' 200});
 set(t,'RowName',[]);
-set(t,'FontSize',12);
 
 %define parameters for figure position
-figwidth = 650;
-figheight = 400;
+figwidth = 725;
+figheight = 500;
 
 %define space between rows and first row location
 rowspace = 25;
@@ -716,18 +771,63 @@ uicontrol(ra_overall,'Style','text','fontsize',16,...
 
 %Start a table
 t = uitable('Parent',ra_overall,'Position',...
-    [25 (rowspace*2) figwidth-50 figheight-(rowspace*5)],...
+    [25 100 figwidth-50 figheight-175],...
     'Data',table2cell(overalltable));
 set(t,'ColumnName',{'Label' 'n Included' 'n Excluded' ...
-    'Dependability' 'Mean # of Trials' 'Min # of Trials'...
+    'Dependability' 'ICC' 'Mean # of Trials' 'Min # of Trials'...
     'Max # of Trials'});
+set(t,'ColumnWidth',{'auto' 'auto' 'auto' 'auto' 100 'auto' 'auto' 'auto'});
 set(t,'RowName',[]);
-set(t,'FontSize',12);
 
-RELout = REL;
-RELout.relsummary = relsummary;
+%Create a back button that will take save the table
+uicontrol(ra_overall,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','Save Table',...
+    'Position', [figwidth/8 25 figwidth/4 50],...
+    'Callback',{@bb_saveoveralltable,RELout,overalltable}); 
+
+%Create button that will save good/bad ids
+uicontrol(ra_overall,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','Save IDs',...
+    'Position', [5*figwidth/8 25 figwidth/4 50],...
+    'Callback',{@ra_saveids,RELout}); 
+
 
 end
+
+function ra_saveoveralltable(REL,overalltable)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%figure out how to write the data!!!!
+[savename, savepath] = uiputfile({'*.xlsx','Excel File (.xlsx)';'*.csv',...
+    'Comma-Separated Vale File (.csv)'},...
+    'Where would you like to save table?');
+
+[~,~,ext] = fileparts(fullfile(savepath,savename));
+
+if strcmp(ext,'.xlsx')
+    
+    filehead = {'Dependability Table Generated on'; datestr(clock);''}; 
+    filehead{end+1} = sprintf('Dateset: %s',REL.filename);
+    filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
+        REL.relsummary.relcutoff);
+    filehead{end+1}='';
+    filehead{end+1}='';
+    
+    xlswrite(fullfile(savepath,savename),filehead)
+    writetable(fullfile(savepath,savename),overalltable,...
+        'Range',char(strcat('A',num2str(length(filehead)))));
+    
+elseif strcmp(ext,'.csv')
+    
+end
+
+end
+
+function ra_saveids(RELout)
+
+end
+
+
 
 function depout = reliab(var_u, var_e, obs)
 

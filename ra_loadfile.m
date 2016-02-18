@@ -147,6 +147,7 @@ end
 %the data into a table to be outputted for analysis
 colnames = dataraw.Properties.VariableNames;
 dataout = table;
+dataout.Properties.Description = filename;
 
 if ~sum(strcmpi(colnames,idcolname)) 
     if ~exist('headererror','var')

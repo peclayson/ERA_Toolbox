@@ -75,7 +75,6 @@ if exist('headerror','var')
 end
 
 
-%%%%%%%%%PUT THIS LOWER%%%%%%%%%%%
 %check whether groups or events are in the table
 if sum(strcmpi(colnames,'group'))
     groupnames = unique(datatable.group(:));
@@ -86,10 +85,10 @@ if sum(strcmpi(colnames,'event'))
     eventnames = unique(datatable.event(:));
     nevent = length(eventnames);
 end
-%%%%%%%%%PUT THIS LOWER%%%%%%%%%%%
 
 
-%determine how cmstan will be set up
+
+%determine how cmdstan will be set up
 %analysis variable will indicate whether group or events need to be
 %considered when sending code to cmdstan
 %analysis:
@@ -114,6 +113,7 @@ nchains = 3;
 
 %create a structure array to store information
 REL = struct;
+REL.filename = datatable.Properties.Description;
 REL.niter = niter;
 REL.nchains = nchains;
 
