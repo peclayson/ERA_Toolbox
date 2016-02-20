@@ -802,26 +802,54 @@ function ra_saveoveralltable(varargin)
 REL = varargin{3};
 overalltable = varargin{4};
 
-[savename, savepath] = uiputfile({'*.xlsx','Excel File (.xlsx)';'*.csv',...
-    'Comma-Separated Vale File (.csv)'},...
-    'Where would you like to save table?');
+if ~ismac
+    [savename, savepath] = uiputfile(...
+        {'*.xlsx','Excel File (.xlsx)';'*.csv',...
+        'Comma-Separated Vale File (.csv)'},...
+        'Where would you like to save table?');
+else
+    [savename, savepath] = uiputfile(...
+        {'*.csv',...
+        'Comma-Separated Vale File (.csv)'},...
+        'Where would you like to save table?');
+end
 
 [~,~,ext] = fileparts(fullfile(savepath,savename));
 
-if strcmp(ext,'.xlsx')
-    
-    filehead = {'Dependability Table Generated on'; datestr(clock);''}; 
+filehead = {'Dependability Table Generated on'; datestr(clock);''}; 
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.relcutoff);
     filehead{end+1}='';
     filehead{end+1}='';
+
+if strcmp(ext,'.xlsx')
    
-    xlswrite(fullfile(savepath,savename),filehead)
+    xlswrite(fullfile(savepath,savename),filehead);
     writetable(overalltable,fullfile(savepath,savename),...
         'Range',strcat('A',num2str(length(filehead))));
     
 elseif strcmp(ext,'.csv')
+    
+    fid = fopen(fullfile(savepath,savename),'w');
+    for i = 1:length(filehead)
+        fprintf(fid,filehead{i});
+    end
+    fclose = fid;
+    
+    writetable(overalltable,fullfile(savepath,savename),...
+        'Range','A7','delimiter',',');
+    
+    for i = 1:height(overalltable)
+        dlmwrite(fullfile(savepath,savename),table2array(overalltable),...
+            'delimiter', ',' ,'-append');
+    end
+    
+    
+    fclose(fid);
+    
+    writetable(overalltable,fullfile(savepath,savename));
+  
     
 end
 

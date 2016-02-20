@@ -1,7 +1,6 @@
 function ra_startproc
 
-[filepart, pathpart] = uigetfile('*.*',...
-    'Select the data file to be processed');
+[filepart, pathpart] = uigetfile('*.*','Data');
 
 if filepart == 0 
     errordlg('No file selected','File Error');
