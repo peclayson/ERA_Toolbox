@@ -1,6 +1,7 @@
 function ra_startproc(varargin)
 
-[filepart, pathpart] = uigetfile('*.*','Data');
+[filepart, pathpart] = uigetfile({'*.xlsx','Excel File (.xlsx)';'*.csv',...
+        'Comma-Separated Vale File (.csv)'},'Data');
 
 if filepart == 0 
     errordlg('No file selected','File Error');
@@ -23,13 +24,13 @@ end
 function ra_startproc_fig(collist,filepart,pathpart,dataraw)
 
 %define parameters for figure position
-figwidth = 500;
-figheight = 300;
+figwidth = 550;
+figheight = 400;
 collist_nonone = collist;
 collist_nonone(end) = [];
 
 %define space between rows and first row location
-rowspace = 25;
+rowspace = 35;
 row = figheight - rowspace*2;
 
 %define locations of column 1 and 2
@@ -39,7 +40,7 @@ rcol = (figwidth/2);
 ra_gui= figure('unit','pix',...
   'position',[400 400 figwidth figheight],...
   'menub','no',...
-  'name','Specify Inputs for Analysis',...
+  'name','Specify Inputs',...
   'numbertitle','off',...
   'resize','off');
 

@@ -14,6 +14,12 @@ function RELout = ra_relfigures(varargin)
 % relcutoff - reliability level to use for cutoff when deciding the
 %  minimum number of trials needed to achieve this specified level of
 %  reliability
+% plotdep - plot the table displaying dependability v number of trials
+%  included in average
+% showinct - display table with information for each event/group
+%  combination (cutoffs and dependability)
+% showoverallt - display table with information for data including all
+%  trials for those participants that meet cutoff threshhold
 %
 %Output:
 % One figure is plotted that displays the dependability of measurements as
@@ -51,12 +57,35 @@ if ~isempty(varargin)
     end
    
     %check if a location for the file to be loaded was specified. 
-    %If it is not found, set display error.
     ind = find(strcmp('relcutoff',varargin),1);
     if ~isempty(ind)
         relcutoff = cell2mat(varargin{ind+1}); 
     else 
         relcutoff = .70; %default level is .70
+    end
+    
+    %check if plotdep is provided
+    ind = find(strcmp('plotdep',varargin),1);
+    if ~isempty(ind)
+        pdep = cell2mat(varargin{ind+1}); 
+    else 
+        pdep = 1; %default is 1
+    end
+
+    %check if showinct is provided
+    ind = find(strcmp('showinct',varargin),1);
+    if ~isempty(ind)
+        showinct = cell2mat(varargin{ind+1}); 
+    else 
+        showinct = 1; %default is 1
+    end
+    
+    %check if showoverallt is provided
+    ind = find(strcmp('showoverallt',varargin),1);
+    if ~isempty(ind)
+        showoverallt = cell2mat(varargin{ind+1}); 
+    else 
+        showoverallt = 1; %default is 1
     end
     
 elseif ~isempty(varargin)
