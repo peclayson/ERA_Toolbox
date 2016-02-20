@@ -1,4 +1,4 @@
-function ra_startproc
+function ra_startproc(varargin)
 
 [filepart, pathpart] = uigetfile('*.*','Data');
 

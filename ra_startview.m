@@ -1,4 +1,4 @@
-function [ output_args ] = ra_startview( input_args )
+function ra_startview(varargin)
 
 
 

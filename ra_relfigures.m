@@ -186,8 +186,8 @@ elseif nevents == 1
     yplots = 1;
 end
 
-fig = figure;
-fig.Position = [30 2500 1070 810];
+depplot = figure('Visible','Off');
+depplot.Position = [30 200 1070 810];
 fsize = 16;
 
 for eloc=1:nevents
@@ -301,13 +301,13 @@ switch analysis
         
         
         relsummary.group(gloc).event(eloc).micc = ...
-            mean(icc(data.g(gloc).e(eloc).sig_u.raw,...
+            mean(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
             data.g(gloc).e(eloc).sig_e.raw)); 
         relsummary.group(gloc).event(eloc).llicc = ...
-            quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+            quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
             data.g(gloc).e(eloc).sig_e.raw),.025); 
         relsummary.group(gloc).event(eloc).ulicc = ...
-            quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+            quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
             data.g(gloc).e(eloc).sig_e.raw),.975); 
    
     case 2 %possible multiple groups but no event types to consider
@@ -404,13 +404,13 @@ switch analysis
             
             
             relsummary.group(gloc).event(eloc).micc = ...
-                mean(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                mean(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                 data.g(gloc).e(eloc).sig_e.raw)); 
             relsummary.group(gloc).event(eloc).llicc = ...
-                quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                 data.g(gloc).e(eloc).sig_e.raw),.025); 
             relsummary.group(gloc).event(eloc).ulicc = ...
-                quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                 data.g(gloc).e(eloc).sig_e.raw),.975); 
             
         end
@@ -513,13 +513,13 @@ switch analysis
                 
                 
                 relsummary.group(gloc).event(eloc).micc = ...
-                    mean(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                    mean(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                     data.g(gloc).e(eloc).sig_e.raw)); 
                 relsummary.group(gloc).event(eloc).llicc = ...
-                    quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                    quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                     data.g(gloc).e(eloc).sig_e.raw),.025); 
                 relsummary.group(gloc).event(eloc).ulicc = ...
-                    quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                    quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                     data.g(gloc).e(eloc).sig_e.raw),.975); 
         end
                 
@@ -636,13 +636,13 @@ switch analysis
                 relsummary.group(gloc).event(eloc).goodn = height(goodids);
                 
                 relsummary.group(gloc).event(eloc).micc = ...
-                    mean(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                    mean(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                     data.g(gloc).e(eloc).sig_e.raw)); 
                 relsummary.group(gloc).event(eloc).llicc = ...
-                    quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                    quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                     data.g(gloc).e(eloc).sig_e.raw),.025); 
                 relsummary.group(gloc).event(eloc).ulicc = ...
-                    quantile(icc(data.g(gloc).e(eloc).sig_u.raw,...
+                    quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                     data.g(gloc).e(eloc).sig_e.raw),.975); 
                
                 
@@ -688,7 +688,7 @@ for gloc=1:ngroups
                 label{end+1} = [gnames{gloc} ' - ' enames{eloc}];
         end
         trlcutoff{end+1} = relsummary.group(gloc).event(eloc).trlcutoff;
-        dep{end+1} = sprintf('        %0.2f CI [%0.2f, %0.2f]',...
+        dep{end+1} = sprintf('        %0.2f CI [%0.2f %0.2f]',...
             relsummary.group(gloc).event(eloc).mrel,...
             relsummary.group(gloc).event(eloc).llrel,...
             relsummary.group(gloc).event(eloc).ulrel);
@@ -700,7 +700,7 @@ for gloc=1:ngroups
         meantrl{end+1} = relsummary.group(gloc).event(eloc).trlinfo.mean;
         goodn{end+1} = relsummary.group(gloc).event(eloc).goodn;
         badn{end+1} = length(relsummary.group(gloc).badids);
-        icc{end+1} = sprintf(' %0.2f CI [%0.2f, %0.2f]',...
+        icc{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
             relsummary.group(gloc).event(eloc).micc,...
             relsummary.group(gloc).event(eloc).llicc,...
             relsummary.group(gloc).event(eloc).ulicc);
@@ -709,6 +709,9 @@ for gloc=1:ngroups
 end
 
 inctrltable = table(label',trlcutoff',dep');
+
+inctrltable.Properties.VariableNames = {'Label','Trial_Cutoff',...
+    'Dependability'};
 
 overalltable = table(label',goodn',badn',overalldep',icc',meantrl',...
     mintrl',maxtrl');
@@ -720,33 +723,43 @@ overalltable.Properties.VariableNames = {'Label' ...
 
 
 %define parameters for figure position
-figwidth = 550;
+figwidth = 500;
 figheight = 400;
 
 %define space between rows and first row location
 rowspace = 25;
 row = figheight - rowspace*2;
 
-ra_inctrl= figure('unit','pix',...
+ra_inctrl= figure('unit','pix','Visible','off',...
   'position',[1150 700 figwidth figheight],...
   'menub','no',...
-  'name','Results of Increasing Trials on Dependability',...
+  'name',...
+  'Results of Increasing Trials the Number of Trials on Dependability',...
   'numbertitle','off',...
   'resize','off');
 
 %Print the name of the loaded dataset
 uicontrol(ra_inctrl,'Style','text','fontsize',16,...
     'HorizontalAlignment','center',...
-    'String','Dependability Analyses',...
+    'String',...
+    sprintf('Dependability Analyses, %0.2f Cutoff',...
+    RELout.relsummary.relcutoff),...
     'Position',[0 row figwidth 25]);          
 
 %Start a table
 t = uitable('Parent',ra_inctrl,'Position',...
-    [25 (rowspace*2) figwidth-50 figheight-(rowspace*5)],...
+    [25 100 figwidth-50 figheight-175],...
     'Data',table2cell(inctrltable));
 set(t,'ColumnName',{'Label' 'Trial Cutoff' 'Dependability'});
-set(t,'ColumnWidth',{200 'auto' 200});
+set(t,'ColumnWidth',{200 'auto' 170});
 set(t,'RowName',[]);
+
+%Create a save button that will take save the table
+uicontrol(ra_inctrl,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','Save Table',...
+    'Position', [figwidth/8 25 figwidth/4 50],...
+    'Callback',{@ra_saveinctrltable,RELout,inctrltable}); 
 
 %define parameters for figure position
 figwidth = 725;
@@ -756,7 +769,7 @@ figheight = 500;
 rowspace = 25;
 row = figheight - rowspace*2;
 
-ra_overall= figure('unit','pix',...
+ra_overall= figure('unit','pix','Visible','off',...
   'position',[1150 150 figwidth figheight],...
   'menub','no',...
   'name','Dependability Analyses Including All Trials',...
@@ -779,7 +792,7 @@ set(t,'ColumnName',{'Label' 'n Included' 'n Excluded' ...
 set(t,'ColumnWidth',{'auto' 'auto' 'auto' 'auto' 100 'auto' 'auto' 'auto'});
 set(t,'RowName',[]);
 
-%Create a back button that will take save the table
+%Create a save button that will take save the table
 uicontrol(ra_overall,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Save Table',...
@@ -793,16 +806,18 @@ uicontrol(ra_overall,'Style','push','fontsize',14,...
     'Position', [5*figwidth/8 25 figwidth/4 50],...
     'Callback',{@ra_saveids,RELout}); 
 
+set(depplot,'Visible','on');
+set(ra_inctrl,'Visible','on');
+set(ra_overall,'Visible','on');
 
 end
 
 function ra_saveoveralltable(varargin)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%figure out how to write the data!!!!
 
 REL = varargin{3};
 overalltable = varargin{4};
 
-if ~ismac
+if ~ismac %macs can't use xlswrite
     [savename, savepath] = uiputfile(...
         {'*.xlsx','Excel File (.xlsx)';'*.csv',...
         'Comma-Separated Vale File (.csv)'},...
@@ -816,15 +831,15 @@ end
 
 [~,~,ext] = fileparts(fullfile(savepath,savename));
 
-filehead = {'Dependability Table Generated on'; datestr(clock);''}; 
+if strcmp(ext,'.xlsx')
+    
+    filehead = {'Dependability Table Generated on'; datestr(clock);''}; 
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.relcutoff);
     filehead{end+1}='';
     filehead{end+1}='';
-
-if strcmp(ext,'.xlsx')
-   
+    
     xlswrite(fullfile(savepath,savename),filehead);
     writetable(overalltable,fullfile(savepath,savename),...
         'Range',strcat('A',num2str(length(filehead))));
@@ -832,34 +847,174 @@ if strcmp(ext,'.xlsx')
 elseif strcmp(ext,'.csv')
     
     fid = fopen(fullfile(savepath,savename),'w');
-    for i = 1:length(filehead)
-        fprintf(fid,filehead{i});
-    end
-    fclose = fid;
+    fprintf(fid,'%s\n','Dependability Table Generated on');
+    fprintf(fid,'%s\n',datestr(clock));
+    fprintf(fid,'\n');
+    fprintf(fid,'Dataset: %s\n',REL.filename);
+    fprintf(fid,'Dependability Cutoff: %0.2f\n',...
+        REL.relsummary.relcutoff);
+    fprintf(fid,'\n');
+    fprintf(fid,'\n');
     
-    writetable(overalltable,fullfile(savepath,savename),...
-        'Range','A7','delimiter',',');
-    
+    fprintf(fid,'%s', strcat('Label,N Included,N Excluded,',...
+        'Dependability,ICC,Mean Num of Trials,Min Num of Trials,',...
+        'Max Num of Trials'));
+    fprintf(fid,'\n');
     for i = 1:height(overalltable)
-        dlmwrite(fullfile(savepath,savename),table2array(overalltable),...
-            'delimiter', ',' ,'-append');
+         formatspec = '%s,%d,%d,%0.4f,%s,%0.4f,%d,%d\n';
+         fprintf(fid,formatspec,char(overalltable{i,1}),...
+             cell2mat(overalltable{i,2}),cell2mat(overalltable{i,3}),...
+             cell2mat(overalltable{i,4}),char(overalltable{i,5}),...
+             cell2mat(overalltable{i,6}),cell2mat(overalltable{i,7}),...
+             cell2mat(overalltable{i,8}));
     end
-    
     
     fclose(fid);
     
-    writetable(overalltable,fullfile(savepath,savename));
-  
+end
+
+end
+
+function ra_saveids(varargin)
+
+REL = varargin{3};
+
+if ~ismac
+    [savename, savepath] = uiputfile(...
+        {'*.xlsx','Excel File (.xlsx)';'*.csv',...
+        'Comma-Separated Vale File (.csv)'},...
+        'Where would you like to save the data?');
+else
+    [savename, savepath] = uiputfile(...
+        {'*.csv',...
+        'Comma-Separated Vale File (.csv)'},...
+        'Where would you like to save the data?');
+end
+
+[~,~,ext] = fileparts(fullfile(savepath,savename));
+
+if strcmp(ext,'.xlsx')
+    
+    datap{1,1} = 'Data Generated on';
+    datap{2,1} = datestr(clock); 
+    datap{3,1} = sprintf('Dataset: %s',REL.filename);
+    datap{4,1} = sprintf('Dependability Cutoff: %0.2f',...
+        REL.relsummary.relcutoff);
+    datap{5,1}='';
+    datap{6,1}='';
+    datap{7,1} = 'Good IDs'; datap{7,2} = 'Bad IDs';
+    gids = REL.relsummary.group.goodids;
+    for i = 1:length(gids)
+        datap{i+7,1}=char(gids(i));
+    end
+    bids = REL.relsummary.group.badids;
+    for i = 1:length(bids)
+        datap{i+7,2}=char(bids(i));
+    end
+    
+    xlswrite(fullfile(savepath,savename),datap);
+    
+elseif strcmp(ext,'.csv')
+    
+    fid = fopen(fullfile(savepath,savename),'w');
+    fprintf(fid,'%s\n','Data Generated on');
+    fprintf(fid,'%s\n',datestr(clock));
+    fprintf(fid,'\n');
+    fprintf(fid,'Dataset: %s\n',REL.filename);
+    fprintf(fid,'Dependability Cutoff: %0.2f\n',...
+        REL.relsummary.relcutoff);
+    fprintf(fid,'\n');
+    fprintf(fid,'\n');
+    fprintf(fid,'%s\n','Good IDs,Bad IDs');
+    
+    gids = REL.relsummary.group.goodids;
+    bids = REL.relsummary.group.badids;
+
+    maxlength = max([length(gids) length(bids)]);
+    minlength = min([length(gids) length(bids)]);
+    
+    if minlength == length(gids)
+        whichlonger = 1;
+    elseif maxlength == length(gids)
+        whichlonger = 2;
+    end
+    
+    for i = 1:maxlength
+        if i <= minlength
+            fprintf(fid,'%s,%s\n',gids{i},bids{i});
+        elseif i > minlength && whichlonger == 1
+            fprintf(fid,',%s\n',bids{i});
+        elseif i > minlength && whichlonger == 2
+            fprintf(fid,'%s,\n',gids{i});
+        end
+    end
+    
+    fclose(fid);
     
 end
 
-end
-
-function ra_saveids(RELout)
 
 end
 
+function ra_saveinctrltable(varargin)
 
+REL = varargin{3};
+incltrltable = varargin{4};
+
+if ~ismac %macs can't use xlswrite
+    [savename, savepath] = uiputfile(...
+        {'*.xlsx','Excel File (.xlsx)';'*.csv',...
+        'Comma-Separated Vale File (.csv)'},...
+        'Where would you like to save table?');
+else
+    [savename, savepath] = uiputfile(...
+        {'*.csv',...
+        'Comma-Separated Vale File (.csv)'},...
+        'Where would you like to save table?');
+end
+
+[~,~,ext] = fileparts(fullfile(savepath,savename));
+
+if strcmp(ext,'.xlsx')
+    
+    filehead = {'Table Generated on'; datestr(clock);''}; 
+    filehead{end+1} = sprintf('Dataset: %s',REL.filename);
+    filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
+        REL.relsummary.relcutoff);
+    filehead{end+1}='';
+    filehead{end+1}='';
+    
+    xlswrite(fullfile(savepath,savename),filehead);
+    writetable(incltrltable,fullfile(savepath,savename),...
+        'Range',strcat('A',num2str(length(filehead))));
+    
+elseif strcmp(ext,'.csv')
+    
+    fid = fopen(fullfile(savepath,savename),'w');
+    fprintf(fid,'%s\n','Table Generated on');
+    fprintf(fid,'%s\n',datestr(clock));
+    fprintf(fid,'\n');
+    fprintf(fid,'Dataset: %s\n',REL.filename);
+    fprintf(fid,'Dependability Cutoff: %0.2f\n',...
+        REL.relsummary.relcutoff);
+    fprintf(fid,'\n');
+    fprintf(fid,'\n');
+    
+    fprintf(fid,'%s', strcat('Label,Trial Cutoff,Dependability'));
+    fprintf(fid,'\n');
+    
+    for i = 1:height(incltrltable)
+         formatspec = '%s,%d,%s\n';
+         fprintf(fid,formatspec,char(incltrltable{i,1}),...
+             cell2mat(incltrltable{i,2}),char(incltrltable{i,3}));
+    end
+    
+    fclose(fid);
+    
+end
+
+
+end
 
 function depout = reliab(var_u, var_e, obs)
 
@@ -867,7 +1022,7 @@ depout = var_u.^2 ./ (var_u.^2 + (var_e.^2./obs));
 
 end
 
-function iccout = icc(var_u,var_e)
+function iccout = iccfun(var_u,var_e)
 
 iccout = var_u.^2 ./ (var_u.^2 + var_e.^2);
 
