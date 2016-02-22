@@ -2,3 +2,5 @@
 .Rhistory
 *.asv
 *.m~
+
+.DS_Store
