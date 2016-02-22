@@ -136,14 +136,14 @@ REL = REL.(name{1});
 
 inputs = varargin{5};
 
-inputs.depvalue = str2double(inputs.h(1).String);
-inputs.plotdep = inputs.h(2).Value;
-inputs.inctrltable = inputs.h(3).Value;
-inputs.overalltable = inputs.h(4).Value;
+% inputs.depvalue = ;
+% inputs.plotdep = ;
+% inputs.inctrltable = inputs.h(3).Value;
+% inputs.overalltable = ;
 
-close(varargin{6});
-
-ra_relfigures('data',REL,'inputs',inputs);
+ra_relfigures('data',REL,'relcutoff',str2double(inputs.h(1).String),...
+    'plotdep',inputs.h(2).Value,'showinct',inputs.h(3).Value,...
+    'showoverallt',inputs.h(4).Value);
 
 end
 

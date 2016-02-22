@@ -768,8 +768,8 @@ if picc == 1
     pl = legend(iccplot);
     pl.String = gnames;
     
-    iccplot(1).Parent.YAxisLocation = 'right';
     camroll(-90);
+    iccplot(1).Parent.YDir = 'reverse';
     
 end
 
