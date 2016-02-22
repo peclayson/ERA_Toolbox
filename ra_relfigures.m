@@ -16,6 +16,9 @@ function RELout = ra_relfigures(varargin)
 %  reliability
 % plotdep - plot the table displaying dependability v number of trials
 %  included in average
+% ploticc - plot the intraclass correlation coefficients for data. This ICC
+%  can be interpreted as the proportion of total variance that is between
+%  persons.
 % showinct - display table with information for each event/group
 %  combination (cutoffs and dependability)
 % showoverallt - display table with information for data including all
@@ -252,7 +255,7 @@ elseif nevents == 1
 end
 
 depplot = figure('Visible','Off');
-depplot.Position = [30 200 1070 810];
+depplot.Position = [125 630 900 450];
 fsize = 16;
 
 for eloc=1:nevents
@@ -721,7 +724,8 @@ RELout = REL;
 RELout.relsummary = relsummary;
 
 if picc == 1
-    figure;
+    iccplot = figure;
+    iccplot.Position = [125 65 900 450];
     miccm = zeros(nevents,ngroups);
     lliccm = zeros(nevents,ngroups);
     uliccm = zeros(nevents,ngroups);
@@ -770,6 +774,7 @@ if picc == 1
     
     iccplot(1).Parent.YAxisLocation = 'right';
     camroll(-90);
+    
     
 end
 
