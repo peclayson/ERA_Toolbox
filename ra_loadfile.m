@@ -143,6 +143,8 @@ if isempty(dataraw)
     dataraw = readtable(file);
 end
 
+[~,filename] = fileparts(file); 
+
 %make sure all of the necessary headers are present in the file then load
 %the data into a table to be outputted for analysis
 colnames = dataraw.Properties.VariableNames;

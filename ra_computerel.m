@@ -185,7 +185,7 @@ switch analysis
         fprintf('\nModel is being run in cmdstan\n');
         fprintf('\nThis may take a while depending on the amount of data\n');
         
-        modelname = strcat('cmstan',char(date));
+        modelname = strcat('cmdstan',char(date));
         
         fit = stan('model_code', stan_in, 'model_name', modelname,...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
@@ -380,7 +380,7 @@ switch analysis
         
         %execute model code 
         
-        modelname = strcat('cmstan',char(date));
+        modelname = strcat('cmdstan',char(date));
         
         fprintf('\nModel is being run in cmdstan\n');
         fprintf('\nThis may take a while depending on the amount of data\n');
@@ -616,7 +616,7 @@ switch analysis
         
         %execute model code 
         
-        modelname = strcat('cmstan',char(date));
+        modelname = strcat('cmdstan',char(date));
         
         fprintf('\nModel is being run in cmdstan\n');
         fprintf('\nThis may take a while depending on the amount of data\n');
@@ -868,7 +868,7 @@ switch analysis
 
             %execute model code 
 
-            modelname = strcat('cmstan',char(date));
+            modelname = strcat('cmdstan',char(date));
 
             fprintf('\nModel is being run in cmdstan\n');
             fprintf('\nThis may take a while depending on the amount of data\n');
