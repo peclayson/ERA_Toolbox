@@ -213,6 +213,9 @@ fprintf('\n\nSaving Processed Data...\n\n');
 %Matlab spits out various warnings when trying to save the StanFit part of
 %the structure. Turning off warnings brielfy so the user does not become
 %concerned
+
+
+RELout.stanfit = [];
 warning('off','all');
 save(fullfile(savepath,savename),'RELout');
 warning('on','all');

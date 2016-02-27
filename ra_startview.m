@@ -7,22 +7,11 @@ if ~isempty(varargin)
     if ~isempty(ind)
         file = varargin{ind+1};
         [pathpart,filepart] = fileparts(file);
-    else 
-        error('varargin:nofile',... %Error code and associated error
-        strcat('WARNING: File location not specified \n\n',... 
-        'Please input the full path specifying the file to be loaded \n'));
     end
-   
-elseif ~isempty(varargin)
-    
-    error('varargin:incomplete',... %Error code and associated error
-    strcat('WARNING: Optional inputs are incomplete \n\n',... 
-    'Make sure each variable input is paired with a value \n',...
-    'See help ra_computerel for more information on optional inputs'));
-    
+ 
 end %if ~isempty(varargin)
 
-if isempty(file)
+if ~exist('file','var')
     [filepart, pathpart] = uigetfile({'*.mat','MAT-files (*.mat)'},'Data');
 
     if filepart == 0 
@@ -167,9 +156,10 @@ end
 
 function ra_svh(varargin)
 
-REL = load(fullfile(varargin{4},varargin{3}));
-name = strsplit(varargin{3},'.');
-REL = REL.(name{1});
+filename = strsplit(varargin{3},'.');
+
+REL = load(fullfile(varargin{4},[filename{1} '.mat']));
+REL = REL.RELout;
 
 inputs = varargin{5};
 
