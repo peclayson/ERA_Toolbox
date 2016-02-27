@@ -158,8 +158,9 @@ if ~sum(strcmpi(colnames,idcolname))
         headerror{end+1} = 'Subject ID';
     end
 elseif sum(strcmpi(colnames,idcolname)) 
-    dataout.id = dataraw{:,strcmpi(colnames,idcolname)};colnames = dataraw.Properties.VariableNames;
-dataout = table;
+    dataout.id = dataraw{:,strcmpi(colnames,idcolname)};...
+        colnames = dataraw.Properties.VariableNames;
+end
 
 if ~sum(strcmpi(colnames,idcolname)) 
     if ~exist('headererror','var')

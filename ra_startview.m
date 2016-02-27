@@ -1,13 +1,37 @@
 function ra_startview(varargin)
 
-[filepart, pathpart] = uigetfile({'*.mat','MAT-files (*.mat)'},'Data');
+if ~isempty(varargin)
+    
+    %check if data have been provided
+    ind = find(strcmp('file',varargin),1);
+    if ~isempty(ind)
+        file = varargin{ind+1};
+        [pathpart,filepart] = fileparts(file);
+    else 
+        error('varargin:nofile',... %Error code and associated error
+        strcat('WARNING: File location not specified \n\n',... 
+        'Please input the full path specifying the file to be loaded \n'));
+    end
+   
+elseif ~isempty(varargin)
+    
+    error('varargin:incomplete',... %Error code and associated error
+    strcat('WARNING: Optional inputs are incomplete \n\n',... 
+    'Make sure each variable input is paired with a value \n',...
+    'See help ra_computerel for more information on optional inputs'));
+    
+end %if ~isempty(varargin)
 
-if filepart == 0 
-    errordlg('No file selected','File Error');
-    ra_start;
+if isempty(file)
+    [filepart, pathpart] = uigetfile({'*.mat','MAT-files (*.mat)'},'Data');
+
+    if filepart == 0 
+        errordlg('No file selected','File Error');
+        ra_start;
+    end
+
+    fprintf('\n\nLoading Data...\n\n');
 end
-
-fprintf('\n\nLoading Data...\n\n');
 
 ra_startview_fig(filepart,pathpart);
 

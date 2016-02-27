@@ -1,5 +1,7 @@
 function ra_startproc(varargin)
 
+close(varargin{3});
+
 [filepart, pathpart] = uigetfile({'*.xlsx','Excel File (.xlsx)';'*.csv',...
         'Comma-Separated Vale File (.csv)'},'Data');
 
@@ -118,21 +120,23 @@ uicontrol(ra_gui,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Back',...
     'Position', [figwidth/8 row figwidth/4 50],...
-    'Callback',@bb_call); 
+    'Callback',{@bb_call,ra_gui}); 
 
 %Create button that will check the inputs and begin processing the data
 uicontrol(ra_gui,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Analyze',...
     'Position', [5*figwidth/8 row figwidth/4 50],...
-    'Callback',{@ra_exec,inplists,collist,filepart,pathpart,dataraw}); 
+    'Callback',{@ra_exec,inplists,collist,filepart,pathpart,dataraw,ra_gui}); 
 
 
 end
 
 %if back button is pushed, go back to ra_start
-function bb_call 
-   
+function bb_call(varargin) 
+
+close(varargin{3});
+
 ra_start;
    
 end
@@ -184,7 +188,7 @@ elseif choices(4) == length(collist)
     eventheader = '';
 end
 
-closereq;
+close(varargin{8});
 
 [savename, savepath] = uiputfile(fullfile(pathpart,'*.mat'),...
     'Where would you like to save the output files?');
@@ -213,7 +217,7 @@ warning('off','all');
 save(fullfile(savepath,savename),'RELout');
 warning('on','all');
 
-ra_startview(RELout);
+ra_startview('file',fullfile(savepath,savename));
 
 end
 
