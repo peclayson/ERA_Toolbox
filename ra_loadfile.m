@@ -158,8 +158,8 @@ if ~sum(strcmpi(colnames,idcolname))
         headerror{end+1} = 'Subject ID';
     end
 elseif sum(strcmpi(colnames,idcolname)) 
-    dataout.id = dataraw{:,strcmpi(colnames,idcolname)};...
-        colnames = dataraw.Properties.VariableNames;
+    dataout.id = dataraw{:,strcmpi(colnames,idcolname)};
+    colnames = dataraw.Properties.VariableNames;
 end
 
 if ~sum(strcmpi(colnames,idcolname)) 
@@ -210,46 +210,46 @@ if exist('headerror','var')
     'Please specify the headers for\n',char(strjoin(headerror,', ')),'\n',...
     'See help ra_loadfile \n'));
 end
-end
 
-if ~sum(strcmpi(colnames,meascolname)) 
-    if ~exist('headererror','var')
-        headerror{1} = 'Measurement';
-    elseif ~exist('headererror','var')
-        headerror{end+1} = 'Measurement';
-    end
-elseif sum(strcmpi(colnames,meascolname)) 
-    dataout.meas = dataraw{:,strcmpi(colnames,meascolname)};
-end
-
-if ~sum(strcmpi(colnames,groupcolname)) && ~isempty(groupcolname)
-    if ~exist('headererror','var')
-        headerror{1} = 'Group';
-    elseif ~exist('headererror','var')
-        headerror{end+1} = 'Group';
-    end
-elseif sum(strcmpi(colnames,groupcolname)) && ~isempty(groupcolname)
-    dataout.group = dataraw{:,strcmpi(colnames,groupcolname)};
-end
-
-if ~sum(strcmpi(colnames,eventcolname)) && ~isempty(eventcolname)
-    if ~exist('headererror','var')
-        headerror{1} = 'Event';
-    elseif ~exist('headererror','var')
-        headerror{end+1} = 'Event';
-    end
-elseif sum(strcmpi(colnames,eventcolname)) && ~isempty(eventcolname)
-    dataout.event = dataraw{:,strcmpi(colnames,eventcolname)};
-end
-
-%error catch in case headers for the columns needed are not specified
-
-if exist('headerror','var')
-    error('varargin:colheaders',... %Error code and associated error
-    strcat('WARNING: Column headers not properly specified \n\n',... 
-    'Please specify the headers for\n',char(strjoin(headerror,', ')),'\n',...
-    'See help ra_loadfile \n'));
-end
+% 
+% if ~sum(strcmpi(colnames,meascolname)) 
+%     if ~exist('headererror','var')
+%         headerror{1} = 'Measurement';
+%     elseif ~exist('headererror','var')
+%         headerror{end+1} = 'Measurement';
+%     end
+% elseif sum(strcmpi(colnames,meascolname)) 
+%     dataout.meas = dataraw{:,strcmpi(colnames,meascolname)};
+% end
+% 
+% if ~sum(strcmpi(colnames,groupcolname)) && ~isempty(groupcolname)
+%     if ~exist('headererror','var')
+%         headerror{1} = 'Group';
+%     elseif ~exist('headererror','var')
+%         headerror{end+1} = 'Group';
+%     end
+% elseif sum(strcmpi(colnames,groupcolname)) && ~isempty(groupcolname)
+%     dataout.group = dataraw{:,strcmpi(colnames,groupcolname)};
+% end
+% 
+% if ~sum(strcmpi(colnames,eventcolname)) && ~isempty(eventcolname)
+%     if ~exist('headererror','var')
+%         headerror{1} = 'Event';
+%     elseif ~exist('headererror','var')
+%         headerror{end+1} = 'Event';
+%     end
+% elseif sum(strcmpi(colnames,eventcolname)) && ~isempty(eventcolname)
+%     dataout.event = dataraw{:,strcmpi(colnames,eventcolname)};
+% end
+% 
+% %error catch in case headers for the columns needed are not specified
+% 
+% if exist('headerror','var')
+%     error('varargin:colheaders',... %Error code and associated error
+%     strcat('WARNING: Column headers not properly specified \n\n',... 
+%     'Please specify the headers for\n',char(strjoin(headerror,', ')),'\n',...
+%     'See help ra_loadfile \n'));
+% end
 
 if isnumeric(dataout.id(:))
     newid = cellstr(num2str(dataout.id(:)));
