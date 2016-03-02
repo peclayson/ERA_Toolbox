@@ -206,7 +206,14 @@ origdir = cd(fullfile(savepath,'Temp_StanFiles'));
 RELout = ra_computerel('data',dataout);
 
 cd(origdir);
+
+try
 rmdir(fullfile(savepath,'Temp_StanFiles'),'s');
+catch
+    
+    fprintf('\n\nTemporary Directory could not be removed...\n\n');
+    
+end
 
 fprintf('\n\nSaving Processed Data...\n\n');
 
