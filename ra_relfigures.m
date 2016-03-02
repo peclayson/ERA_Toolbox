@@ -242,6 +242,8 @@ ntrials = plotntrials;
 x = 1:ntrials;
 
 mrel = zeros(ntrials,0);
+% llrel = zeros(ntrials,0);
+% ulrel = zeros(ntrials,0);
 
 if nevents > 2
     xplots = ceil(sqrt(nevents));
@@ -263,11 +265,26 @@ for eloc=1:nevents
         for trial=1:ntrials
             mrel(trial,gloc) = ...
                 mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,trial)); 
+                data.g(gloc).e(eloc).sig_e.raw,trial));
+%             llrel(trial,gloc) = ...
+%                 quantile(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+%                 data.g(gloc).e(eloc).sig_e.raw,trial),.025);
+%             ulrel(trial,gloc) = ...
+%                 quantile(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+%                 data.g(gloc).e(eloc).sig_e.raw,trial),.975);
         end
     end
-    subplot(yplots,xplots,eloc);
-    plot(x,mrel);
+    subplot(yplots,xplots,eloc);   %Need to grab color from the subplot
+    h = plot(x,mrel);
+%     clines = get(h,'Color');
+% 
+%     hold on
+%     for i = 1:length(clines)
+%         plot(x,llrel(:,i),'--','Color',clines{i});
+%         plot(x,ulrel(:,i),'--','Color',clines{i});
+%     end
+%     hold off
+    
     axis([0 ntrials 0 1]);
     set(gca,'fontsize',16);
     
