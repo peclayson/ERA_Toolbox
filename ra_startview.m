@@ -30,7 +30,7 @@ function ra_startview_fig(filepart,pathpart)
 
 %define parameters for figure position
 figwidth = 550;
-figheight = 450;
+figheight = 500;
 
 %default inputs
 inputs.depvalue = .70;
@@ -38,6 +38,7 @@ inputs.plotdep = 1;
 inputs.ploticc = 1;
 inputs.inctrltable = 1;
 inputs.overalltable = 1;
+inputs.showstddevt = 1;
 
 %define space between rows and first row location
 rowspace = 35;
@@ -129,6 +130,20 @@ inputs.h(5) = uicontrol(ra_gui,'Style','checkbox',...
     'Value',inputs.overalltable,...
     'Position', [rcol row+12 figwidth/2 25]); 
 
+row = row - rowspace;
+
+str = ['Would you like a table of overall relative '...
+    'size of sources of variance?'];
+uicontrol(ra_gui,'Style','text','fontsize',12,...
+    'HorizontalAlignment','left',...
+    'String',...
+    str,...
+    'Position', [lcol row figwidth/2 40]);  
+
+inputs.h(6) = uicontrol(ra_gui,'Style','checkbox',...
+    'Value',inputs.overalltable,...
+    'Position', [rcol row+12 figwidth/2 25]);
+
 row = row - rowspace*1.5;
 
 %Create a back button that will take the user back to ra_start
@@ -163,10 +178,10 @@ REL = REL.RELout;
 
 inputs = varargin{5};
 
-
 ra_relfigures('data',REL,'relcutoff',str2double(inputs.h(1).String),...
     'plotdep',inputs.h(2).Value,'ploticc',inputs.h(3).Value,...
-    'showinct',inputs.h(4).Value,'showoverallt',inputs.h(5).Value);
+    'showinct',inputs.h(4).Value,'showoverallt',inputs.h(5).Value,...
+    'showstddevt',inputs.h(6).Value);
 
 end
 

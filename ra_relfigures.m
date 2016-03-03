@@ -23,6 +23,8 @@ function RELout = ra_relfigures(varargin)
 %  combination (cutoffs and dependability)
 % showoverallt - display table with information for data including all
 %  trials for those participants that meet cutoff threshhold
+% showstddevt - display table with information about the sources of
+%  variance (between person v within person)
 %
 %Output:
 % One figure is plotted that displays the dependability of measurements as
@@ -119,7 +121,7 @@ if ~isempty(varargin)
         showoverallt = 1; %default is 1
     end
     
-    %check if showoverallt is provided
+    %check if depplotntrials is provided
     ind = find(strcmp('depplotntrials',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
@@ -128,8 +130,21 @@ if ~isempty(varargin)
             plotntrials = varargin{ind+1}; 
         end
     else 
-        plotntrials = 50; %default is 1
-    end    
+        plotntrials = 50; %default is 50
+    end
+    
+    %check if showstddevt is provided
+    ind = find(strcmp('showstddevt',varargin),1);
+    if ~isempty(ind)
+        if iscell(varargin{ind+1})
+            showstddevt = cell2mat(varargin{ind+1}); 
+        elseif isnumeric(varargin{ind+1})
+            showstddevt = varargin{ind+1}; 
+        end
+    else 
+        showstddevt = 1; %default is 1
+    end
+    
 elseif ~isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
@@ -394,7 +409,22 @@ switch analysis
         relsummary.group(gloc).event(eloc).ulicc = ...
             quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
             data.g(gloc).e(eloc).sig_e.raw),.975); 
-   
+
+        relsummary.group(gloc).event(eloc).mbetsd = ...
+            mean(data.g(gloc).e(eloc).sig_u.raw); 
+        relsummary.group(gloc).event(eloc).llbetsd = ...
+            quantile(data.g(gloc).e(eloc).sig_u.raw,.025); 
+        relsummary.group(gloc).event(eloc).ulbetsd = ...
+            quantile(data.g(gloc).e(eloc).sig_u.raw,.975);
+        
+        relsummary.group(gloc).event(eloc).mwitsd = ...
+            mean(data.g(gloc).e(eloc).sig_e.raw); 
+        relsummary.group(gloc).event(eloc).llwitsd = ...
+            quantile(data.g(gloc).e(eloc).sig_e.raw,.025); 
+        relsummary.group(gloc).event(eloc).ulwitsd = ...
+            quantile(data.g(gloc).e(eloc).sig_e.raw,.975);
+       
+        
     case 2 %possible multiple groups but no event types to consider
         
        	eloc = 1;
@@ -496,7 +526,22 @@ switch analysis
                 data.g(gloc).e(eloc).sig_e.raw),.025); 
             relsummary.group(gloc).event(eloc).ulicc = ...
                 quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw),.975); 
+                data.g(gloc).e(eloc).sig_e.raw),.975);
+            
+            relsummary.group(gloc).event(eloc).mbetsd = ...
+                mean(data.g(gloc).e(eloc).sig_u.raw); 
+            relsummary.group(gloc).event(eloc).llbetsd = ...
+                quantile(data.g(gloc).e(eloc).sig_u.raw,.025); 
+            relsummary.group(gloc).event(eloc).ulbetsd = ...
+                quantile(data.g(gloc).e(eloc).sig_u.raw,.975);
+
+            relsummary.group(gloc).event(eloc).mwitsd = ...
+                mean(data.g(gloc).e(eloc).sig_e.raw); 
+            relsummary.group(gloc).event(eloc).llwitsd = ...
+                quantile(data.g(gloc).e(eloc).sig_e.raw,.025); 
+            relsummary.group(gloc).event(eloc).ulwitsd = ...
+                quantile(data.g(gloc).e(eloc).sig_e.raw,.975);
+       
             
         end
         
@@ -605,7 +650,22 @@ switch analysis
                     data.g(gloc).e(eloc).sig_e.raw),.025); 
                 relsummary.group(gloc).event(eloc).ulicc = ...
                     quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
-                    data.g(gloc).e(eloc).sig_e.raw),.975); 
+                    data.g(gloc).e(eloc).sig_e.raw),.975);
+                
+                relsummary.group(gloc).event(eloc).mbetsd = ...
+                    mean(data.g(gloc).e(eloc).sig_u.raw); 
+                relsummary.group(gloc).event(eloc).llbetsd = ...
+                    quantile(data.g(gloc).e(eloc).sig_u.raw,.025); 
+                relsummary.group(gloc).event(eloc).ulbetsd = ...
+                    quantile(data.g(gloc).e(eloc).sig_u.raw,.975);
+
+                relsummary.group(gloc).event(eloc).mwitsd = ...
+                    mean(data.g(gloc).e(eloc).sig_e.raw); 
+                relsummary.group(gloc).event(eloc).llwitsd = ...
+                    quantile(data.g(gloc).e(eloc).sig_e.raw,.025); 
+                relsummary.group(gloc).event(eloc).ulwitsd = ...
+                    quantile(data.g(gloc).e(eloc).sig_e.raw,.975);
+                
         end
                 
     case 4 %groups and event types to consider
@@ -730,7 +790,20 @@ switch analysis
                     quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                     data.g(gloc).e(eloc).sig_e.raw),.975); 
                
-                
+                relsummary.group(gloc).event(eloc).mbetsd = ...
+                    mean(data.g(gloc).e(eloc).sig_u.raw); 
+                relsummary.group(gloc).event(eloc).llbetsd = ...
+                    quantile(data.g(gloc).e(eloc).sig_u.raw,.025); 
+                relsummary.group(gloc).event(eloc).ulbetsd = ...
+                    quantile(data.g(gloc).e(eloc).sig_u.raw,.975);
+
+                relsummary.group(gloc).event(eloc).mwitsd = ...
+                    mean(data.g(gloc).e(eloc).sig_e.raw); 
+                relsummary.group(gloc).event(eloc).llwitsd = ...
+                    quantile(data.g(gloc).e(eloc).sig_e.raw,.025); 
+                relsummary.group(gloc).event(eloc).ulwitsd = ...
+                    quantile(data.g(gloc).e(eloc).sig_e.raw,.975);
+       
             end
         end
                 
@@ -792,7 +865,6 @@ if picc == 1
     iccplot(1).Parent.YAxisLocation = 'right';
     camroll(-90);
     
-    
 end
 
 
@@ -813,6 +885,8 @@ meantrl = {};
 goodn = {};
 badn = {};
 icc = {};
+betsd = {};
+witsd = {};
 
 %put data together in tables to display
 
@@ -846,8 +920,23 @@ for gloc=1:ngroups
             relsummary.group(gloc).event(eloc).llicc,...
             relsummary.group(gloc).event(eloc).ulicc);
         
+        betsd{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
+            relsummary.group(gloc).event(eloc).mbetsd,...
+            relsummary.group(gloc).event(eloc).llbetsd,...
+            relsummary.group(gloc).event(eloc).ulbetsd);
+        
+        witsd{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
+            relsummary.group(gloc).event(eloc).mwitsd,...
+            relsummary.group(gloc).event(eloc).llwitsd,...
+            relsummary.group(gloc).event(eloc).ulwitsd);
+        
     end 
 end
+
+stddevtable = table(label',goodn',betsd',witsd');
+
+stddevtable.Properties.VariableNames = {'Label','n_Included',...
+    'Between_StdDev','Within_StdDev'};
 
 inctrltable = table(label',trlcutoff',dep');
 
@@ -863,7 +952,51 @@ overalltable.Properties.VariableNames = {'Label' ...
     'Max_Num_Trials'};
 
 
-%define parameters for figure position
+
+%define parameters for figure size
+figwidth = 650;
+figheight = 400;
+
+%define space between rows and first row location
+rowspace = 25;
+row = figheight - rowspace*2;
+name = ['Point and 95% Interval Estimates for the Between-'...
+    'and Within-Person Standard Deviations'];
+ra_stddev= figure('unit','pix','Visible','off',...
+  'position',[1250 600 figwidth figheight],...
+  'menub','no',...
+  'name',...
+  name,...
+  'numbertitle','off',...
+  'resize','off');
+
+%Print the name of the loaded dataset
+uicontrol(ra_stddev,'Style','text','fontsize',16,...
+    'HorizontalAlignment','center',...
+    'String',...
+    'Between- and Within-Person Standard Deviations',...
+    'Position',[0 row figwidth 25]);          
+
+%Start a table
+t = uitable('Parent',ra_stddev,'Position',...
+    [25 100 figwidth-50 figheight-175],...
+    'Data',table2cell(stddevtable));
+set(t,'ColumnName',{'Label' 'n Included' 'Between Std Dev'...
+    'Within Std Dev'});
+set(t,'ColumnWidth',{200 'auto' 140 140});
+set(t,'RowName',[]);
+
+%Create a save button that will take save the table
+uicontrol(ra_stddev,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','Save Table',...
+    'Position', [figwidth/8 25 figwidth/4 50],...
+    'Callback',{@ra_savestddevtable,RELout,stddevtable}); 
+
+
+
+
+%define parameters for figure size
 figwidth = 500;
 figheight = 400;
 
@@ -902,7 +1035,9 @@ uicontrol(ra_inctrl,'Style','push','fontsize',14,...
     'Position', [figwidth/8 25 figwidth/4 50],...
     'Callback',{@ra_saveinctrltable,RELout,inctrltable}); 
 
-%define parameters for figure position
+
+
+%define parameters for figure size
 figwidth = 725;
 figheight = 500;
 
@@ -946,6 +1081,10 @@ uicontrol(ra_overall,'Style','push','fontsize',14,...
     'String','Save IDs',...
     'Position', [5*figwidth/8 25 figwidth/4 50],...
     'Callback',{@ra_saveids,RELout}); 
+
+if showstddevt == 1
+    set(ra_stddev,'Visible','on');
+end
 
 if pdep == 1
     set(depplot,'Visible','on');
@@ -1164,6 +1303,70 @@ end
 
 
 end
+
+
+function ra_savestddevtable(varargin)
+
+REL = varargin{3};
+stddevtable = varargin{4};
+
+if ~ismac %macs can't use xlswrite
+    [savename, savepath] = uiputfile(...
+        {'*.xlsx','Excel File (.xlsx)';'*.csv',...
+        'Comma-Separated Vale File (.csv)'},...
+        'Where would you like to save table?');
+else
+    [savename, savepath] = uiputfile(...
+        {'*.csv',...
+        'Comma-Separated Vale File (.csv)'},...
+        'Where would you like to save table?');
+end
+
+[~,~,ext] = fileparts(fullfile(savepath,savename));
+
+if strcmp(ext,'.xlsx')
+    
+    filehead = {'Table Generated on'; datestr(clock);''}; 
+    filehead{end+1} = sprintf('Dataset: %s',REL.filename);
+    filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
+        REL.relsummary.relcutoff);
+    filehead{end+1}='';
+    filehead{end+1}='';
+    
+    xlswrite(fullfile(savepath,savename),filehead);
+    writetable(stddevtable,fullfile(savepath,savename),...
+        'Range',strcat('A',num2str(length(filehead))));
+    
+elseif strcmp(ext,'.csv')
+    
+    fid = fopen(fullfile(savepath,savename),'w');
+    fprintf(fid,'%s\n','Table Generated on');
+    fprintf(fid,'%s\n',datestr(clock));
+    fprintf(fid,'\n');
+    fprintf(fid,'Dataset: %s\n',REL.filename);
+    fprintf(fid,'Dependability Cutoff: %0.2f\n',...
+        REL.relsummary.relcutoff);
+    fprintf(fid,'\n');
+    fprintf(fid,'\n');
+    
+    fprintf(fid,'%s', strcat('Label,n Included,Beteen-Person Std Dev',...
+        ',Within-Person Std Dev'));
+    fprintf(fid,'\n');
+    
+    for i = 1:height(stddevtable)
+         formatspec = '%s,%d,%s,%s\n';
+         fprintf(fid,formatspec,char(stddevtable{i,1}),...
+             cell2mat(stddevtable{i,2}),char(stddevtable{i,3}),...
+             char(stddevtable{i,4}));
+    end
+    
+    fclose(fid);
+    
+end
+
+
+end
+
 
 function depout = reliab(var_u, var_e, obs)
 
