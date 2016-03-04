@@ -31,6 +31,50 @@ figheight = 400;
 collist_nonone = collist;
 collist_nonone(end) = [];
 
+%help the user set things up by checking if any generic names are present
+%in the headers that identify the columns
+defls = struct();
+defls.id = 1;
+defls.meas = 2;
+defls.group = length(collist);
+defls.event = length(collist);
+
+%check for a participant header
+poss = {'Subject' 'ID' 'Participant' 'SubjID' 'Subj'};
+for i = 1:length(collist_nonone)
+    ind = strcmpi(collist_nonone(i),poss);
+    if sum(ind) == 1
+        defls.id = i;
+    end
+end
+
+%check for a mesurement header
+poss = {'Measurement'};
+for i = 1:length(collist_nonone)
+    ind = strcmpi(collist_nonone(i),poss);
+    if sum(ind) == 1
+        defls.meas = i;
+    end
+end
+
+%check for a group header
+poss = {'Group'};
+for i = 1:length(collist_nonone)
+    ind = strcmpi(collist_nonone(i),poss);
+    if sum(ind) == 1
+        defls.group = i;
+    end
+end
+
+%check for a group header
+poss = {'Event' 'Type'};
+for i = 1:length(collist_nonone)
+    ind = strcmpi(collist_nonone(i),poss);
+    if sum(ind) == 1
+        defls.event = i;
+    end
+end
+
 %define space between rows and first row location
 rowspace = 35;
 row = figheight - rowspace*2;
@@ -76,7 +120,7 @@ uicontrol(ra_gui,'Style','text','fontsize',14,...
     'Position', [lcol row figwidth/4 25]);  
 
 inplists(1) = uicontrol(ra_gui,'Style','pop','fontsize',14,...
-    'String',collist_nonone,'Value',1,...
+    'String',collist_nonone,'Value',defls.id,...
     'Position', [rcol row figwidth/2 25]);  
 
 row = row - rowspace;
@@ -87,7 +131,7 @@ uicontrol(ra_gui,'Style','text','fontsize',14,...
     'Position', [lcol row figwidth/4 25]);  
 
 inplists(2) = uicontrol(ra_gui,'Style','pop','fontsize',14,...
-    'String',collist_nonone,'Value',2,...
+    'String',collist_nonone,'Value',defls.meas,...
     'Position', [rcol row figwidth/2 25]); 
 
 row = row - rowspace;
@@ -98,7 +142,7 @@ uicontrol(ra_gui,'Style','text','fontsize',14,...
     'Position', [lcol row figwidth/4 25]);  
 
 inplists(3) = uicontrol(ra_gui,'Style','pop','fontsize',14,...
-    'String',collist,'Value',length(collist),...
+    'String',collist,'Value',defls.group,...
     'Position', [rcol row figwidth/2 25]); 
 
 row = row - rowspace;
@@ -109,7 +153,7 @@ uicontrol(ra_gui,'Style','text','fontsize',14,...
     'Position', [lcol row figwidth/4 25]);  
 
 inplists(4) = uicontrol(ra_gui,'Style','pop','fontsize',14,...
-    'String',collist,'Value',length(collist),...
+    'String',collist,'Value',defls.event,...
     'Position', [rcol row figwidth/2 25]); 
 
 
@@ -208,7 +252,9 @@ RELout = ra_computerel('data',dataout);
 cd(origdir);
 
 try
-rmdir(fullfile(savepath,'Temp_StanFiles'),'s');
+    
+    rmdir(fullfile(savepath,'Temp_StanFiles'),'s');
+
 catch
     
     fprintf('\n\nTemporary Directory could not be removed...\n\n');
