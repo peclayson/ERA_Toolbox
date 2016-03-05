@@ -1,8 +1,8 @@
-function ra_start
+function era_start
 %
 %Initiate Matlab gui to use the ERP Reliability Analysis (ERA) toolbox
 %
-%version .80 - Last Updated 2/22/16
+%version .85 - Last Updated 3/5/16
 %
 
 %The ERA toolbox uses generalizability theory as a method for evaluating 
@@ -20,7 +20,7 @@ function ra_start
 % Baldwin, S. A., Larson, M. J., & Clayson, P. E. (2015). The dependability 
 % of electrophysiological measurements of performance monitoring in a 
 % clinical sample: A generalizability and decision analysis of the ERN and 
-% Pe. Psychophysiology, 52(6), 790?800. http://doi.org/10.1111/psyp.12401
+% Pe. Psychophysiology, 52(6), 790-800. http://doi.org/10.1111/psyp.12401
 %
 %The notion of reporting estimates of reliability in all ERP studies and 
 % this toolbox are specifically discussed in 
@@ -44,17 +44,17 @@ function ra_start
 %Matlab files contained in ERA toolbox
 %
 % Gui-related files
-%  ra_startproc - gui to specify inputs for the analysis of data using 
-%   cmdstand (runs ra_loadfile and ra_computerel)
-%  ra_startview - gui to specify inputs for displaying processed data
-%   (runs ra_relfigures)
+%  era_startproc - gui to specify inputs for the analysis of data using 
+%   cmdstand (runs era_loadfile and era_computerel)
+%  era_startview - gui to specify inputs for displaying processed data
+%   (runs era_relfigures)
 %
 % Data analysis files
-%  ra_loadfile - function to load data files and prepare them for 
+%  era_loadfile - function to load data files and prepare them for 
 %   processing
-%  ra_computerel - function to run data through cmdstan for dependability
+%  era_computerel - function to run data through cmdstan for dependability
 %   analyses
-%  ra_relfigures - function to display information about dependability
+%  era_relfigures - function to display information about dependability
 %   (figures and tables)
 %
 %Required dependents not contained in download of ERA toolbox
@@ -93,17 +93,17 @@ function ra_start
 %
 
 %Output info about ERA Toolbox
-fprintf('\n\n\nERP Reliability Analysis Toolbox Version .80\n\n');
+fprintf('\n\n\nERP Reliability Analysis Toolbox Version .85\n\n');
 
 
 %check whether dependencies are contained in the Matlab path
 %first look for ERA toolbox files
 fprintf('\nEnsuring required dependents are found in the Matlab path\n');
-if exist('ra_startproc.m','file') ~= 2 || ...
-        exist('ra_startview.m','file') ~= 2 || ...
-        exist('ra_computerel.m','file') ~= 2 || ...
-        exist('ra_loadfile.m','file') ~= 2 || ...
-        exist('ra_relfigures.m','file') ~= 2 
+if exist('era_startproc.m','file') ~= 2 || ...
+        exist('era_startview.m','file') ~= 2 || ...
+        exist('era_computerel.m','file') ~= 2 || ...
+        exist('era_loadfile.m','file') ~= 2 || ...
+        exist('era_relfigures.m','file') ~= 2 
 
     dlg = {'Warning: Dependencies for the ERA toolbox are not located';...
         'in the Matlab path. Please include the folder containing the';...
@@ -162,36 +162,36 @@ rowspace = 25;
 row = figheight - rowspace*2;
 
 %initialize gui
-ra_gui= figure('unit','pix','Visible','off',...
+era_gui= figure('unit','pix','Visible','off',...
   'position',[400 400 figwidth figheight],...
   'menub','no',...
   'numbertitle','off',...
   'resize','off');
-movegui(ra_gui,'center');
+movegui(era_gui,'center');
 
 %Print the name of the loaded dataset
-uicontrol(ra_gui,'Style','text','fontsize',16,...
+uicontrol(era_gui,'Style','text','fontsize',16,...
     'HorizontalAlignment','center',...
     'String','What would you like to do?',...
     'Position',[0 row figwidth 25]);          
 
 %Create a button that will take the user to the gui for setting the inputs
 %to process data
-uicontrol(ra_gui,'Style','push','fontsize',14,...
+uicontrol(era_gui,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','<html><center>Process <br>New Data',...
     'Position', [figwidth/8 25 figwidth/3 75],...
-    'Callback',{@ra_startproc,ra_gui}); 
+    'Callback',{@era_startproc,era_gui}); 
 
 %Create button that will take the user to the gui for setting the inputs
 %for viewing the data
-uicontrol(ra_gui,'Style','push','fontsize',14,...
+uicontrol(era_gui,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','View Results',...
     'Position', [5*figwidth/8 25 figwidth/3 75],...
-    'Callback',{@ra_startview,ra_gui}); 
+    'Callback',{@era_startview,era_gui}); 
 
 %display gui
-set(ra_gui,'Visible','on');
+set(era_gui,'Visible','on');
 
 end

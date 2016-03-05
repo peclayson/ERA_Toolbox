@@ -1,14 +1,14 @@
-function RELout = ra_computerel(varargin)
+function RELout = era_computerel(varargin)
 %Prepare and execute cmdstan code for dependability analyses
 %
-%ra_computerel('data',era_datatable)
+%era_computerel('data',era_datatable)
 %
 %Lasted Updated 3/5/16
 %
 %Required Input:
-% data - data table outputted from the ra_loadfile script (see ra_loadfile
+% data - data table outputted from the era_loadfile script (see era_loadfile
 %  for more information about table format)
-%  Note: ra_loadfile sets up the datatable in a specific format with
+%  Note: era_loadfile sets up the datatable in a specific format with
 %  specific header names that are used in this script
 %
 %Outputs:
@@ -29,6 +29,20 @@ function RELout = ra_computerel(varargin)
 %    possible combination (e.g., 'Error_Controls' or 'Hits_Patients'' event 
 %    and group will be separated by an underscore)
 %  stan_in: compiled model syntax that was passed to Stan
+
+%For more information about how variance components were estimated please
+% see
+%
+% Baldwin, S. A., Larson, M. J., & Clayson, P. E. (2015). The dependability 
+% of electrophysiological measurements of performance monitoring in a 
+% clinical sample: A generalizability and decision analysis of the ERN and 
+% Pe. Psychophysiology, 52(6), 790-800. http://doi.org/10.1111/psyp.12401
+%
+%It would be terribly remiss of me not thank Scott Baldwin for
+%conceptualizing and developing the formulas that are implemented in this
+%toolbox. Dr. Baldwin also wrote the original Stan syntax in R and 
+%graciously provided me with all of his code. This Matlab code is based
+%off of his R code. 
 
 % Copyright (C) 2016 Peter E. Clayson
 % 
@@ -62,7 +76,7 @@ if ~isempty(varargin)
         error('varargin:incomplete',... %Error code and associated error
         strcat('WARNING: Inputs are incomplete \n\n',... 
         'Make sure each variable input is paired with a value \n',...
-        'See help ra_computerel for more information on optional inputs'));
+        'See help era_computerel for more information on optional inputs'));
     end
     
     %check if the dataset is present
@@ -80,7 +94,7 @@ elseif ~isempty(varargin)
     error('varargin:incomplete',... %Error code and associated error
     strcat('WARNING: Optional inputs are incomplete \n\n',... 
     'Make sure each variable input is paired with a value \n',...
-    'See help ra_computerel for more information on optional inputs'));
+    'See help era_computerel for more information on optional inputs'));
     
 end %if ~isempty(varargin)
 
@@ -112,7 +126,7 @@ if exist('headerror','var')
     strcat('WARNING: Column headers not properly defined in data \n\n',... 
     'Please properly specify the headers for\n',...
     char(strjoin(headerror,', ')),'\n',...
-    'See help ra_loadfile for data table format \n'));
+    'See help era_loadfile for data table format \n'));
 end
 
 

@@ -1,7 +1,7 @@
-function dataout = ra_loadfile(varargin)
+function dataout = era_loadfile(varargin)
 %Loads and prepares the data file for dependability analyses
 %
-%ra_loadfile('file',filename)
+%era_loadfile('file',filename)
 %
 %Required Inputs:
 % file - location of file to be loaded and prepared for dependability
@@ -18,7 +18,7 @@ function dataout = ra_loadfile(varargin)
 %  it is assumed that there is only one group in the data file.
 % eventcol - column label for the event variable. If no label is provided
 %  it is assumed there is only one event type in the data file.
-% dataraw - raw data table outputted from ra_startproc (so Matlab doesn't
+% dataraw - raw data table outputted from era_startproc (so Matlab doesn't
 %  have to re-load entire table)
 %
 %Output:
@@ -61,7 +61,7 @@ if ~isempty(varargin)
         error('varargin:incomplete',... %Error code and associated error
         strcat('WARNING: Inputs are incomplete \n\n',... 
         'Make sure each variable input is paired with a value \n',...
-        'See help ra_loadfile for more information on optional inputs'));
+        'See help era_loadfile for more information on optional inputs'));
     end
     
     %check if a location for the file to be loaded was specified. 
@@ -135,7 +135,7 @@ elseif ~isempty(varargin)
     error('varargin:incomplete',... %Error code and associated error
     strcat('WARNING: Optional inputs are incomplete \n\n',... 
     'Make sure each variable input is paired with a value \n',...
-    'See help ra_loadfile for more information on optional inputs'));
+    'See help era_loadfile for more information on optional inputs'));
     
 end %if ~isempty(varargin)
 
@@ -144,14 +144,16 @@ if ~isempty(ext) && strcmp(ext(1),'.')
     ext = ext(2:end);
 end
 
+%file extensions able to be read by Matlab's readtable function
 supportedfiles = {'txt','dat','csv','xls','xlsx','xlsb','xlsm','xltm',...
     'xltx','ods'};
 
+%output error if file type is not supported
 if sum(strcmp(ext,supportedfiles)) ~= 1
 
     error('varargin:filetype',... %Error code and associated error
     strcat('WARNING: File type not supported \n\n',... 
-    'For a list of supported file types, see help ra_loadfile \n'));
+    'For a list of supported file types, see help era_loadfile \n'));
 
 end
 
@@ -160,6 +162,7 @@ if isempty(dataraw)
     dataraw = readtable(file);
 end
 
+%grab the filename to store
 [~,filename] = fileparts(file); 
 
 %make sure all of the necessary headers are present in the file then load
@@ -168,6 +171,7 @@ colnames = dataraw.Properties.VariableNames;
 dataout = table;
 dataout.Properties.Description = filename;
 
+%ensure that the id column is present
 if ~sum(strcmpi(colnames,idcolname)) 
     if ~exist('headererror','var')
         headerror{1} = 'Subject ID';
@@ -179,16 +183,7 @@ elseif sum(strcmpi(colnames,idcolname))
     colnames = dataraw.Properties.VariableNames;
 end
 
-if ~sum(strcmpi(colnames,idcolname)) 
-    if ~exist('headererror','var')
-        headerror{1} = 'Subject ID';
-    elseif ~exist('headererror','var')
-        headerror{end+1} = 'Subject ID';
-    end
-elseif sum(strcmpi(colnames,idcolname)) 
-    dataout.id = dataraw{:,strcmpi(colnames,idcolname)};
-end
-
+%ensure that the measurement column is present
 if ~sum(strcmpi(colnames,meascolname)) 
     if ~exist('headererror','var')
         headerror{1} = 'Measurement';
@@ -199,6 +194,8 @@ elseif sum(strcmpi(colnames,meascolname))
     dataout.meas = dataraw{:,strcmpi(colnames,meascolname)};
 end
 
+%ensure that the group column is present if the group header should be
+%there
 if ~sum(strcmpi(colnames,groupcolname)) && ~isempty(groupcolname)
     if ~exist('headererror','var')
         headerror{1} = 'Group';
@@ -209,6 +206,8 @@ elseif sum(strcmpi(colnames,groupcolname)) && ~isempty(groupcolname)
     dataout.group = dataraw{:,strcmpi(colnames,groupcolname)};
 end
 
+%ensure that the event column is present if the event header should be
+%there
 if ~sum(strcmpi(colnames,eventcolname)) && ~isempty(eventcolname)
     if ~exist('headererror','var')
         headerror{1} = 'Event';
@@ -219,55 +218,17 @@ elseif sum(strcmpi(colnames,eventcolname)) && ~isempty(eventcolname)
     dataout.event = dataraw{:,strcmpi(colnames,eventcolname)};
 end
 
-%error catch in case headers for the columns needed are not specified
-
+%error catch in case headers for the columns needed are not specified. Let
+%the user know which columns were problematic
 if exist('headerror','var')
     error('varargin:colheaders',... %Error code and associated error
     strcat('WARNING: Column headers not properly specified \n\n',... 
     'Please specify the headers for\n',char(strjoin(headerror,', ')),'\n',...
-    'See help ra_loadfile \n'));
+    'See help era_loadfile \n'));
 end
 
-% 
-% if ~sum(strcmpi(colnames,meascolname)) 
-%     if ~exist('headererror','var')
-%         headerror{1} = 'Measurement';
-%     elseif ~exist('headererror','var')
-%         headerror{end+1} = 'Measurement';
-%     end
-% elseif sum(strcmpi(colnames,meascolname)) 
-%     dataout.meas = dataraw{:,strcmpi(colnames,meascolname)};
-% end
-% 
-% if ~sum(strcmpi(colnames,groupcolname)) && ~isempty(groupcolname)
-%     if ~exist('headererror','var')
-%         headerror{1} = 'Group';
-%     elseif ~exist('headererror','var')
-%         headerror{end+1} = 'Group';
-%     end
-% elseif sum(strcmpi(colnames,groupcolname)) && ~isempty(groupcolname)
-%     dataout.group = dataraw{:,strcmpi(colnames,groupcolname)};
-% end
-% 
-% if ~sum(strcmpi(colnames,eventcolname)) && ~isempty(eventcolname)
-%     if ~exist('headererror','var')
-%         headerror{1} = 'Event';
-%     elseif ~exist('headererror','var')
-%         headerror{end+1} = 'Event';
-%     end
-% elseif sum(strcmpi(colnames,eventcolname)) && ~isempty(eventcolname)
-%     dataout.event = dataraw{:,strcmpi(colnames,eventcolname)};
-% end
-% 
-% %error catch in case headers for the columns needed are not specified
-% 
-% if exist('headerror','var')
-%     error('varargin:colheaders',... %Error code and associated error
-%     strcat('WARNING: Column headers not properly specified \n\n',... 
-%     'Please specify the headers for\n',char(strjoin(headerror,', ')),'\n',...
-%     'See help ra_loadfile \n'));
-% end
-
+%turn all of the ids, groups, and events into strings. ERA toolbox will 
+%use this later
 if isnumeric(dataout.id(:))
     newid = cellstr(num2str(dataout.id(:)));
     dataout.id = [];

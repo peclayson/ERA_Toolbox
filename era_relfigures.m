@@ -1,19 +1,19 @@
-function RELout = ra_relfigures(varargin)
-%Creates figures depicting dependability estimates and displays information
-% about optimal cutoffs and overall dependability
+function era_relfigures(varargin)
+%Creates various figures and tables for dependability data. See user manual
+% for more specific information about each figure.
 %
-%ra_relfigures('data',REL)
+%era_relfigures('data',ERAData)
 %
 %Note: The Statistics and Machine Learning Toolbox is required
 %
 %Required Inputs:
 % data - structure array containing results of dependability analyses using
-%  cmdstan. See ra_computerel for more information.
+%  cmdstan. See era_computerel for more information.
 %
 %Optional Inputs:
-% relcutoff - reliability level to use for cutoff when deciding the
+% depcutoff - dependability level to use for cutoff when deciding the
 %  minimum number of trials needed to achieve this specified level of
-%  reliability
+%  dependability
 % plotdep - plot the table displaying dependability v number of trials
 %  included in average
 % ploticc - plot the intraclass correlation coefficients for data. This ICC
@@ -29,17 +29,34 @@ function RELout = ra_relfigures(varargin)
 %  by group and event
 %
 %Output:
-% One figure is plotted that displays the dependability of measurements as
-%  the number of trials increases. If there is separate information for
-%  groups, events, or groups and events, the dependability estimates will
-%  be displayed accordingly.
+% Various figures may be plotted. Tables will also have buttons for
+%  saving the table to a file. Additionally the table showing the cutoffs
+%  for numbers of trials to achieve a given level of dependability will
+%  have a button to save the ids of participants to include and exclude.
+
+% Copyright (C) 2016 Peter E. Clayson
+% 
+%     This program is free software: you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published by
+%     the Free Software Foundation, either version 3 of the License, or
+%     any later version.
+% 
+%     This program is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+%     GNU General Public License for more details.
+% 
+%     You should have received a copy of the GNU General Public License
+%     along with this program (gpl.txt). If not, see 
+%     <http://www.gnu.org/licenses/>.
+%
 
 %History 
-% by Peter Clayson (12/23/15)
+% by Peter Clayson (3/5/15)
 % peter.clayson@gmail.com
 %
 
-
+%somersault through inputs
 if ~isempty(varargin)
     
     %the optional inputs check assumes that there was an even number of 
@@ -49,7 +66,7 @@ if ~isempty(varargin)
         error('varargin:incomplete',... %Error code and associated error
         strcat('WARNING: Inputs are incomplete \n\n',... 
         'Make sure each variable input is paired with a value \n',...
-        'See help ra_relfigures for more information on optional inputs'));
+        'See help era_relfigures for more information on optional inputs'));
     end
     
     %check if a location for the file to be loaded was specified. 
@@ -63,16 +80,16 @@ if ~isempty(varargin)
         'Please input the full path specifying the file to be loaded \n'));
     end
    
-    %check if a location for the file to be loaded was specified. 
-    ind = find(strcmp('relcutoff',varargin),1);
+    %check if the dependability cutoff was specified 
+    ind = find(strcmp('depcutoff',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            relcutoff = cell2mat(varargin{ind+1}); 
+            depcutoff = cell2mat(varargin{ind+1}); 
         elseif isnumeric(varargin{ind+1})
-            relcutoff = varargin{ind+1}; 
+            depcutoff = varargin{ind+1}; 
         end
     else 
-        relcutoff = .70; %default level is .70
+        depcutoff = .70; %default level is .70
     end
     
     %check if plotdep is provided
@@ -87,7 +104,7 @@ if ~isempty(varargin)
         pdep = 1; %default is 1
     end
     
-    %check if plotdep is provided
+    %check if picc is provided
     ind = find(strcmp('ploticc',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
@@ -164,12 +181,14 @@ elseif ~isempty(varargin)
     error('varargin:incomplete',... %Error code and associated error
     strcat('WARNING: Optional inputs are incomplete \n\n',... 
     'Make sure each variable input is paired with a value \n',...
-    'See help ra_relfigures for more information on optional inputs'));
+    'See help era_relfigures for more information on optional inputs'));
     
 end %if ~isempty(varargin)
 
+%create a data structure for storing outputs
 data = struct;
 
+%check whether any groups exist
 if strcmpi(REL.groups,'none')
     ngroups = 1;
     gnames = cellstr(REL.groups);
@@ -178,6 +197,7 @@ else
     gnames = REL.groups(:);
 end
 
+%check whether any events exist
 if strcmpi(REL.events,'none')
     nevents = 1;
     enames = cellstr(REL.events);
@@ -203,6 +223,7 @@ elseif ngroups > 1 && nevents > 1
     analysis = 4;
 end
 
+%extract information from REL and store in data for crunching
 switch analysis
     case 1 %1 - no groups or event types to consider
 
@@ -248,14 +269,16 @@ switch analysis
         
     case 4 %4 - possible groups and event types to consider
         for i=1:length(REL.out.labels)
-    
+                
+            %use the underscores that were added in era_computerel to
+            %differentiate where the group and event the data are for
             lblstr = strsplit(REL.out.labels{i},'_');
 
             eloc = find(ismember(enames,lblstr(1)));
             gloc = find(ismember(gnames,lblstr(2)));
 
-            if isempty(eloc); eloc = 1; end;
-            if isempty(gloc); gloc = 1; end;
+%             if isempty(eloc); eloc = 1; end;
+%             if isempty(gloc); gloc = 1; end;
 
             data.g(gloc).e(eloc).label = REL.out.labels(i);
             data.g(gloc).e(eloc).mu.raw = REL.out.mu(:,i);
@@ -265,15 +288,18 @@ switch analysis
             data.g(gloc).glabel = gnames(gloc);
     
         end
-end
-  
+end %switch analysis
+
+%create an x-axis for the number of observations
 ntrials = plotntrials;
 x = 1:ntrials;
 
+%create an empty array for storing information into
 mrel = zeros(ntrials,0);
 % llrel = zeros(ntrials,0);
 % ulrel = zeros(ntrials,0);
 
+%see how many subplots are needed
 if nevents > 2
     xplots = ceil(sqrt(nevents));
     yplots = ceil(sqrt(nevents));
@@ -285,10 +311,12 @@ elseif nevents == 1
     yplots = 1;
 end
 
+%create the figure
 depplot = figure('Visible','Off');
 depplot.Position = [125 630 900 450];
 fsize = 16;
 
+%extract the data and create the subplots for depplot
 for eloc=1:nevents
     for gloc=1:ngroups
         for trial=1:ntrials
@@ -323,7 +351,7 @@ for eloc=1:nevents
     
     ylabel('Dependability','FontSize',fsize);
     xlabel('Number of Observations','FontSize',fsize);
-    hline = refline(0,relcutoff);
+    hline = refline(0,depcutoff);
     set(hline,'Color','b','LineStyle',':');
     if analysis ~= 1 && analysis ~= 3
         leg = legend(gnames{:},'Location','southeast');
@@ -331,11 +359,14 @@ for eloc=1:nevents
     end
 end
 
+%create empty arrays for storing dependability information
+ntrials = length(data.g(gloc).e(eloc).sig_u.raw);
 mrel = zeros(0,ntrials);
 llrel = zeros(0,ntrials);
 ulrel = zeros(0,ntrials);
 
-relsummary.relcutoff = relcutoff;
+%store the cutoff in relsummary to pass to other functions more easily
+relsummary.depcutoff = depcutoff;
 
 switch analysis
     case 1 %no groups or event types to consider
@@ -345,7 +376,8 @@ switch analysis
         
         relsummary.group(gloc).name = gnames{gloc};
         relsummary.group(gloc).event(eloc).name = 'measure';
-
+        
+        %compute dependability information
         for trial=1:ntrials
             mrel(trial) = ...
                 mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
@@ -360,8 +392,9 @@ switch analysis
 
         %find the number of trials to reach cutoff based on the
         %lower limit of the confidence interval
-        trlcutoff = find(llrel >= relcutoff, 1);
+        trlcutoff = find(llrel >= depcutoff, 1);
 
+        %store information about cutoffs
         relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
         relsummary.group(gloc).event(eloc).mrel = mrel(trlcutoff);
         relsummary.group(gloc).event(eloc).llrel = llrel(trlcutoff);
@@ -465,7 +498,7 @@ switch analysis
 
             %find the number of trials to reach cutoff based on the
             %lower limit of the confidence interval
-            trlcutoff = find(llrel >= relcutoff, 1);
+            trlcutoff = find(llrel >= depcutoff, 1);
 
             relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
             relsummary.group(gloc).event(eloc).mrel = mrel(trlcutoff);
@@ -585,7 +618,7 @@ switch analysis
                 
                 %find the number of trials to reach cutoff based on the
                 %lower limit of the confidence interval
-                trlcutoff = find(llrel >= relcutoff, 1);
+                trlcutoff = find(llrel >= depcutoff, 1);
                 
                 relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
                 relsummary.group(gloc).event(eloc).mrel = mrel(trlcutoff);
@@ -708,7 +741,7 @@ switch analysis
                 
                 %find the number of trials to reach cutoff based on the
                 %lower limit of the confidence interval
-                trlcutoff = find(llrel >= relcutoff, 1);
+                trlcutoff = find(llrel >= depcutoff, 1);
                 
                 relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
                 relsummary.group(gloc).event(eloc).mrel = mrel(trlcutoff);
@@ -1029,7 +1062,7 @@ rowspace = 25;
 row = figheight - rowspace*2;
 name = ['Point and 95% Interval Estimates for the Between-'...
     'and Within-Person Standard Deviations'];
-ra_stddev= figure('unit','pix','Visible','off',...
+era_stddev= figure('unit','pix','Visible','off',...
   'position',[1250 600 figwidth figheight],...
   'menub','no',...
   'name',...
@@ -1038,14 +1071,14 @@ ra_stddev= figure('unit','pix','Visible','off',...
   'resize','off');
 
 %Print the name of the loaded dataset
-uicontrol(ra_stddev,'Style','text','fontsize',16,...
+uicontrol(era_stddev,'Style','text','fontsize',16,...
     'HorizontalAlignment','center',...
     'String',...
     'Between- and Within-Person Standard Deviations',...
     'Position',[0 row figwidth 25]);          
 
 %Start a table
-t = uitable('Parent',ra_stddev,'Position',...
+t = uitable('Parent',era_stddev,'Position',...
     [25 100 figwidth-50 figheight-175],...
     'Data',table2cell(stddevtable));
 set(t,'ColumnName',{'Label' 'n Included' 'Between Std Dev'...
@@ -1054,11 +1087,11 @@ set(t,'ColumnWidth',{200 'auto' 140 140});
 set(t,'RowName',[]);
 
 %Create a save button that will take save the table
-uicontrol(ra_stddev,'Style','push','fontsize',14,...
+uicontrol(era_stddev,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Save Table',...
     'Position', [figwidth/8 25 figwidth/4 50],...
-    'Callback',{@ra_savestddevtable,RELout,stddevtable}); 
+    'Callback',{@era_savestddevtable,RELout,stddevtable}); 
 
 
 
@@ -1071,7 +1104,7 @@ figheight = 400;
 rowspace = 25;
 row = figheight - rowspace*2;
 
-ra_inctrl= figure('unit','pix','Visible','off',...
+era_inctrl= figure('unit','pix','Visible','off',...
   'position',[1150 700 figwidth figheight],...
   'menub','no',...
   'name',...
@@ -1080,15 +1113,15 @@ ra_inctrl= figure('unit','pix','Visible','off',...
   'resize','off');
 
 %Print the name of the loaded dataset
-uicontrol(ra_inctrl,'Style','text','fontsize',16,...
+uicontrol(era_inctrl,'Style','text','fontsize',16,...
     'HorizontalAlignment','center',...
     'String',...
     sprintf('Dependability Analyses, %0.2f Cutoff',...
-    RELout.relsummary.relcutoff),...
+    RELout.relsummary.depcutoff),...
     'Position',[0 row figwidth 25]);          
 
 %Start a table
-t = uitable('Parent',ra_inctrl,'Position',...
+t = uitable('Parent',era_inctrl,'Position',...
     [25 100 figwidth-50 figheight-175],...
     'Data',table2cell(inctrltable));
 set(t,'ColumnName',{'Label' 'Trial Cutoff' 'Dependability'});
@@ -1096,11 +1129,11 @@ set(t,'ColumnWidth',{200 'auto' 170});
 set(t,'RowName',[]);
 
 %Create a save button that will take save the table
-uicontrol(ra_inctrl,'Style','push','fontsize',14,...
+uicontrol(era_inctrl,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Save Table',...
     'Position', [figwidth/8 25 figwidth/4 50],...
-    'Callback',{@ra_saveinctrltable,RELout,inctrltable}); 
+    'Callback',{@era_saveinctrltable,RELout,inctrltable}); 
 
 
 
@@ -1112,7 +1145,7 @@ figheight = 500;
 rowspace = 25;
 row = figheight - rowspace*2;
 
-ra_overall= figure('unit','pix','Visible','off',...
+era_overall= figure('unit','pix','Visible','off',...
   'position',[1150 150 figwidth figheight],...
   'menub','no',...
   'name','Dependability Analyses Including All Trials',...
@@ -1120,13 +1153,13 @@ ra_overall= figure('unit','pix','Visible','off',...
   'resize','off');
 
 %Print the name of the loaded dataset
-uicontrol(ra_overall,'Style','text','fontsize',16,...
+uicontrol(era_overall,'Style','text','fontsize',16,...
     'HorizontalAlignment','center',...
     'String','Overall Dependability',...
     'Position',[0 row figwidth 25]);          
 
 %Start a table
-t = uitable('Parent',ra_overall,'Position',...
+t = uitable('Parent',era_overall,'Position',...
     [25 100 figwidth-50 figheight-175],...
     'Data',table2cell(overalltable));
 set(t,'ColumnName',{'Label' 'n Included' 'n Excluded' ...
@@ -1136,21 +1169,21 @@ set(t,'ColumnWidth',{'auto' 'auto' 'auto' 'auto' 100 'auto' 'auto' 'auto'});
 set(t,'RowName',[]);
 
 %Create a save button that will take save the table
-uicontrol(ra_overall,'Style','push','fontsize',14,...
+uicontrol(era_overall,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Save Table',...
     'Position', [figwidth/8 25 figwidth/4 50],...
-    'Callback',{@ra_saveoveralltable,RELout,overalltable}); 
+    'Callback',{@era_saveoveralltable,RELout,overalltable}); 
 
 %Create button that will save good/bad ids
-uicontrol(ra_overall,'Style','push','fontsize',14,...
+uicontrol(era_overall,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Save IDs',...
     'Position', [5*figwidth/8 25 figwidth/4 50],...
-    'Callback',{@ra_saveids,RELout}); 
+    'Callback',{@era_saveids,RELout}); 
 
 if showstddevt == 1
-    set(ra_stddev,'Visible','on');
+    set(era_stddev,'Visible','on');
 end
 
 if pdep == 1
@@ -1158,16 +1191,16 @@ if pdep == 1
 end
 
 if showinct == 1
-    set(ra_inctrl,'Visible','on');
+    set(era_inctrl,'Visible','on');
 end
 
 if showoverallt == 1
-    set(ra_overall,'Visible','on');
+    set(era_overall,'Visible','on');
 end
 
 end
 
-function ra_saveoveralltable(varargin)
+function era_saveoveralltable(varargin)
 
 REL = varargin{3};
 overalltable = varargin{4};
@@ -1191,7 +1224,7 @@ if strcmp(ext,'.xlsx')
     filehead = {'Dependability Table Generated on'; datestr(clock);''}; 
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
-        REL.relsummary.relcutoff);
+        REL.relsummary.depcutoff);
     filehead{end+1}='';
     filehead{end+1}='';
     
@@ -1207,7 +1240,7 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'\n');
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
-        REL.relsummary.relcutoff);
+        REL.relsummary.depcutoff);
     fprintf(fid,'\n');
     fprintf(fid,'\n');
     
@@ -1230,7 +1263,7 @@ end
 
 end
 
-function ra_saveids(varargin)
+function era_saveids(varargin)
 
 REL = varargin{3};
 
@@ -1254,7 +1287,7 @@ if strcmp(ext,'.xlsx')
     datap{2,1} = datestr(clock); 
     datap{3,1} = sprintf('Dataset: %s',REL.filename);
     datap{4,1} = sprintf('Dependability Cutoff: %0.2f',...
-        REL.relsummary.relcutoff);
+        REL.relsummary.depcutoff);
     datap{5,1}='';
     datap{6,1}='';
     datap{7,1} = 'Good IDs'; datap{7,2} = 'Bad IDs';
@@ -1277,7 +1310,7 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'\n');
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
-        REL.relsummary.relcutoff);
+        REL.relsummary.depcutoff);
     fprintf(fid,'\n');
     fprintf(fid,'\n');
     fprintf(fid,'%s\n','Good IDs,Bad IDs');
@@ -1311,7 +1344,7 @@ end
 
 end
 
-function ra_saveinctrltable(varargin)
+function era_saveinctrltable(varargin)
 
 REL = varargin{3};
 incltrltable = varargin{4};
@@ -1335,7 +1368,7 @@ if strcmp(ext,'.xlsx')
     filehead = {'Table Generated on'; datestr(clock);''}; 
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
-        REL.relsummary.relcutoff);
+        REL.relsummary.depcutoff);
     filehead{end+1}='';
     filehead{end+1}='';
     
@@ -1351,7 +1384,7 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'\n');
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
-        REL.relsummary.relcutoff);
+        REL.relsummary.depcutoff);
     fprintf(fid,'\n');
     fprintf(fid,'\n');
     
@@ -1372,7 +1405,7 @@ end
 end
 
 
-function ra_savestddevtable(varargin)
+function era_savestddevtable(varargin)
 
 REL = varargin{3};
 stddevtable = varargin{4};
@@ -1396,7 +1429,7 @@ if strcmp(ext,'.xlsx')
     filehead = {'Table Generated on'; datestr(clock);''}; 
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
-        REL.relsummary.relcutoff);
+        REL.relsummary.depcutoff);
     filehead{end+1}='';
     filehead{end+1}='';
     
@@ -1412,7 +1445,7 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'\n');
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
-        REL.relsummary.relcutoff);
+        REL.relsummary.depcutoff);
     fprintf(fid,'\n');
     fprintf(fid,'\n');
     

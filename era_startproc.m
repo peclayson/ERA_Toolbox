@@ -1,4 +1,4 @@
-function ra_startproc(varargin)
+function era_startproc(varargin)
 %
 %Initiate Matlab gui to begin processing data in Stan
 %
@@ -14,7 +14,7 @@ function ra_startproc(varargin)
 %Output
 % This script will not output any variables to the workspace. A .mat with
 %  processed data from Stan will be saved in a user specified locaiton.
-%  This .mat will automatically be loaded into ra_startview for viewing the
+%  This .mat will automatically be loaded into era_startview for viewing the
 %  data
 %
 
@@ -40,17 +40,17 @@ function ra_startproc(varargin)
 % peter.clayson@gmail.com
 %
 
-%close the ra_start gui
+%close the era_start gui
 close(varargin{3});
 
 %ask the user to identify the data file to be loaded
 [filepart, pathpart] = uigetfile({'*.xlsx','Excel File (.xlsx)';'*.csv',...
         'Comma-Separated Vale File (.csv)'},'Data');
 
-%if the user does not select a file, then take the user back to ra_start    
+%if the user does not select a file, then take the user back to era_start    
 if filepart == 0 
     errordlg('No file selected','File Error');
-    ra_start;
+    era_start;
 end
 
 fprintf('\n\nLoading Data...');
@@ -67,11 +67,11 @@ collist = dataraw.Properties.VariableNames;
 collist{end+1} = 'none';
 
 %use the loaded dateset in the gui for setting up the data to be run
-ra_startproc_fig(collist,filepart,pathpart,dataraw);
+era_startproc_fig(collist,filepart,pathpart,dataraw);
 
 end
 
-function ra_startproc_fig(collist,filepart,pathpart,dataraw)
+function era_startproc_fig(collist,filepart,pathpart,dataraw)
 %
 %Input
 % collist - a list of the headers of the loaded dataset
@@ -81,8 +81,8 @@ function ra_startproc_fig(collist,filepart,pathpart,dataraw)
 %
 %Output
 % There are no direct outputs to the Matlab workspace. The user will have
-%  the option (via the gui) to go back to the ra_start window or pass the
-%  data to ra_startproc to process the data in Stan
+%  the option (via the gui) to go back to the era_start window or pass the
+%  data to era_startproc to process the data in Stan
 %
 
 %define parameters for figure position
@@ -143,8 +143,8 @@ row = figheight - rowspace*2;
 lcol = 30;
 rcol = (figwidth/2);
 
-%create the basic ra_gui
-ra_gui= figure('unit','pix',...
+%create the basic era_gui
+era_gui= figure('unit','pix',...
   'position',[400 400 figwidth figheight],...
   'menub','no',...
   'name','Specify Inputs',...
@@ -152,7 +152,7 @@ ra_gui= figure('unit','pix',...
   'resize','off');
 
 %Print the name of the loaded dataset
-uicontrol(ra_gui,'Style','text','fontsize',16,...
+uicontrol(era_gui,'Style','text','fontsize',16,...
     'HorizontalAlignment','center',...
     'String',['Dataset:  ' filepart],...
     'Position',[0 row figwidth 25]);          
@@ -161,12 +161,12 @@ uicontrol(ra_gui,'Style','text','fontsize',16,...
 row = row - rowspace*1.5;
 
 %Print the gui headers
-uicontrol(ra_gui,'Style','text','fontsize',16,...
+uicontrol(era_gui,'Style','text','fontsize',16,...
     'HorizontalAlignment','center',...
     'String','Variable',...
     'Position', [figwidth/8 row figwidth/4 25]);  
 
-uicontrol(ra_gui,'Style','text','fontsize',16,...
+uicontrol(era_gui,'Style','text','fontsize',16,...
     'HorizontalAlignment','center',...
     'String','Input',...
     'Position',[5*(figwidth/8) row figwidth/4 25]);
@@ -176,12 +176,12 @@ row = row - rowspace*1.5;
 
 %print the name of the variables and place a listbox with possible options
 %start with participant ID row
-uicontrol(ra_gui,'Style','text','fontsize',14,...
+uicontrol(era_gui,'Style','text','fontsize',14,...
     'HorizontalAlignment','left',...
     'String','Participant ID:',...
     'Position', [lcol row figwidth/4 25]);  
 
-inplists(1) = uicontrol(ra_gui,'Style','pop','fontsize',14,...
+inplists(1) = uicontrol(era_gui,'Style','pop','fontsize',14,...
     'String',collist_nonone,'Value',defls.id,...
     'Position', [rcol row figwidth/2 25]);  
 
@@ -189,12 +189,12 @@ inplists(1) = uicontrol(ra_gui,'Style','pop','fontsize',14,...
 row = row - rowspace;
 
 %measurement row
-uicontrol(ra_gui,'Style','text','fontsize',14,...
+uicontrol(era_gui,'Style','text','fontsize',14,...
     'HorizontalAlignment','left',...
     'String','Measurement:',...
     'Position', [lcol row figwidth/4 25]);  
 
-inplists(2) = uicontrol(ra_gui,'Style','pop','fontsize',14,...
+inplists(2) = uicontrol(era_gui,'Style','pop','fontsize',14,...
     'String',collist_nonone,'Value',defls.meas,...
     'Position', [rcol row figwidth/2 25]); 
 
@@ -202,12 +202,12 @@ inplists(2) = uicontrol(ra_gui,'Style','pop','fontsize',14,...
 row = row - rowspace;
 
 %group row
-uicontrol(ra_gui,'Style','text','fontsize',14,...
+uicontrol(era_gui,'Style','text','fontsize',14,...
     'HorizontalAlignment','left',...
     'String','Group ID:',...
     'Position', [lcol row figwidth/4 25]);  
 
-inplists(3) = uicontrol(ra_gui,'Style','pop','fontsize',14,...
+inplists(3) = uicontrol(era_gui,'Style','pop','fontsize',14,...
     'String',collist,'Value',defls.group,...
     'Position', [rcol row figwidth/2 25]); 
 
@@ -215,49 +215,49 @@ inplists(3) = uicontrol(ra_gui,'Style','pop','fontsize',14,...
 row = row - rowspace;
 
 %event row
-uicontrol(ra_gui,'Style','text','fontsize',14,...
+uicontrol(era_gui,'Style','text','fontsize',14,...
     'HorizontalAlignment','left',...
     'String','Event Type:',...
     'Position', [lcol row figwidth/4 25]);  
 
-inplists(4) = uicontrol(ra_gui,'Style','pop','fontsize',14,...
+inplists(4) = uicontrol(era_gui,'Style','pop','fontsize',14,...
     'String',collist,'Value',defls.event,...
     'Position', [rcol row figwidth/2 25]); 
 
 %next row with extra space
 row = row - rowspace*2.5;
 
-%Create a back button that will take the user back to ra_start
-uicontrol(ra_gui,'Style','push','fontsize',14,...
+%Create a back button that will take the user back to era_start
+uicontrol(era_gui,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Back',...
     'Position', [figwidth/8 row figwidth/4 50],...
-    'Callback',{@bb_call,ra_gui}); 
+    'Callback',{@bb_call,era_gui}); 
 
 %Create button that will check the inputs and begin processing the data
-uicontrol(ra_gui,'Style','push','fontsize',14,...
+uicontrol(era_gui,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Analyze',...
     'Position', [5*figwidth/8 row figwidth/4 50],...
-    'Callback',{@ra_exec,inplists,collist,filepart,pathpart,dataraw,ra_gui}); 
+    'Callback',{@era_exec,inplists,collist,filepart,pathpart,dataraw,era_gui}); 
 
 
 end
 
 
 function bb_call(varargin) 
-%if back button is pushed, go back to ra_start
+%if back button is pushed, go back to era_start
 
-%close the ra_gui
+%close the era_gui
 close(varargin{3});
 
-%go back to ra_start
-ra_start;
+%go back to era_start
+era_start;
    
 end
 
 
-function ra_exec(varargin)
+function era_exec(varargin)
 %if execute button is pushed, analyze the loaded data
 %
 %Input
@@ -272,11 +272,11 @@ function ra_exec(varargin)
 % No variables outputted to the Matlab workspace
 % A directory will be created where the temporary files will be saved for
 %  running the Stan model (stan creates various temp files). After the
-%  model is done running (executed with ra_computerel), the temporary
+%  model is done running (executed with era_computerel), the temporary
 %  directory and files will be removed.
 % The user will also be asked to specify the location of where the .mat
 %  file that contains the Stan results should be saved. This .mat file will
-%  be used by ra_startview, which will be automatically pulled up after
+%  be used by era_startview, which will be automatically pulled up after
 %  stan has finished.
 
 %parse inputs
@@ -306,8 +306,8 @@ if ~isempty(ind)
             'When selecting column headers, please select unique names'};
         errordlg(dlg, 'Unique variable names not provided');
         
-        %take the user back to ra_startproc_fig
-        ra_startproc_fig(collist,filepart,pathpart,dataraw);
+        %take the user back to era_startproc_fig
+        era_startproc_fig(collist,filepart,pathpart,dataraw);
     end
 end
 
@@ -335,15 +335,15 @@ close(varargin{8});
     'Where would you like to save the output files?');
 
 %if the user does not select a file, then take the user back to 
-%ra_startproc_fig    
+%era_startproc_fig    
 if filepart == 0 
     errordlg('No file selected','File Error');
-    ra_startproc_fig(collist,filepart,pathpart,dataraw);
+    era_startproc_fig(collist,filepart,pathpart,dataraw);
 end
 
 %now that the headers have been specified, set up a data table to be passed
-%to ra_computerel for analysis
-dataout = ra_loadfile('file',fullfile(pathpart,filepart),...
+%to era_computerel for analysis
+dataout = era_loadfile('file',fullfile(pathpart,filepart),...
     'idcol',idheader,'meascol',measheader,'groupcol',groupheader,...
     'eventcol',eventheader,'dataraw',dataraw);
 
@@ -351,8 +351,8 @@ dataout = ra_loadfile('file',fullfile(pathpart,filepart),...
 mkdir(savepath,'Temp_StanFiles');
 origdir = cd(fullfile(savepath,'Temp_StanFiles'));
 
-%pass the data to ra_computerel for analysis
-RELout = ra_computerel('data',dataout);
+%pass the data to era_computerel for analysis
+RELout = era_computerel('data',dataout);
 
 %change the working directory back to the original directory 
 cd(origdir);
@@ -372,8 +372,8 @@ fprintf('\nSaving Processed Data...\n\n');
 
 save(fullfile(savepath,savename),'RELout');
 
-%take the user to ra_startview for viewing the processed data
-ra_startview('file',fullfile(savepath,savename));
+%take the user to era_startview for viewing the processed data
+era_startview('file',fullfile(savepath,savename));
 
 end
 
