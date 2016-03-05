@@ -25,6 +25,8 @@ function RELout = ra_relfigures(varargin)
 %  trials for those participants that meet cutoff threshhold
 % showstddevt - display table with information about the sources of
 %  variance (between person v within person)
+% plotbetstddev - plot the between-person standard deviations stratified
+%  by group and event
 %
 %Output:
 % One figure is plotted that displays the dependability of measurements as
@@ -143,6 +145,18 @@ if ~isempty(varargin)
         end
     else 
         showstddevt = 1; %default is 1
+    end
+    
+    %check if plotbetstddev is provided
+    ind = find(strcmp('plotbetstddev',varargin),1);
+    if ~isempty(ind)
+        if iscell(varargin{ind+1})
+            plotbetstddev = cell2mat(varargin{ind+1}); 
+        elseif isnumeric(varargin{ind+1})
+            plotbetstddev = varargin{ind+1}; 
+        end
+    else 
+        plotbetstddev = 1; %default is 1
     end
     
 elseif ~isempty(varargin)
@@ -867,6 +881,59 @@ if picc == 1
     
 end
 
+if plotbetstddev == 1
+    sdplot = figure;
+    sdplot.Position = [225 165 900 450];
+    msd = zeros(nevents,ngroups);
+    llsd = zeros(nevents,ngroups);
+    ulsd = zeros(nevents,ngroups);
+    offsetm = zeros(nevents,ngroups);
+    for gloc=1:ngroups
+       for eloc=1:nevents
+           msd(eloc,gloc) = relsummary.group(gloc).event(eloc).mbetsd;
+           llsd(eloc,gloc) = relsummary.group(gloc).event(eloc).mbetsd...
+               - relsummary.group(gloc).event(eloc).llbetsd;
+           ulsd(eloc,gloc) = relsummary.group(gloc).event(eloc).ulbetsd...
+               - relsummary.group(gloc).event(eloc).mbetsd;
+           
+           if gloc < median(1:ngroups)
+               offsetm(eloc,gloc) = eloc - (.4/ngroups);
+           elseif gloc > median(1:ngroups)
+               offsetm(eloc,gloc) = eloc + (.4/ngroups);
+           elseif gloc == median(1:ngroups)
+               offsetm(eloc,gloc) = eloc;
+           end
+           
+       end
+    end
+    
+    sdplot = errorbar(offsetm,msd,llsd,ulsd,'Marker','.',...
+        'MarkerSize',15,'LineWidth',1);
+    ylabel('Between-Person Standard Deviation','FontSize',fsize);
+    
+    for i = 1:length(sdplot)
+        sdplot(i).LineStyle = 'none';
+    end
+    
+    sdplot(1).Parent.XLim = [0 nevents+1+.25];
+    if nevents == 1
+        sdplot(1).Parent.YLim = [min(msd-llsd)-1.5 max(ulsd+msd)+1.5];
+    elseif nevents > 1
+        sdplot(1).Parent.YLim = [min(min(msd-llsd))-1.5 max(max(ulsd+msd))+1.5];
+        xlabel('Event','FontSize',fsize);
+    end
+    
+    sdplot(1).Parent.XTick = 1:nevents;
+    sdplot(1).Parent.XTickLabel = enames;
+    sdplot(1).Parent.FontSize = fsize;
+    
+    pl = legend(sdplot);
+    pl.String = gnames;
+    
+    sdplot(1).Parent.YAxisLocation = 'right';
+    camroll(-90);
+    
+end
 
 %reminder....
 %1 - no groups or event types to consider

@@ -1,12 +1,12 @@
 function ra_start
 %
-%Initiate Matlab gui to use the ERP Reliability Analysis (RA) toolbox
+%Initiate Matlab gui to use the ERP Reliability Analysis (ERA) toolbox
 %
 %version .80 - Last Updated 2/22/16
 %
 
-%The RA toolbox uses generalizability theory as a method for evaluating 
-%realibity of ERP data. Dependability estimates (generalizability-theory
+%The ERA toolbox uses generalizability theory as a method for evaluating 
+%reliability of ERP data. Dependability estimates (generalizability-theory
 %analog to reliability) can be computed for any number of groups or events.
 %The influence of number of trials on dependability of measurements will
 %also be determined, and a recommended cutoff for inclusion of ERP data 
@@ -27,7 +27,7 @@ function ra_start
 %
 % <insert citation here>
 %
-%Please cite both papers when using the RA toolbox (Baldwin et al. paper
+%Please cite both papers when using the ERA toolbox (Baldwin et al. paper
 %for the formulas and concept; Clayson and Miller paper for the toolbox)
 %
 %
@@ -41,7 +41,7 @@ function ra_start
 %  the user chooses, various files (data, tables, plots) could be saved
 %  from the guis initiated by this script.
 %
-%Matlab files contained in RA toolbox
+%Matlab files contained in ERA toolbox
 %
 % Gui-related files
 %  ra_startproc - gui to specify inputs for the analysis of data using 
@@ -57,14 +57,12 @@ function ra_start
 %  ra_relfigures - function to display information about dependability
 %   (figures and tables)
 %
-%Required dependents not contained in download of RA toolbox
+%Required dependents not contained in download of ERA toolbox
 % MatlabStan and its dependents: CmdStan and MatlabProcessManager
 % Instructions can be found at 
 %  https://github.com/brian-lau/MatlabStan/wiki/Getting-Started
-% These dependents are necessary for computing dependability data. IF you
-%  are only interested in viewing already processed data from the RA 
-%  toolbox then MatlabStan, CmdStan, and MatlabProcessManager are not
-%  necessary.
+% These dependents are necessary for computing dependability data. 
+%
 
 % Copyright (C) 2016 Peter E. Clayson
 % 
@@ -94,19 +92,20 @@ function ra_start
 % peter.clayson@gmail.com
 %
 
-%Output info about RA Toolbox
+%Output info about ERA Toolbox
 fprintf('\n\n\nERP Reliability Analysis Toolbox Version .80\n\n');
 
 
 %check whether dependencies are contained in the Matlab path
-%first look for RA toolbox files 
+%first look for ERA toolbox files
+fprintf('\nEnsuring required dependents are found in the Matlab path\n');
 if exist('ra_startproc.m','file') ~= 2 || ...
         exist('ra_startview.m','file') ~= 2 || ...
         exist('ra_computerel.m','file') ~= 2 || ...
         exist('ra_loadfile.m','file') ~= 2 || ...
         exist('ra_relfigures.m','file') ~= 2 
 
-    dlg = {'Warning: Dependencies for the RA toolbox are not located';...
+    dlg = {'Warning: Dependencies for the ERA toolbox are not located';...
         'in the Matlab path. Please include the folder containing the';...
         'scripts for the RA toolbox in your Matlab path.';...
         'Please see RA_UserManual.pdf for more information'};
@@ -116,6 +115,9 @@ if exist('ra_startproc.m','file') ~= 2 || ...
     end
     fprintf('\n\n');
     return;
+    
+else
+    fprintf('\nERA Toolbox files found');
 end
 
 %look for Stan dependents (the important files, assuming the rest are in
@@ -131,7 +133,7 @@ if exist('mcmc.m','file') ~= 2 || ...
         exist('runCmdStanTests.py','file') ~= 2 
     
 
-    dlg = {'Warning: Dependencies for the RA toolbox are not located';...
+    dlg = {'Warning: Dependencies for the ERA toolbox are not located';...
         'in the Matlab path. Please include the folders containing the';...
         'scripts for CmdStan, MatlabProcessManager, and MatlabStan';...
         'in your Matlab path.';...
@@ -142,7 +144,11 @@ if exist('mcmc.m','file') ~= 2 || ...
     end
     fprintf('\n\n');
     return;
+else
+    fprintf('\nCmdStan, MatlabProcessManager, and MatlabStan files found');
 end
+
+fprintf('\n\n');
 
 %set the gui for indicating whether the user wants to process data or view
 %previously processed data

@@ -1,15 +1,54 @@
 function RELout = ra_computerel(varargin)
 %Prepare and execute cmdstan code for dependability analyses
 %
+%ra_computerel('data',era_datatable)
+%
+%Lasted Updated 3/5/16
+%
 %Required Input:
 % data - data table outputted from the ra_loadfile script (see ra_loadfile
 %  for more information about table format)
+%  Note: ra_loadfile sets up the datatable in a specific format with
+%  specific header names that are used in this script
 %
 %Outputs:
 % RELout - structure array with the following fields.
+%  filename: filename of the processed dataset
+%  niter: number of interations run in Stan
+%  events: names of the events (if applicable)
+%  groups: names of the groups (if applicable)
+%  data: compiled tables that were used to create data structures to pass
+%   to stan
+%  out: data output from stan and labels corresponding to order of data
+%   mu: person mean
+%   sig_u: person variance
+%   sig_e: error variance
+%   labels: labels for the data. If either events or groups were processed
+%    then this the labeles for events or groups. If both events and groups
+%    were processed then this labels will be 'event_group' for each
+%    possible combination (e.g., 'Error_Controls' or 'Hits_Patients'' event 
+%    and group will be separated by an underscore)
+%  stan_in: compiled model syntax that was passed to Stan
+
+% Copyright (C) 2016 Peter E. Clayson
+% 
+%     This program is free software: you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published by
+%     the Free Software Foundation, either version 3 of the License, or
+%     any later version.
+% 
+%     This program is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+%     GNU General Public License for more details.
+% 
+%     You should have received a copy of the GNU General Public License
+%     along with this program (gpl.txt). If not, see 
+%     <http://www.gnu.org/licenses/>.
 %
+
 %History
-% by Peter Clayson (12/15/15)
+% by Peter Clayson (3/5/16)
 % peter.clayson@gmail.com
 
 %somersault through varargin inputs to check for which inputs were
@@ -26,8 +65,7 @@ if ~isempty(varargin)
         'See help ra_computerel for more information on optional inputs'));
     end
     
-    %check if a location for the file to be loaded was specified. 
-    %If it is not found, set display error.
+    %check if the dataset is present
     ind = find(strcmp('data',varargin),1);
     if ~isempty(ind)
         datatable = varargin{ind+1}; 
@@ -46,9 +84,11 @@ elseif ~isempty(varargin)
     
 end %if ~isempty(varargin)
 
-%ensure the necessary columns are present in the table
+%ensure the necessary columns are present in the table (at least the
+%headers for id and meas)
 colnames = datatable.Properties.VariableNames;
 
+%check for id column
 if ~sum(strcmpi(colnames,'id')) 
     if ~exist('headererror','var')
         headerror{1} = 'Subject ID';
@@ -57,6 +97,7 @@ if ~sum(strcmpi(colnames,'id'))
     end
 end
 
+%check for measurement column
 if ~sum(strcmpi(colnames,'meas')) 
     if ~exist('headererror','var')
         headerror{1} = 'Measurement';
@@ -86,7 +127,15 @@ if sum(strcmpi(colnames,'event'))
     nevent = length(eventnames);
 end
 
+%settings for cmdstan (numbers of iterations and chains)
+niter = 100;
+nchains = 3;
 
+%create a structure array to store information that will later be outputted
+REL = struct;
+REL.filename = datatable.Properties.Description;
+REL.niter = niter;
+REL.nchains = nchains;
 
 %determine how cmdstan will be set up
 %analysis variable will indicate whether group or events need to be
@@ -106,17 +155,6 @@ elseif ~exist('ngroup','var') && exist('nevent','var')
 elseif exist('ngroup','var') && exist('nevent','var')
     analysis = 4;
 end
-
-%settings for cmdstan
-niter = 100;
-nchains = 3;
-
-%create a structure array to store information
-REL = struct;
-REL.filename = datatable.Properties.Description;
-REL.niter = niter;
-REL.nchains = nchains;
-
 
 switch analysis
     case 1 %no groups or event types to consider
@@ -142,11 +180,15 @@ switch analysis
         end
 
         datatable.id2 = id2(:);
-
+        
+        %store the datatable used in REL
         REL.data = datatable;
+        
+        %groups and events were not considered
         REL.groups = 'none';
         REL.events = 'none';
         
+        %create cmdstand syntax
         stan_in = {
           'data {' 
           '  int<lower=0> NOBS; //number of obs'
@@ -175,7 +217,8 @@ switch analysis
           '  sig_e ~ cauchy(0,40);'
           '}'
         };
-
+        
+        %create data structure to pass to cmdstan
         data = struct(...
             'NOBS',length(datatable.id), ... %number of observations
             'NSUB', length(unique(datatable.id)),... %number of participants
@@ -187,17 +230,20 @@ switch analysis
         
         modelname = strcat('cmdstan',char(date));
         
+        %fit model in cmdstan
         fit = stan('model_code', stan_in, 'model_name', modelname,...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
             niter/10, 'verbose', false, 'file_overwrite', true);
         
+        %don't let the user continue to use the Matlab command window
         fit.block();
         
-        REL.stanfit = fit;
-        
+        %extract and store cmdstan output
         REL.out.mu = fit.extract('pars','mu').mu;
         REL.out.sig_u = fit.extract('pars','sig_u').sig_u;
         REL.out.sig_e = fit.extract('pars','sig_e').sig_e; 
+        
+        %label is simply measure (no events or groups to deal with)
         REL.out.labels = 'measure';
         
         
@@ -240,17 +286,22 @@ switch analysis
 
         datatable.id2 = id2(:);
         
+        %create labels for the gorups
         REL.data = datatable;
         groupnames = unique(datatable.group(:));
         ngroup = length(groupnames);
         
+        %all names are forced to be strings for ease of use later on
         if isnumeric(groupnames)
             groupnames = num2str(groupnames);
         end
         
+        %store group names. separate events are not a consideration
         REL.groups = groupnames;
         REL.events = 'none';
-
+        
+        
+        %create model syntax for cmdstan
         stan_in{1,1} = 'data {';
 
         for i=1:ngroup
@@ -344,6 +395,8 @@ switch analysis
         
         stan_in{end+1,1} = '}';
         
+        
+        %store cmdstan model syntax
         REL.stan_in = stan_in;
         
         %create structure array for the data to be sent to cmdstan
@@ -385,21 +438,22 @@ switch analysis
         fprintf('\nModel is being run in cmdstan\n');
         fprintf('\nThis may take a while depending on the amount of data\n');
         
+        %run cmdstan
         fit = stan('model_code', stan_in, 'model_name', modelname,...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
             niter/10, 'verbose', false, 'file_overwrite', true);
-
+        
+        %block user from using Matlab command window
         fit.block();
         
-           
-
-        REL.stanfit = fit;
+        %create fields for storing parsed cmdstan outputs
         REL.out = [];
         REL.out.mu = [];
         REL.out.sig_u = [];
         REL.out.sig_e = [];
         REL.out.labels = {};  
         
+        %store cmdstand outputs
         for i=1:ngroup
             measname = sprintf('mu_G%d',i);
             measvalue = fit.extract('pars',measname).(measname);
@@ -417,7 +471,8 @@ switch analysis
             measvalue = fit.extract('pars',measname).(measname);
             REL.out.sig_e(:,end+1) = measvalue;           
         end
-       
+        
+        %store labels
         for i=1:ngroup
             REL.out.labels(:,end+1) = groupnames(i);           
         end
@@ -438,13 +493,18 @@ switch analysis
         eventnames = unique(datatable.event(:));
         nevent = length(eventnames);
         
+        %ensure all event names are strings (makes life easier later)
         if isnumeric(eventnames)
             eventnames = num2str(eventnames);
         end
         
+        %store the event names
         REL.events = eventnames;
+        
+        %no groups to consider
         REL.groups = 'none';
         
+        %create data structure for storing measurements for each event
         eventarray = struct;
         eventarray.data = [];
         
@@ -456,6 +516,7 @@ switch analysis
             
         end
         
+        %creating that id2 variable to make cmdstan happy
         for j = 1:nevent
             
             id2 = zeros(0,height(eventarray.data{j}));
@@ -479,15 +540,9 @@ switch analysis
             
         end
         
-        
+        %store the data
         REL.data = eventarray.data;
-        
-        REL.out = [];
-        REL.out.mu = [];
-        REL.out.sig_u = [];
-        REL.out.sig_e = [];
-        REL.out.labels = {};
-        
+
         stan_in{1,1} = 'data {';
 
         for i=1:nevent
@@ -621,15 +676,23 @@ switch analysis
         fprintf('\nModel is being run in cmdstan\n');
         fprintf('\nThis may take a while depending on the amount of data\n');
         
+        %run in cmdstan
         fit = stan('model_code', stan_in, 'model_name', modelname,...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
             niter/10, 'verbose', false, 'file_overwrite', true);
         
+        %block user from using Matlab command window 
         fit.block();
-           
-
-        REL.stanfit = fit;  
     
+        
+        %create fields to store cmdstan output
+        REL.out = [];
+        REL.out.mu = [];
+        REL.out.sig_u = [];
+        REL.out.sig_e = [];
+        REL.out.labels = {};
+        
+        %parse outputs
         for i=1:nevent
             measname = sprintf('mu_E%d',i);
             measvalue = fit.extract('pars',measname).(measname);
@@ -648,6 +711,7 @@ switch analysis
             REL.out.sig_e(:,end+1) = measvalue;           
         end
        
+        %labels are the event names
         for i=1:nevent
             REL.out.labels(:,end+1) = eventnames(i);           
         end
@@ -659,9 +723,6 @@ switch analysis
         %to decrease memory load, cmdstan will be run separately for each
         %event. Groups will be processed in the same cmdstan run.
         
-        %cmdstan requires the id variable to be numeric and sequential. 
-        %an id2 variable is created to satisfy this requirement.
-        
         fprintf('\nPreparing data for analysis...\n');
         
         datatable = sortrows(datatable,{'group','id','event'});
@@ -670,20 +731,24 @@ switch analysis
             eventnames = num2str(eventnames);
         end
         
+        %store event names
         nevent = length(eventnames);
         REL.events = eventnames;
-        
+       
         groupnames = unique(datatable.group(:));
         if isnumeric(groupnames)
             groupnames = num2str(groupnames);
         end
         
+        %store group names
         ngroup = length(groupnames);
         REL.groups = groupnames;
         
+        %create structure for storing data
         eventarray = struct;
         eventarray.data = [];
         
+        %store the data for each event separately
         for i = 1:nevent
             
             dummytable = datatable(ismember(datatable.event,...
@@ -691,6 +756,11 @@ switch analysis
             eventarray.data{end+1} = dummytable;
             
         end
+        
+        %cmdstan requires the id variable to be numeric and sequential. 
+        %an id2 variable is created to satisfy this requirement. This is
+        %done separately for each event since the event data will be passed
+        %separately to cmdstan
         
         for j = 1:nevent
             
@@ -727,15 +797,21 @@ switch analysis
             
         end
         
+        %put the compiled data into REL structure
         REL.data = eventarray.data;
         
+        %create the fields for storing the parsed cmdstan outputs 
         REL.out = [];
         REL.out.mu = [];
         REL.out.sig_u = [];
         REL.out.sig_e = [];
         REL.out.labels = {};
-        REL.stanfit = {};
+        REL.stan_in = {};
         
+        %separate syntax will need to be generated for each event because
+        %the number of samples will be different
+        
+        %create syntax for cmdstan
         for j=1:nevent
             
             clear stan_in
@@ -831,12 +907,14 @@ switch analysis
             end
 
             stan_in{end+1,1} = '}';
+            
+            %store the cmdstan syntax
+            REL.stan_in{end+1} = stan_in;
 
-            REL.stan_in = stan_in;
-
-            %create structure array for the data to be sent to cmdstan
+            %create structure for the data to be sent to cmdstan
             data = struct;
 
+            %prep data structure for cmdstan
             for i=1:ngroup
                 fieldname = sprintf('NG%d',i);
                 fieldvalue = length(eventarray.data{j}.group(ismember(eventarray.data{j}.group,...
@@ -873,15 +951,15 @@ switch analysis
             fprintf('\nModel is being run in cmdstan\n');
             fprintf('\nThis may take a while depending on the amount of data\n');
             
+            %run cmdstan
             fit = stan('model_code', stan_in, 'model_name', modelname,...
                 'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
                 niter/10, 'verbose', false, 'file_overwrite', true);
             
+            %block user from using Matlab command window
             fit.block();
-                
             
-            REL.stanfit{end+1} = fit; 
-            
+            %parse cmdstan outputs
             for i=1:ngroup
                 measname = sprintf('mu_G%d',i);
                 measvalue = fit.extract('pars',measname).(measname);
@@ -900,15 +978,18 @@ switch analysis
                 REL.out.sig_e(:,end+1) = measvalue;           
             end
 
+            %store labels for each column by separating the event name and
+            %group name with an underscore
             for i=1:ngroup
                 REL.out.labels(:,end+1) = strcat(eventnames(j),...
                     '_',groupnames(i));           
             end
 
-        end
+        end %for j=1:nevent
 
-end
+end %switch analysis
 
+%output the REL structure
 RELout = REL;
 
 end
