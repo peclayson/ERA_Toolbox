@@ -20,7 +20,7 @@ function era_start
 % Baldwin, S. A., Larson, M. J., & Clayson, P. E. (2015). The dependability 
 % of electrophysiological measurements of performance monitoring in a 
 % clinical sample: A generalizability and decision analysis of the ERN and 
-% Pe. Psychophysiology, 52(6), 790?800. http://doi.org/10.1111/psyp.12401
+% Pe. Psychophysiology, 52(6), 790-800. http://doi.org/10.1111/psyp.12401
 %
 %The notion of reporting estimates of reliability in all ERP studies and 
 % this toolbox are specifically discussed in 

@@ -30,6 +30,20 @@ function RELout = era_computerel(varargin)
 %    and group will be separated by an underscore)
 %  stan_in: compiled model syntax that was passed to Stan
 
+%For more information about how variance components were estimated please
+% see
+%
+% Baldwin, S. A., Larson, M. J., & Clayson, P. E. (2015). The dependability 
+% of electrophysiological measurements of performance monitoring in a 
+% clinical sample: A generalizability and decision analysis of the ERN and 
+% Pe. Psychophysiology, 52(6), 790-800. http://doi.org/10.1111/psyp.12401
+%
+%It would be terribly remiss of me not thank Scott Baldwin for
+%conceptualizing and developing the formulas that are implemented in this
+%toolbox. Dr. Baldwin also wrote the original Stan syntax in R and 
+%graciously provided me with all of his code. This Matlab code is based
+%off of his R code. 
+
 % Copyright (C) 2016 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
