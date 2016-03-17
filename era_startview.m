@@ -49,11 +49,14 @@ if ~isempty(varargin)
         [pathpart,filepart] = fileparts(file);
     end
     
-    %if ra_start is open, close it
-    if ishandle(varargin{3})
-        close(varargin{3})
+    try %see if ra_start is still open
+        %if ra_start is open, close it
+        if ishandle(varargin{3})
+            close(varargin{3})
+        end
+    catch
     end
- 
+
 end %if ~isempty(varargin)
 
 %if the file was not specified, prompt the user to indicate where the file
