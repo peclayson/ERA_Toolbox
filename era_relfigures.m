@@ -773,6 +773,7 @@ switch analysis
         for gloc=1:ngroups
             tempids = {};
             badids = [];
+            
             for eloc=1:nevents
                 tempids{end+1} = relsummary.group(gloc).event(eloc).eventgoodids;
 
@@ -785,13 +786,10 @@ switch analysis
                     new(ind) = [];
                     tempids{1} = new;
                 end
-
-                
-
             end
-
-        relsummary.group(gloc).goodids = tempids{1};
-        relsummary.group(gloc).badids = unique(badids);
+            
+            relsummary.group(gloc).goodids = tempids{1};
+            relsummary.group(gloc).badids = unique(badids);
 
         end
          

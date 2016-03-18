@@ -73,13 +73,21 @@ era_startproc_fig(collist,filepart,pathpart,dataraw);
 
 end
 
-function era_startproc_fig(collist,filepart,pathpart,dataraw)
+function era_startproc_fig(collist,filepart,pathpart,dataraw,varargin)
 %
 %Input
 % collist - a list of the headers of the loaded dataset
 % filepart - the name of the dataset
 % pathpart - the path where the dataset is located
 % dataraw - the loaded dataset
+% procprefs - processing preferences to be passed to Stan
+%
+%Optional Inputs:
+% procprefs - prefences for processing in stan
+%  .nchains - number of chains
+%  .niter - number of iterations
+% inpchoices - choices for the assignment of table columns to data inputs
+%  (e.g., id, measurement). Used when the preferences executes era_gui.
 %
 %Output
 % There are no direct outputs to the Matlab workspace. The user will have
@@ -87,54 +95,107 @@ function era_startproc_fig(collist,filepart,pathpart,dataraw)
 %  data to era_startproc to process the data in Stan
 %
 
+%somersault through varargin inputs to check for which inputs were
+%defined and store those values. 
+if ~isempty(varargin)
+    
+    %the optional inputs check assumes that there was an even number of 
+    %optional inputs entered. If not, an error will displayed and the
+    %script will terminate.
+    if mod(length(varargin),2)  
+        error('varargin:incomplete',... %Error code and associated error
+        strcat('WARNING: Inputs are incomplete \n\n',... 
+        'Make sure each variable input is paired with a value\n'));
+    end
+ 
+    %check if procprefs has already been defined
+    ind = find(strcmp('procprefs',varargin),1);
+    if ~isempty(ind)
+        procprefs = varargin{ind+1}; 
+    else
+        %define default preferences for processing data in stan
+        procprefs.nchains = 5;
+        procprefs.niter = 250;
+    end
+
+    %check if inpchoices has already been defined
+    ind = find(strcmp('inpchoices',varargin),1);
+    if ~isempty(ind)
+        inpchoices = varargin{ind+1}; 
+    else
+        inpchoices = [];
+    end
+
+elseif isempty(varargin) %just in case none of the optional inputs are used
+    
+    procprefs.nchains = 5;
+    procprefs.niter = 250;
+    inpchoices = [];
+    
+end %if ~isempty(varargin)
+
 %define parameters for figure position
-figwidth = 550;
+figwidth = 600;
 figheight = 400;
 collist_nonone = collist;
 collist_nonone(end) = [];
 
-%help the user set things up by checking if any generic names are present
-%in the headers that identify the columns
-defls = struct();
-defls.id = 1;
-defls.meas = 2;
-defls.group = length(collist);
-defls.event = length(collist);
+%if the assignment of which columns belong to which category has already
+%been made, then use those choices. Otherwise, load the defaults and try to
+%figure out the data.
+if ~isempty(inpchoices)
+    
+    defls.id = inpchoices(1);
+    defls.meas = inpchoices(2);
+    defls.group = inpchoices(3);
+    defls.event = inpchoices(4);
+    
+elseif isempty(inpchoices)
 
-%check for a participant header
-poss = {'Subject' 'ID' 'Participant' 'SubjID' 'Subj'};
-for i = 1:length(collist_nonone)
-    ind = strcmpi(collist_nonone(i),poss);
-    if sum(ind) == 1
-        defls.id = i;
-    end
-end
+    %help the user set things up by checking if any generic names are present
+    %in the headers that identify the columns
+    defls = struct();
+    defls.id = 1;
+    defls.meas = 2;
+    defls.group = length(collist);
+    defls.event = length(collist);
 
-%check for a mesurement header
-poss = {'Measurement'};
-for i = 1:length(collist_nonone)
-    ind = strcmpi(collist_nonone(i),poss);
-    if sum(ind) == 1
-        defls.meas = i;
+    %check for a participant header
+    poss = {'Subject' 'ID' 'Participant' 'SubjID' 'Subj'};
+    for i = 1:length(collist_nonone)
+        ind = strcmpi(collist_nonone(i),poss);
+        if sum(ind) == 1
+            defls.id = i;
+        end
     end
-end
 
-%check for a group header
-poss = {'Group'};
-for i = 1:length(collist_nonone)
-    ind = strcmpi(collist_nonone(i),poss);
-    if sum(ind) == 1
-        defls.group = i;
+    %check for a mesurement header
+    poss = {'Measurement'};
+    for i = 1:length(collist_nonone)
+        ind = strcmpi(collist_nonone(i),poss);
+        if sum(ind) == 1
+            defls.meas = i;
+        end
     end
-end
 
-%check for a group header
-poss = {'Event' 'Type'};
-for i = 1:length(collist_nonone)
-    ind = strcmpi(collist_nonone(i),poss);
-    if sum(ind) == 1
-        defls.event = i;
+    %check for a group header
+    poss = {'Group'};
+    for i = 1:length(collist_nonone)
+        ind = strcmpi(collist_nonone(i),poss);
+        if sum(ind) == 1
+            defls.group = i;
+        end
     end
+
+    %check for a group header
+    poss = {'Event' 'Type'};
+    for i = 1:length(collist_nonone)
+        ind = strcmpi(collist_nonone(i),poss);
+        if sum(ind) == 1
+            defls.event = i;
+        end
+    end
+
 end
 
 %define space between rows and first row location
@@ -233,16 +294,24 @@ row = row - rowspace*2.5;
 uicontrol(era_gui,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Back',...
-    'Position', [figwidth/8 row figwidth/4 50],...
+    'Position', [figwidth/8 row figwidth/5 50],...
     'Callback',{@bb_call,era_gui}); 
 
 %Create button that will check the inputs and begin processing the data
 uicontrol(era_gui,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Analyze',...
-    'Position', [5*figwidth/8 row figwidth/4 50],...
-    'Callback',{@era_exec,inplists,collist,filepart,pathpart,dataraw,era_gui}); 
+    'Position', [3*figwidth/8 row figwidth/5 50],...
+    'Callback',{@era_exec,inplists,collist,filepart,pathpart,...
+    dataraw,procprefs,era_gui}); 
 
+%Create button that will display preferences
+uicontrol(era_gui,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','Preferences',...
+    'Position', [5*figwidth/8 row figwidth/5 50],...
+    'Callback',{@era_procprefs,inplists,collist,filepart,pathpart,...
+    dataraw,era_gui,procprefs}); 
 
 end
 
@@ -255,9 +324,152 @@ close(varargin{3});
 
 %go back to era_start
 era_start;
-   
+
 end
 
+function era_procprefs(varargin)
+%
+%Input (varargin #)
+% inpchoices(3) - a list of the choices made for assigning headers to
+%  categories (id, measurement, etc)
+% collist(4) - a list of the headers of the loaded dataset
+% filepart(5) - the name of the dataset
+% pathpart(6) - the path where the dataset is located
+% dataraw(7) - the loaded dataset
+% era_gui(8) - handle for era_gui
+% procprefs(9) - processing preferences to be passed to Stan
+%
+%Output
+% There are no direct outputs to the Matlab workspace. The user will have
+%  the option (via the gui) to go back to the era_gui or save the specified
+%  preferences to be used for stan
+%
+
+%parse inputs
+h_era_gui.inpchoices = cell2mat(get(varargin{3},'value'));
+h_era_gui.collist = varargin{4};
+h_era_gui.filepart = varargin{5};
+h_era_gui.pathpart = varargin{6};
+h_era_gui.dataraw = varargin{7};
+initialprefs = varargin{9};
+newprefs = varargin{9};
+pos = varargin{8}.Position;
+
+%close era_gui
+close(varargin{8});
+
+%define space between rows and first row location
+rowspace = 35;
+row = pos(4) - rowspace*2;
+
+%define locations of column 1 and 2 for the gui
+lcol = 30;
+rcol = (pos(3)/2+10);
+
+%create the basic era_prefs
+era_prefs= figure('unit','pix',...
+  'position',pos,...
+  'menub','no',...
+  'name','Specify Processing Preferences',...
+  'numbertitle','off',...
+  'resize','off');    
+
+%print the gui headers
+uicontrol(era_prefs,'Style','text','fontsize',16,...
+    'HorizontalAlignment','center',...
+    'String','Preferences',...
+    'Position', [pos(4)/7 row pos(4)/3 25]);  
+
+uicontrol(era_prefs,'Style','text','fontsize',16,...
+    'HorizontalAlignment','center',...
+    'String','Input',...
+    'Position',[6*(pos(4)/7) row pos(4)/3 25]);
+
+%next row
+row = row - rowspace*1.75;
+
+%ask for an input for the number of stan chains
+uicontrol(era_prefs,'Style','text','fontsize',14,...
+    'HorizontalAlignment','left',...
+    'String','Number of Chains:',...
+    'Position', [lcol row pos(4)/2 35]);  
+
+newprefs.nchains = uicontrol(era_prefs,'Style','edit','fontsize',14,...
+    'String',newprefs.nchains,...
+    'Position', [rcol row pos(4)/2 25]);  
+
+%next row
+row = row - rowspace;
+
+%input for number of stan iterations
+uicontrol(era_prefs,'Style','text','fontsize',14,...
+    'HorizontalAlignment','left',...
+    'String','Number of iterations:',...
+    'Position', [lcol row pos(4)/2 25]);  
+
+newprefs.niter = uicontrol(era_prefs,'Style','edit','fontsize',14,...
+    'String',newprefs.niter,...
+    'Position', [rcol row pos(4)/2 25]);  
+
+
+%next row with extra space
+row = row - rowspace*2.5;
+
+%Create a back button that will save inputs for preferences
+uicontrol(era_prefs,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','Save',...
+    'Position', [pos(4)/7 row pos(4)/3 50],...
+    'Callback',{@era_prefs_save,era_prefs,newprefs,h_era_gui}); 
+
+%Create button that will go back to era_gui without saving
+uicontrol(era_prefs,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','Back',...
+    'Position', [6*pos(4)/7 row pos(4)/3 50],...
+    'Callback',{@era_prefs_back,era_prefs,initialprefs,h_era_gui}); 
+
+end
+
+function era_prefs_save(varargin)
+%if the preferences are to be saved
+
+%pull the preferences from the gui
+procprefs.nchains = str2double(varargin{4}.nchains.String);
+procprefs.niter = str2double(varargin{4}.niter.String);
+
+%close era_prefs gui
+close(varargin{3});
+
+%pull the era_gui data
+h_era_gui = varargin{5};
+
+%execute era_startproc_fic with the new preferences
+era_startproc_fig(h_era_gui.collist,h_era_gui.filepart,...
+    h_era_gui.pathpart,h_era_gui.dataraw,'procprefs',procprefs,...
+    'inpchoices',h_era_gui.inpchoices);
+
+end
+
+function era_prefs_back(varargin)
+%if the back button was pressed then the inputs will not be saved
+
+%pull the old preferences
+procprefs.nchains = varargin{4}.nchains;
+procprefs.niter = varargin{4}.niter;
+
+%close era_prefs gui
+close(varargin{3});
+
+%pull the era_gui data
+h_era_gui = varargin{5};
+
+%execute era_startproc_fig with the old preferences
+era_startproc_fig(h_era_gui.collist,h_era_gui.filepart,...
+    h_era_gui.pathpart,h_era_gui.dataraw,'procprefs',procprefs,...
+    'inpchoices',h_era_gui.inpchoices);
+
+end
 
 function era_exec(varargin)
 %if execute button is pushed, analyze the loaded data
@@ -287,6 +499,7 @@ collist = varargin{4};
 filepart = varargin{5};
 pathpart = varargin{6};
 dataraw = varargin{7};
+procprefs = varargin{8};
 
 choices = cell2mat(get(inp(:),'value'));
 
@@ -330,7 +543,7 @@ elseif choices(4) == length(collist)
 end
 
 %close the gui
-close(varargin{8});
+close(varargin{9});
 
 %prompt the user to indicate where the output from stan should be saved
 [savename, savepath] = uiputfile(fullfile(pathpart,'*.mat'),...
@@ -354,7 +567,8 @@ mkdir(savepath,'Temp_StanFiles');
 origdir = cd(fullfile(savepath,'Temp_StanFiles'));
 
 %pass the data to era_computerel for analysis
-RELout = era_computerel('data',dataout);
+RELout = era_computerel('data',dataout,'chains',procprefs.nchains,...
+    'iter',procprefs.niter);
 
 %change the working directory back to the original directory 
 cd(origdir);

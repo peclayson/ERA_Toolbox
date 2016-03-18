@@ -11,6 +11,10 @@ function RELout = era_computerel(varargin)
 %  Note: era_loadfile sets up the datatable in a specific format with
 %  specific header names that are used in this script
 %
+%Optional Inputs:
+%  chains - number of chains to run in stan (default: 5)
+%  iter - number of iterations to run in stan (default: 250)
+%
 %Outputs:
 % RELout - structure array with the following fields.
 %  filename: filename of the processed dataset
@@ -88,8 +92,24 @@ if ~isempty(varargin)
         strcat('WARNING: File location not specified \n\n',... 
         'Please input the full path specifying the file to be loaded \n'));
     end
-   
-elseif ~isempty(varargin)
+    
+    %check whether chains is specified
+    ind = find(strcmp('chains',varargin),1);
+    if ~isempty(ind)
+        nchains = varargin{ind+1}; 
+    else 
+        nchains = 5;
+    end
+    
+    %check whether iter is specified
+    ind = find(strcmp('iter',varargin),1);
+    if ~isempty(ind)
+        niter = varargin{ind+1}; 
+    else 
+        niter = 250;
+    end
+    
+elseif isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
     strcat('WARNING: Optional inputs are incomplete \n\n',... 
@@ -140,10 +160,6 @@ if sum(strcmpi(colnames,'event'))
     eventnames = unique(datatable.event(:));
     nevent = length(eventnames);
 end
-
-%settings for cmdstan (numbers of iterations and chains)
-niter = 100;
-nchains = 3;
 
 %create a structure array to store information that will later be outputted
 REL = struct;
