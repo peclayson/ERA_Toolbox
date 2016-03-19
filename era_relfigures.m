@@ -198,7 +198,9 @@ data = struct;
 
 %create variabel to specify whether there are bad/unreliable data
 %default state: 0, will be changed to 1 if there is a problem
-poorrel = 0;
+poorrel = struct();
+poorrel.trlcutoff = 0;
+poorrel.trlmax = 0;
 
 %check whether any groups exist
 if strcmpi(REL.groups,'none')
@@ -408,7 +410,7 @@ switch analysis
         
         if isempty(trlcutoff)
             
-            poorrel = 1;
+            poorrel.trlcutoff = 1;
             trlcutoff = -1;
             relsummary.group(gloc).event(eloc).trlcutoff = -1;
             relsummary.group(gloc).event(eloc).rel.m = -1;
@@ -548,6 +550,17 @@ switch analysis
             relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
             relsummary.group(gloc).event(eloc).goodn = height(goodids);
             
+            if  relsummary.group(gloc).event(eloc).trlcutoff >...
+                    relsummary.group(gloc).event(eloc).trlinfo.max
+                
+                poorrel.trlmax = 1;
+                relsummary.group(gloc).event(eloc).rel.m = -1;
+                relsummary.group(gloc).event(eloc).rel.ll = -1;
+                relsummary.group(gloc).event(eloc).rel.ul = -1;
+
+            end
+            
+            
         end
         
         relsummary.group(gloc).event(eloc).icc.m = ...
@@ -605,7 +618,7 @@ switch analysis
             
             if isempty(trlcutoff)
 
-                poorrel = 1;
+                poorrel.trlcutoff = 1;
                 trlcutoff = -1;
                 relsummary.group(gloc).event(eloc).trlcutoff = -1;
                 relsummary.group(gloc).event(eloc).rel.m = -1;
@@ -718,6 +731,16 @@ switch analysis
             relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
             relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
             
+            if  relsummary.group(gloc).event(eloc).trlcutoff >...
+                    relsummary.group(gloc).event(eloc).trlinfo.max
+                
+                poorrel.trlmax = 1;
+                relsummary.group(gloc).event(eloc).rel.m = -1;
+                relsummary.group(gloc).event(eloc).rel.ll = -1;
+                relsummary.group(gloc).event(eloc).rel.ul = -1;
+
+            end
+            
             if ~strcmp(relsummary.group(gloc).goodids,'none')
                 relsummary.group(gloc).event(eloc).goodn = height(goodids);
             elseif strcmp(relsummary.group(gloc).goodids,'none')
@@ -782,7 +805,7 @@ switch analysis
                 
                 if isempty(trlcutoff)
             
-                    poorrel = 1;
+                    poorrel.trlcutoff = 1;
                     trlcutoff = -1;
                     relsummary.group(gloc).event(eloc).trlcutoff = -1;
                     relsummary.group(gloc).event(eloc).rel.m = -1;
@@ -899,6 +922,16 @@ switch analysis
                 relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
                 relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
                 
+                if  relsummary.group(gloc).event(eloc).trlcutoff >...
+                        relsummary.group(gloc).event(eloc).trlinfo.max
+                    
+                    poorrel.trlmax = 1;
+                    relsummary.group(gloc).event(eloc).rel.m = -1;
+                    relsummary.group(gloc).event(eloc).rel.ll = -1;
+                    relsummary.group(gloc).event(eloc).rel.ul = -1;
+                
+                end
+
                 if ~strcmp(relsummary.group(gloc).goodids,'none')
                     relsummary.group(gloc).event(eloc).goodn = height(goodids);
                 else
@@ -961,7 +994,7 @@ switch analysis
                 
                 if isempty(trlcutoff)
             
-                    poorrel = 1;
+                    poorrel.trlcutoff = 1;
                     trlcutoff = -1;
                     relsummary.group(gloc).event(eloc).trlcutoff = -1;
                     relsummary.group(gloc).event(eloc).rel.m = -1;
@@ -969,6 +1002,8 @@ switch analysis
                     relsummary.group(gloc).event(eloc).rel.ul = -1;
                     
                     datatrls = REL.data{eloc};
+                    ind = strcmp(datatrls.group,gnames{gloc});
+                    datatrls = datatrls(ind,:);
                 
                     trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
 
@@ -989,7 +1024,9 @@ switch analysis
                     relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
 
                     datatrls = REL.data{eloc};
-                
+                    ind = strcmp(datatrls.group,gnames{gloc});
+                    datatrls = datatrls(ind,:);
+                    
                     trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
 
                     ind2include = trltable.GroupCount >= trlcutoff;
@@ -1090,6 +1127,18 @@ switch analysis
                 relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
                 relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
                 
+                %check if trial cutoff for an event exceeded the total
+                %number of trials for any subjects
+                if  relsummary.group(gloc).event(eloc).trlcutoff >...
+                        relsummary.group(gloc).event(eloc).trlinfo.max
+                    
+                    poorrel.trlmax = 1;
+                    relsummary.group(gloc).event(eloc).rel.m = -1;
+                    relsummary.group(gloc).event(eloc).rel.ll = -1;
+                    relsummary.group(gloc).event(eloc).rel.ul = -1;
+                
+                end
+
                 if ~strcmp(relsummary.group(gloc).event(eloc).eventgoodids,'none')
                     relsummary.group(gloc).event(eloc).goodn = height(goodids);
                 else
@@ -1469,7 +1518,11 @@ if showoverallt == 1
     set(era_overall,'Visible','on');
 end
 
-if poorrel == 1
+if poorrel.trlcutoff == 1
+    
+end
+
+if poorrel.trlmax == 1
     
 end
 
@@ -1566,15 +1619,23 @@ if strcmp(ext,'.xlsx')
     datap{5,1}='';
     datap{6,1}='';
     datap{7,1} = 'Good IDs'; datap{7,2} = 'Bad IDs';
-    gids = REL.relsummary.group.goodids;
+    
+    gids = [];
+    bids = [];
+    
+    for j=1:length(REL.relsummary.group)
+        gids = [gids;REL.relsummary.group(j).goodids(:)];
+        bids = [bids;REL.relsummary.group(j).badids(:)];
+    end
+    
     for i = 1:length(gids)
         datap{i+7,1}=char(gids(i));
     end
-    bids = REL.relsummary.group.badids;
+
     for i = 1:length(bids)
         datap{i+7,2}=char(bids(i));
     end
-    
+
     xlswrite(fullfile(savepath,savename),datap);
     
 elseif strcmp(ext,'.csv')
