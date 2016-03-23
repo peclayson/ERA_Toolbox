@@ -852,10 +852,10 @@ switch analysis
         badids = [];
         for eloc=1:nevents
             if ~strcmp(relsummary.group(gloc).event(eloc).eventgoodids,'none')
-            
                 tempids{end+1} = relsummary.group(gloc).event(eloc).eventgoodids;
-
-                if eloc > 1
+                if eloc == 1
+                    badids = relsummary.group(gloc).event(eloc).eventbadids;
+                elseif eloc > 1
                     [~,ind]=setdiff(tempids{1},tempids{end});
                     new = tempids{1};
                     badids = vertcat(badids,...
@@ -1052,8 +1052,10 @@ switch analysis
                 
                 if ~strcmp(relsummary.group(gloc).event(eloc).eventgoodids,'none')
                     tempids{end+1} = relsummary.group(gloc).event(eloc).eventgoodids;
-
-                    if eloc > 1
+                    
+                    if eloc == 1
+                        badids = relsummary.group(gloc).event(eloc).eventbadids;
+                    elseif eloc > 1
                         [~,ind]=setdiff(tempids{1},tempids{end});
                         new = tempids{1};
                         badids = vertcat(badids,...
@@ -1062,6 +1064,7 @@ switch analysis
                         new(ind) = [];
                         tempids{1} = new;
                     end
+                    
                 end
             end
             
@@ -1651,8 +1654,13 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'\n');
     fprintf(fid,'%s\n','Good IDs,Bad IDs');
     
-    gids = REL.relsummary.group.goodids;
-    bids = REL.relsummary.group.badids;
+    gids = [];
+    bids = [];
+    
+    for j=1:length(REL.relsummary.group)
+        gids = [gids;REL.relsummary.group(j).goodids(:)];
+        bids = [bids;REL.relsummary.group(j).badids(:)];
+    end
 
     maxlength = max([length(gids) length(bids)]);
     minlength = min([length(gids) length(bids)]);
