@@ -128,8 +128,8 @@ if ~isempty(varargin)
 
 elseif isempty(varargin) %just in case none of the optional inputs are used
     
-    procprefs.nchains = 5;
-    procprefs.niter = 250;
+    procprefs.nchains = 3;
+    procprefs.niter = 500;
     inpchoices = [];
     
 end %if ~isempty(varargin)
@@ -569,6 +569,11 @@ origdir = cd(fullfile(savepath,'Temp_StanFiles'));
 %pass the data to era_computerel for analysis
 RELout = era_computerel('data',dataout,'chains',procprefs.nchains,...
     'iter',procprefs.niter);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%put in convergence check here
+
+
 
 %change the working directory back to the original directory 
 cd(origdir);

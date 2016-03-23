@@ -38,7 +38,7 @@ function era_startview(varargin)
 % by Peter Clayson (3/1/15)
 % peter.clayson@gmail.com
 
-%see if the file be used for the figures and tables has been specified in
+%see if the file for the figures and tables has been specified in
 %varargin
 if ~isempty(varargin)
     

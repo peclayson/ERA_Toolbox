@@ -10,10 +10,8 @@ function RELout = era_computerel(varargin)
 %  for more information about table format)
 %  Note: era_loadfile sets up the datatable in a specific format with
 %  specific header names that are used in this script
-%
-%Optional Inputs:
-%  chains - number of chains to run in stan (default: 5)
-%  iter - number of iterations to run in stan (default: 250)
+% chains - number of chains to run in stan 
+% iter - number of iterations to run in stan 
 %
 %Outputs:
 % RELout - structure array with the following fields.
@@ -42,7 +40,7 @@ function RELout = era_computerel(varargin)
 % clinical sample: A generalizability and decision analysis of the ERN and 
 % Pe. Psychophysiology, 52(6), 790-800. http://doi.org/10.1111/psyp.12401
 %
-%It would be terribly remiss of me not thank Scott Baldwin for
+%It would be terribly remiss of me not thank Dr. Scott Baldwin for
 %conceptualizing and developing the formulas that are implemented in this
 %toolbox. Dr. Baldwin also wrote the original Stan syntax in R and 
 %graciously provided me with all of his code. This Matlab code is based
@@ -98,7 +96,10 @@ if ~isempty(varargin)
     if ~isempty(ind)
         nchains = varargin{ind+1}; 
     else 
-        nchains = 5;
+        error('varargin:nchains',... %Error code and associated error
+        strcat('WARNING: Number of chains not specified \n\n',... 
+        'Please input the number of chains for stan\n',...
+        'See help era_computerel for more information on inputs'));
     end
     
     %check whether iter is specified
@@ -106,7 +107,10 @@ if ~isempty(varargin)
     if ~isempty(ind)
         niter = varargin{ind+1}; 
     else 
-        niter = 250;
+        error('varargin:niter',... %Error code and associated error
+        strcat('WARNING: Number of iterations not specified \n\n',... 
+        'Please input the number of iterations for stan\n',...
+        'See help era_computerel for more information on inputs'));
     end
     
 elseif isempty(varargin)
@@ -114,9 +118,13 @@ elseif isempty(varargin)
     error('varargin:incomplete',... %Error code and associated error
     strcat('WARNING: Optional inputs are incomplete \n\n',... 
     'Make sure each variable input is paired with a value \n',...
-    'See help era_computerel for more information on optional inputs'));
+    'See help era_computerel for more information on  inputs'));
     
 end %if ~isempty(varargin)
+
+%store raw data to pass to era_checkconvergence in the event that the user
+%chooses to run with more iterations
+dataraw = datatable;
 
 %ensure the necessary columns are present in the table (at least the
 %headers for id and meas)
@@ -185,6 +193,10 @@ elseif ~exist('ngroup','var') && exist('nevent','var')
 elseif exist('ngroup','var') && exist('nevent','var')
     analysis = 4;
 end
+
+%variable to specify whether convergence between chains has been met. If
+%not, will keep running unless the user specifies otherwise.
+converged = 0;
 
 switch analysis
     case 1 %no groups or event types to consider
@@ -276,6 +288,7 @@ switch analysis
         %label is simply measure (no events or groups to deal with)
         REL.out.labels = 'measure';
         
+        REL.out.rhats = era_storerhats(fit);
         
         
     case 2 %possible multiple groups 
@@ -507,12 +520,10 @@ switch analysis
             REL.out.labels(:,end+1) = groupnames(i);           
         end
         
-        
+        REL.out.rhats = era_storerhats(fit);
         
     case 3 %possible event types but no groups to consider
 
-        
-        
         %cmdstan requires the id variable to be numeric and sequential. 
         %an id2 variable is created to satisfy this requirement.
         
@@ -721,6 +732,7 @@ switch analysis
         REL.out.sig_u = [];
         REL.out.sig_e = [];
         REL.out.labels = {};
+        REL.out.rhats = {};
         
         %parse outputs
         for i=1:nevent
@@ -746,7 +758,7 @@ switch analysis
             REL.out.labels(:,end+1) = eventnames(i);           
         end
        
-        
+        REL.out.rhats = era_storerhats(fit);
         
     case 4 %possible groups and event types to consider
 
@@ -836,6 +848,7 @@ switch analysis
         REL.out.sig_u = [];
         REL.out.sig_e = [];
         REL.out.labels = {};
+        REL.out.rhats = {};
         REL.stan_in = {};
         
         %separate syntax will need to be generated for each event because
@@ -1015,12 +1028,43 @@ switch analysis
                     '_',groupnames(i));           
             end
 
+            REL.out.rhats(:,end+1) = era_storerhats(fit);
+            
         end %for j=1:nevent
 
 end %switch analysis
 
-%output the REL structure
 RELout = REL;
+
+end
+
+function allrhats = era_storerhats(fit)
+%pull out r_hats from Stanfit model
+
+%pull summary using the print function
+%there's no other way to get at the r_hat values, so output will also be
+%printed in the command window
+output = print(fit);
+
+%define cell array that holds the r_hats
+allrhats = cell(0,2);
+
+%cycle through the important inputs
+%depending on whether there are multiple events/groups there may be 
+%multiple mu_, sig_u_, and sig_e_
+inp2check = {'lp__' 'mu_' 'sig_u_' 'sig_e_'}; 
+
+for j = 1:length(inp2check)
+    check = strncmp(output,inp2check{j},length(inp2check{j}));
+    ind2check = find(check == 1);
+    for i = 1:length(ind2check)
+        pullrow = strsplit(output{ind2check(i),:},' ');
+        label = pullrow{1};
+        rhat = str2num(pullrow{end});
+        allrhats{end+1,1} = label;
+        allrhats{end,2} = rhat;
+    end
+end
 
 end
 
