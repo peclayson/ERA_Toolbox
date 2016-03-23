@@ -58,7 +58,7 @@ end
 fprintf('\n\nLoading Data...');
 fprintf('\nThis may take awhile depending on the amount of data...\n\n');
 %load file
-dataraw = readtable(fullfile(pathpart,filepart));
+dataraw = era_readtable('file',fullfile(pathpart,filepart));
 
 %pull the headernames from the file
 collist = dataraw.Properties.VariableNames;

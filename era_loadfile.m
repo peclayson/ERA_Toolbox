@@ -8,9 +8,6 @@ function dataout = era_loadfile(varargin)
 %  analyses
 %
 %Optional Inputs:
-% ext - extension or file format of the file to be loaded (e.g., .dat or
-%  .csv). The readtable function is used to load data files. Allowable file
-%  formats are txt, dat, csv, xls, xlsb, xlsm, xltm, xltx, ods
 % idcol - column label for the participant id variable (default: 'id')
 % meascol - column label for the measurement to be analyzed (default:
 %  'measurement')
@@ -61,7 +58,7 @@ if ~isempty(varargin)
         error('varargin:incomplete',... %Error code and associated error
         strcat('WARNING: Inputs are incomplete \n\n',... 
         'Make sure each variable input is paired with a value \n',...
-        'See help era_loadfile for more information on optional inputs'));
+        'See help era_loadfile for more information on inputs'));
     end
     
     %check if a location for the file to be loaded was specified. 
@@ -75,16 +72,6 @@ if ~isempty(varargin)
         'Please input the full path specifying the file to be loaded \n'));
     end
    
-    %check if the file type was specified. 
-    %If it is not found, ascertain from file extension (and hope it's
-    %correct!)
-    ind = find(strcmp('ext',varargin),1);
-    if ~isempty(ind)
-        ext = cell2mat(varargin(ind+1)); 
-    else 
-        [~,~,ext] = fileparts(file);
-    end
-
     %check if id column was specified 
     %If it is not found, use default 'id'
     ind = find(strcmp('idcol',varargin),1);
@@ -135,31 +122,13 @@ elseif ~isempty(varargin)
     error('varargin:incomplete',... %Error code and associated error
     strcat('WARNING: Optional inputs are incomplete \n\n',... 
     'Make sure each variable input is paired with a value \n',...
-    'See help era_loadfile for more information on optional inputs'));
+    'See help era_loadfile for more information on inputs'));
     
 end %if ~isempty(varargin)
 
-%check if file is a supported file type
-if ~isempty(ext) && strcmp(ext(1),'.')
-    ext = ext(2:end);
-end
-
-%file extensions able to be read by Matlab's readtable function
-supportedfiles = {'txt','dat','csv','xls','xlsx','xlsb','xlsm','xltm',...
-    'xltx','ods'};
-
-%output error if file type is not supported
-if sum(strcmp(ext,supportedfiles)) ~= 1
-
-    error('varargin:filetype',... %Error code and associated error
-    strcat('WARNING: File type not supported \n\n',... 
-    'For a list of supported file types, see help era_loadfile \n'));
-
-end
-
 %load file if it has not been done already
 if isempty(dataraw)
-    dataraw = readtable(file);
+    dataraw = era_readtable('file',file);
 end
 
 %grab the filename to store
