@@ -345,6 +345,7 @@ for eloc=1:nevents
 %                 data.g(gloc).e(eloc).sig_e.raw,trial),.975);
         end
     end
+    
     subplot(yplots,xplots,eloc);   %Need to grab color from the subplot
     h = plot(x,mrel);
 %     clines = get(h,'Color');
