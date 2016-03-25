@@ -288,7 +288,7 @@ switch analysis
         %label is simply measure (no events or groups to deal with)
         REL.out.labels = 'measure';
         
-        REL.out.rhats = era_storerhats(fit);
+        REL.out.conv.data = era_storeconv(fit);
         
         
     case 2 %possible multiple groups 
@@ -520,7 +520,7 @@ switch analysis
             REL.out.labels(:,end+1) = groupnames(i);           
         end
         
-        REL.out.rhats = era_storerhats(fit);
+        REL.out.conv.data = era_storeconv(fit);
         
     case 3 %possible event types but no groups to consider
 
@@ -732,7 +732,7 @@ switch analysis
         REL.out.sig_u = [];
         REL.out.sig_e = [];
         REL.out.labels = {};
-        REL.out.rhats = {};
+        REL.out.conv.data = {};
         
         %parse outputs
         for i=1:nevent
@@ -758,7 +758,7 @@ switch analysis
             REL.out.labels(:,end+1) = eventnames(i);           
         end
        
-        REL.out.rhats = era_storerhats(fit);
+        REL.out.conv.data = era_storeconv(fit);
         
     case 4 %possible groups and event types to consider
 
@@ -848,7 +848,7 @@ switch analysis
         REL.out.sig_u = [];
         REL.out.sig_e = [];
         REL.out.labels = {};
-        REL.out.rhats = {};
+        REL.out.conv.data = {};
         REL.stan_in = {};
         
         %separate syntax will need to be generated for each event because
@@ -1028,7 +1028,7 @@ switch analysis
                     '_',groupnames(i));           
             end
 
-            REL.out.rhats(:,end+1) = era_storerhats(fit);
+            REL.out.conv.data(:,end+1) = era_storeconv(fit);
             
         end %for j=1:nevent
 
@@ -1038,7 +1038,7 @@ RELout = REL;
 
 end
 
-function allrhats = era_storerhats(fit)
+function convstats = era_storeconv(fit)
 %pull out r_hats from Stanfit model
 
 %pull summary using the print function
@@ -1047,7 +1047,10 @@ function allrhats = era_storerhats(fit)
 output = print(fit);
 
 %define cell array that holds the r_hats
-allrhats = cell(0,2);
+convstats = cell(0,3);
+convstats{1,1} = 'name';
+convstats{1,2} = 'n_eff';
+convstats{1,3} = 'r_hat';
 
 %cycle through the important inputs
 %depending on whether there are multiple events/groups there may be 
@@ -1060,9 +1063,11 @@ for j = 1:length(inp2check)
     for i = 1:length(ind2check)
         pullrow = strsplit(output{ind2check(i),:},' ');
         label = pullrow{1};
+        neff = str2num(pullrow{end-2});
         rhat = str2num(pullrow{end});
-        allrhats{end+1,1} = label;
-        allrhats{end,2} = rhat;
+        convstats{end+1,1} = label;
+        convstats{end,2} = neff;
+        convstats{end,3} = rhat;
     end
 end
 

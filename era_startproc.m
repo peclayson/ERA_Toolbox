@@ -563,15 +563,44 @@ dataout = era_loadfile('file',fullfile(pathpart,filepart),...
     'eventcol',eventheader,'dataraw',dataraw);
 
 %Change working dir for temporary Stan files
-mkdir(savepath,'Temp_StanFiles');
+if ~exist(fullfile(savepath,'Temp_StanFiles'), 'dir')
+  mkdir(savepath,'Temp_StanFiles');
+end
 origdir = cd(fullfile(savepath,'Temp_StanFiles'));
 
-%pass the data to era_computerel for analysis
-RELout = era_computerel('data',dataout,'chains',procprefs.nchains,...
-    'iter',procprefs.niter);
+%set initial state of rerun to 1
+%this will run era_computerel
+%if chains properly converged then rerun will be changed to 0 and the while
+%loop will be exited
+rerun = 1;
 
+%whether chains converged will be checked.
+while rerun ~= 0
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%put in convergence check here
+    %pass the data to era_computerel for analysis
+    REL = era_computerel('data',dataout,'chains',procprefs.nchains,...
+        'iter',procprefs.niter);
+    
+    %check convergence of chains
+    RELout = era_checkconv(REL);
+    
+    if RELout.out.conv.converged == 0
+       
+        
+        
+    end
+    
+    %if convergence was not met and the user would like to rerun the model,
+    %double the number of iterations (if the doubled number is less than
+    %1000, then run 1000 iterations)
+    if rerun == 1
+        procprefs.niter = procprefs.niter * 2;
+        if procprefs.niter < 1000
+            procprefs.niter = 1000;
+        end
+    end
+end
+
 
 
 
@@ -586,7 +615,7 @@ try
 catch
     
     fprintf('\n\nTemporary directory could not be removed.');
-    sprintf('\nPath: %s\n',savepath);
+    fprintf('\nPath: %s\n',savepath);
 end
 
 fprintf('\nSaving Processed Data...\n\n');
