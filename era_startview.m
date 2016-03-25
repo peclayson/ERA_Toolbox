@@ -48,16 +48,15 @@ if ~isempty(varargin)
         file = varargin{ind+1};
         [pathpart,filepart] = fileparts(file);
     end
-    
-    try %see if ra_start is still open
-        %if ra_start is open, close it
-        if ishandle(varargin{3})
-            close(varargin{3})
-        end
-    catch
-    end
 
 end %if ~isempty(varargin)
+
+%check if era_gui is open. If the user executes era_startproc and skips
+%era_start then there will be no gui to close.
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    close(era_gui);
+end
 
 %if the file was not specified, prompt the user to indicate where the file
 %is located.

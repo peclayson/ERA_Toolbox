@@ -319,6 +319,9 @@ uicontrol(era_gui,'Style','push','fontsize',14,...
     'Callback',{@era_procprefs,inplists,collist,filepart,pathpart,...
     dataraw,era_gui,procprefs}); 
 
+%tag gui
+era_gui.Tag = 'era_gui';
+
 end
 
 
@@ -352,17 +355,27 @@ function era_procprefs(varargin)
 %
 
 %parse inputs
-h_era_gui.inpchoices = cell2mat(get(varargin{3},'value'));
+if any(ishandle(varargin{3}))
+    h_era_gui.inpchoices = cell2mat(get(varargin{3},'value'));
+else
+    h_era_gui.inpchoices = varargin{3};
+end
+
 h_era_gui.collist = varargin{4};
 h_era_gui.filepart = varargin{5};
 h_era_gui.pathpart = varargin{6};
 h_era_gui.dataraw = varargin{7};
 initialprefs = varargin{9};
 newprefs = varargin{9};
-pos = varargin{8}.Position;
 
-%close era_gui
-close(varargin{8});
+%check if era_gui is open.
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    pos = varargin{8}.Position;
+    close(era_gui);
+else
+    pos=[400 400 600 400];
+end
 
 %define space between rows and first row location
 rowspace = 35;
@@ -450,10 +463,36 @@ close(varargin{3});
 %pull the era_gui data
 h_era_gui = varargin{5};
 
-%execute era_startproc_fic with the new preferences
-era_startproc_fig(h_era_gui.collist,h_era_gui.filepart,...
-    h_era_gui.pathpart,h_era_gui.dataraw,'procprefs',procprefs,...
-    'inpchoices',h_era_gui.inpchoices);
+if procprefs.nchains >= 3 && procprefs.niter > 0
+    %execute era_startproc_fic with the new preferences
+    era_startproc_fig(h_era_gui.collist,h_era_gui.filepart,...
+        h_era_gui.pathpart,h_era_gui.dataraw,'procprefs',procprefs,...
+        'inpchoices',h_era_gui.inpchoices);
+end
+
+%make sure the user has defined at least 3 chains and more than 0
+%iterations
+if procprefs.nchains < 3 
+   
+    errordlg('You must have at least three chains to test convergence');
+    procprefs.nchains = 3;
+    
+    era_procprefs([],[],h_era_gui.inpchoices,h_era_gui.collist,...
+        h_era_gui.filepart,h_era_gui.pathpart,...
+        h_era_gui.dataraw,[],procprefs);
+    
+end
+
+if procprefs.niter <= 0
+   
+    errordlg('You must have more than zero iterations per chain');
+    procprefs.niter = 500;
+    
+    era_procprefs([],[],h_era_gui.inpchoices,h_era_gui.collist,...
+        h_era_gui.filepart,h_era_gui.pathpart,...
+        h_era_gui.dataraw,[],procprefs);
+    
+end
 
 end
 
