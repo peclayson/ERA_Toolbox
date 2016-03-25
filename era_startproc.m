@@ -40,14 +40,20 @@ function era_startproc(varargin)
 % peter.clayson@gmail.com
 %
 
-%close the era_start gui
-close(varargin{3});
+%check if era_gui is open. If the user executes era_startproc and skips
+%era_start then there will be no gui to close.
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    close(era_gui);
+end
 
 %ask the user to identify the data file to be loaded
 [filepart, pathpart] = uigetfile({'*.xlsx','Excel File (.xlsx)';'*.xls',...
         'Excel File 97-2003 (.xls)';'*.csv',...
-        'Comma-Separated Vale File (.csv)';'*.txt',...
-        'Text, Tab delimited (.txt)'},'Data');
+        'Comma-Separated Vale File (.csv)';'*.dat',...
+        'Tab-Delimited Text (.dat)';'*.txt',...
+        'Raw Text File (.txt)';'*.ods',...
+        'OpenDocument Spreadsheet (.ods)'},'Data');
 
 %if the user does not select a file, then take the user back to era_start    
 if filepart == 0 
