@@ -1,8 +1,6 @@
-function [rerun] = era_reruncheck
+function era_reruncheck
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
-
-rerun = [];
 
 %define parameters for figure position
 figwidth = 500;
@@ -18,6 +16,7 @@ era_gui= figure('unit','pix','Visible','off',...
   'menub','no',...
   'numbertitle','off',...
   'resize','off');
+
 movegui(era_gui,'center');
 
 str = {'Chains did not converge';...
@@ -43,13 +42,10 @@ uicontrol(era_gui,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Rerun',...
     'Position', [5*figwidth/8 25 figwidth/3 75],...
-    'Callback',{@(rerun)era_setrerun,1,era_gui}); 
+    'Callback',{@era_setrerun,1,era_gui}); 
 
 %display gui
 set(era_gui,'Visible','on');
-
-%store REL in guidata
-guidata(era_gui,'REL');
 
 %tag the gui
 era_gui.Tag = 'era_gui';
@@ -61,21 +57,12 @@ uiwait(era_gui);
 end
 
 
-function rerun = era_setrerun(varargin)
+function era_setrerun(varargin)
 
 uiresume;
-rerun = 0;
-close(varargin{3});
+era_gui = findobj('Tag','era_gui');
+guidata(era_gui,varargin{3});
 
 end
 
-% 
-% function era_setrerun(varargin)
-% 
-% uiresume;
-% rerun = 1;
-% close(varargin{3});
-% 
-% end
-% 
 

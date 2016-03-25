@@ -574,7 +574,7 @@ origdir = cd(fullfile(savepath,'Temp_StanFiles'));
 %loop will be exited
 rerun = 1;
 
-%whether chains converged will be checked.
+%whether chains converged will be checked each time era_computerel is run
 while rerun ~= 0
 
     %pass the data to era_computerel for analysis
@@ -586,7 +586,14 @@ while rerun ~= 0
     
     if RELout.out.conv.converged == 0
        
+        era_reruncheck;
+        era_gui = findobj('Tag','era_gui');
+        rerun = guidata(era_gui);
+        close(era_gui);
         
+    else 
+        %if chains converged, do no rerun.
+        rerun = 0;
         
     end
     
@@ -598,12 +605,17 @@ while rerun ~= 0
         if procprefs.niter < 1000
             procprefs.niter = 1000;
         end
+        fprintf('\nIncreasing number of iterations to %d\n',...
+            procprefs.niter);
     end
 end
 
-
-
-
+%sometimes the era_gui doesn't close
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    close(era_gui);
+end
+    
 %change the working directory back to the original directory 
 cd(origdir);
 
@@ -616,6 +628,21 @@ catch
     
     fprintf('\n\nTemporary directory could not be removed.');
     fprintf('\nPath: %s\n',savepath);
+end
+
+%if the chains did not converge send the user back to era_startproc_fig
+if RELout.out.conv.converged == 0
+
+    era_startproc_fig(collist,filepart,pathpart,dataraw,'procprefs',...
+        procprefs,'inpchoices',choices);
+    return
+    
+else
+    
+    %chains converged. Let the user know.
+    str = 'Models successfully converged with %d chains and %d iterations';
+    fprintf(strcat('\n',str,'\n'),procpref.nchains,procprefs.niter);
+    
 end
 
 fprintf('\nSaving Processed Data...\n\n');

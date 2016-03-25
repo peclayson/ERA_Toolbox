@@ -1028,7 +1028,7 @@ switch analysis
                     '_',groupnames(i));           
             end
 
-            REL.out.conv.data(:,end+1) = era_storeconv(fit);
+            REL.out.conv.data{end+1} = era_storeconv(fit);
             
         end %for j=1:nevent
 

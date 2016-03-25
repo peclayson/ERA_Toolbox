@@ -32,7 +32,7 @@ function RELout = era_checkconv(REL)
 %
 
 %History
-% by Peter Clayson (3/23/16)
+% by Peter Clayson (3/24/16)
 % peter.clayson@gmail.com
 
 %make sure an input was provided
@@ -42,35 +42,81 @@ if length(nargin) ~= 1
     'See help era_checkconv for more information on  inputs'));
 end
 
-%pull data from REL
-%first check r_hats
-rhats = REL.out.conv.data(:,[1 3]);
+%pull the dimensions to figure out if there are nested cell arrays
+%if there are there will be 1 row and multiple columns (a = 1)
+[a,nloops] = size(REL.out.conv.data);
 
-%see if any of the rhats didn't equal 1 (i.e., did not converge)
-indbad = find([rhats{2:end,2}] >= 1.1);
+%if there is more than 1 row then that means there is only one set of
+%convergence statistics to examine
+if a == 1
 
-%specify whethere convergenece between chains was reached
-if ~isempty(indbad)
-    result = 0;
-else
-    result = 1;
-end
+    for i=1:nloops
+        %pull data from REL
+        %first check r_hats
+        data = REL.out.conv.data{i};
+        rhats = data(:,[1 3]);
+        
+        %see if any of the rhats didn't equal 1 (i.e., did not converge)
+        indbad = find([rhats{2:end,2}] >= 1.1);
 
-if result == 1
-    %check whether neff is (5*2*nchains)
-    neff = REL.out.conv.data(:,[1 2]);
+        %specify whether convergenece between chains was reached
+        if ~isempty(indbad)
+            result = 0;
+            break;
+        else
+            result = 1;
+        end
+
+        if result == 1
+            %check whether neff is (5*2*nchains)
+            neff = data(:,[1 2]);
+
+            %see if any of the rhats didn't equal 1 (i.e., did not converge)
+            indbad = find([neff{2:end,2}] < (5*2*REL.nchains));
+
+            %specify whethere convergenece between chains was reached
+            if ~isempty(indbad)
+                result = 0;
+                break;
+            else
+                result = 1;
+            end
+        end
+    end
+    
+elseif a ~= 1
+    
+    %pull data from REL
+    %first check r_hats
+    rhats = REL.out.conv.data(:,[1 3]);
 
     %see if any of the rhats didn't equal 1 (i.e., did not converge)
-    indbad = find([neff{2:end,2}] < (5*2*REL.nchains));
+    indbad = find([rhats{2:end,2}] >= 1.1);
 
-    %specify whethere convergenece between chains was reached
+    %specify whether convergenece between chains was reached
     if ~isempty(indbad)
         result = 0;
     else
         result = 1;
     end
-end
 
+    if result == 1
+        %check whether neff is (5*2*nchains)
+        neff = REL.out.conv.data(:,[1 2]);
+
+        %see if any of the rhats didn't equal 1 (i.e., did not converge)
+        indbad = find([neff{2:end,2}] < (5*2*REL.nchains));
+
+        %specify whethere convergenece between chains was reached
+        if ~isempty(indbad)
+            result = 0;
+        else
+            result = 1;
+        end
+    end
+end
+    
+    
 REL.out.conv.converged = result;
 RELout = REL;
 
