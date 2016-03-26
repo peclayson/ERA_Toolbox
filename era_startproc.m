@@ -135,7 +135,7 @@ if ~isempty(varargin)
 elseif isempty(varargin) %just in case none of the optional inputs are used
     
     procprefs.nchains = 3;
-    procprefs.niter = 500;
+    procprefs.niter = 1000;
     inpchoices = [];
     
 end %if ~isempty(varargin)
@@ -486,7 +486,7 @@ end
 if procprefs.niter <= 0
    
     errordlg('You must have more than zero iterations per chain');
-    procprefs.niter = 500;
+    procprefs.niter = 1000;
     
     era_procprefs([],[],h_era_gui.inpchoices,h_era_gui.collist,...
         h_era_gui.filepart,h_era_gui.pathpart,...

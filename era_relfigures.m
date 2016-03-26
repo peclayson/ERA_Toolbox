@@ -187,16 +187,16 @@ if ~isempty(varargin)
 elseif ~isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
-    strcat('WARNING: Optional inputs are incomplete \n\n',... 
+    strcat('WARNING: Inputs are incomplete \n\n',... 
     'Make sure each variable input is paired with a value \n',...
-    'See help era_relfigures for more information on optional inputs'));
+    'See help era_relfigures for more information on inputs'));
     
 end %if ~isempty(varargin)
 
 %create a data structure for storing outputs
 data = struct;
 
-%create variabel to specify whether there are bad/unreliable data
+%create variable to specify whether there are bad/unreliable data
 %default state: 0, will be changed to 1 if there is a problem
 poorrel = struct();
 poorrel.trlcutoff = 0;
@@ -374,12 +374,6 @@ for eloc=1:nevents
     end
 end
 
-%create empty arrays for storing dependability information
-ntrials = length(data.g(gloc).e(eloc).sig_u.raw);
-mrel = zeros(0,ntrials);
-llrel = zeros(0,ntrials);
-ulrel = zeros(0,ntrials);
-
 %store the cutoff in relsummary to pass to other functions more easily
 relsummary.depcutoff = depcutoff;
 
@@ -391,6 +385,14 @@ switch analysis
         
         relsummary.group(gloc).name = gnames{gloc};
         relsummary.group(gloc).event(eloc).name = 'measure';
+        
+        %create empty arrays for storing dependability information
+        trltable = varfun(@length,REL.data{1},'GroupingVariables',{'id'});
+
+        ntrials = max(trltable.GroupCount(:)) + 100;
+        mrel = zeros(0,ntrials);
+        llrel = zeros(0,ntrials);
+        ulrel = zeros(0,ntrials);
         
         %compute dependability information
         for trial=1:ntrials
@@ -600,7 +602,16 @@ switch analysis
             end
 
             relsummary.group(gloc).event(eloc).name = enames{eloc};
+            
+            %create empty arrays for storing dependability information
+            trltable = varfun(@length,REL.data{1},...
+                'GroupingVariables',{'id'});
 
+            ntrials = max(trltable.GroupCount(:)) + 100;
+            mrel = zeros(0,ntrials);
+            llrel = zeros(0,ntrials);
+            ulrel = zeros(0,ntrials);
+            
             for trial=1:ntrials
                 mrel(trial) = ...
                     mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
@@ -638,11 +649,12 @@ switch analysis
 
             if trlcutoff == -1
                 
-                datatrls = REL.data;
+                datatrls = REL.data{1};
                 ind = strcmp(datatrls.group,gnames{gloc});
                 datatrls = datatrls(ind,:);
 
-                trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+                trltable = varfun(@length,datatrls,...
+                    'GroupingVariables',{'id'});
 
                 ind2exclude = trltable.GroupCount(:);
 
@@ -652,11 +664,12 @@ switch analysis
                 
             else
                 
-                datatrls = REL.data;
+                datatrls = REL.data{1};
                 ind = strcmp(datatrls.group,gnames{gloc});
                 datatrls = datatrls(ind,:);
 
-                trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+                trltable = varfun(@length,datatrls,...
+                    'GroupingVariables',{'id'});
 
                 ind2include = trltable.GroupCount >= trlcutoff;
                 ind2exclude = trltable.GroupCount < trlcutoff;
@@ -684,7 +697,7 @@ switch analysis
 
         for gloc=1:ngroups
 
-            datatable = REL.data;
+            datatable = REL.data{1};
             ind = strcmp(datatable.group,gnames{gloc});
             datasubset = datatable(ind,:);
             
@@ -787,6 +800,14 @@ switch analysis
                 end
                
                 relsummary.group(gloc).event(eloc).name = enames{eloc};
+                %create empty arrays for storing dependability information
+                trltable = varfun(@length,REL.data{1},...
+                    'GroupingVariables',{'id'});
+
+                ntrials = max(trltable.GroupCount(:)) + 100;
+                mrel = zeros(0,ntrials);
+                llrel = zeros(0,ntrials);
+                ulrel = zeros(0,ntrials);
                 
                 for trial=1:ntrials
                     mrel(trial) = ...
@@ -815,7 +836,8 @@ switch analysis
                     
                     datatrls = REL.data{eloc};
                 
-                    trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+                    trltable = varfun(@length,datatrls,...
+                        'GroupingVariables',{'id'});
 
                     ind2include = 'none';
                     ind2exclude = trltable.GroupCount(:);
@@ -976,6 +998,15 @@ switch analysis
                 end
                
                 relsummary.group(gloc).event(eloc).name = enames{eloc};
+                
+                %create empty arrays for storing dependability information
+                trltable = varfun(@length,REL.data{1},...
+                    'GroupingVariables',{'id'});
+
+                ntrials = max(trltable.GroupCount(:)) + 100;
+                mrel = zeros(0,ntrials);
+                llrel = zeros(0,ntrials);
+                ulrel = zeros(0,ntrials);
                 
                 for trial=1:ntrials
                     mrel(trial) = ...
@@ -1208,8 +1239,22 @@ if picc == 1
        end
     end
     
-    iccplot = errorbar(offsetm,miccm,lliccm,uliccm,'Marker','.',...
-        'MarkerSize',15,'LineWidth',1);
+    [e,g] = size(miccm); 
+    
+    if ~(g > 1 && e == 1)
+        iccplot = errorbar(offsetm,miccm,lliccm,uliccm,'Marker','.',...
+            'MarkerSize',15,'LineWidth',1);
+    elseif g > 1 && e == 1
+        hold on
+        for i = 1:g
+            iccplot = errorbar(offsetm(i),miccm(i),lliccm(i),uliccm(i),...
+                'Marker','.','MarkerSize',15,'LineWidth',1,...
+                'DisplayName',gnames{i});
+            legend('-DynamicLegend');
+        end
+        hold off
+    end
+    
     ylabel('Intraclass Correlation Coefficient','FontSize',fsize);
     
     for i = 1:length(iccplot)
@@ -1228,8 +1273,10 @@ if picc == 1
     iccplot(1).Parent.XTickLabel = enames;
     iccplot(1).Parent.FontSize = fsize;
     
-    pl = legend(iccplot);
-    pl.String = gnames;
+    if ~(g > 1 && e == 1)
+        pl = legend(iccplot);
+        pl.String = gnames;
+    end
     
     iccplot(1).Parent.YAxisLocation = 'right';
     camroll(-90);
@@ -1262,8 +1309,22 @@ if plotbetstddev == 1
        end
     end
     
-    sdplot = errorbar(offsetm,msd,llsd,ulsd,'Marker','.',...
-        'MarkerSize',15,'LineWidth',1);
+    [e,g] = size(miccm); 
+    
+    if ~(g > 1 && e == 1)
+        sdplot = errorbar(offsetm,msd,llsd,ulsd,'Marker','.',...
+            'MarkerSize',15,'LineWidth',1);
+    elseif g > 1 && e == 1
+        hold on
+        for i = 1:g
+            sdplot = errorbar(offsetm(i),msd(i),llsd(i),ulsd(i),...
+                'Marker','.','MarkerSize',15,'LineWidth',1,...
+                'DisplayName',gnames{i});
+            legend('-DynamicLegend');
+        end
+        hold off
+    end
+
     ylabel('Between-Person Standard Deviation','FontSize',fsize);
     
     for i = 1:length(sdplot)
@@ -1282,8 +1343,10 @@ if plotbetstddev == 1
     sdplot(1).Parent.XTickLabel = enames;
     sdplot(1).Parent.FontSize = fsize;
     
-    pl = legend(sdplot);
-    pl.String = gnames;
+    if ~(g > 1 && e == 1)
+        pl = legend(iccplot);
+        pl.String = gnames;
+    end
     
     sdplot(1).Parent.YAxisLocation = 'right';
     camroll(-90);
@@ -1523,11 +1586,19 @@ if showoverallt == 1
 end
 
 if poorrel.trlcutoff == 1
-    
+    errorstr = {};
+    errorstr{end+1} = 'Trial cutoffs for adequate dependability could not be calculated';
+    errorstr{end+1} = 'Data are too variable or there are not enough trials';
+
+    errordlg(errorstr);
 end
 
 if poorrel.trlmax == 1
+    errorstr = {};
+    errorstr{end+1} = 'Not enough trials are present in the current data';
+    errorstr{end+1} = 'Cutoffs represent an extrapolation beyond the data';
     
+    errordlg(errorstr);
 end
 
 end
@@ -1557,6 +1628,8 @@ if strcmp(ext,'.xlsx')
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
+    filehead{end+1} = sprintf('Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     filehead{end+1}='';
     filehead{end+1}='';
     
@@ -1573,6 +1646,8 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
+    fprintf(fid, 'Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     fprintf(fid,'\n');
     fprintf(fid,'\n');
     
@@ -1620,9 +1695,11 @@ if strcmp(ext,'.xlsx')
     datap{3,1} = sprintf('Dataset: %s',REL.filename);
     datap{4,1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
-    datap{5,1}='';
+    datap{5,1} = sprintf('Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     datap{6,1}='';
-    datap{7,1} = 'Good IDs'; datap{7,2} = 'Bad IDs';
+    datap{7,1}='';
+    datap{8,1} = 'Good IDs'; datap{8,2} = 'Bad IDs';
     
     gids = [];
     bids = [];
@@ -1633,11 +1710,11 @@ if strcmp(ext,'.xlsx')
     end
     
     for i = 1:length(gids)
-        datap{i+7,1}=char(gids(i));
+        datap{i+8,1}=char(gids(i));
     end
 
     for i = 1:length(bids)
-        datap{i+7,2}=char(bids(i));
+        datap{i+8,2}=char(bids(i));
     end
 
     xlswrite(fullfile(savepath,savename),datap);
@@ -1651,6 +1728,8 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
+    fprintf(fid,'Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     fprintf(fid,'\n');
     fprintf(fid,'\n');
     fprintf(fid,'%s\n','Good IDs,Bad IDs');
@@ -1714,6 +1793,8 @@ if strcmp(ext,'.xlsx')
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
+    filehead{end+1} = sprintf('Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     filehead{end+1}='';
     filehead{end+1}='';
     
@@ -1730,6 +1811,8 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
+    fprintf(fid,'Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     fprintf(fid,'\n');
     fprintf(fid,'\n');
     
@@ -1775,6 +1858,8 @@ if strcmp(ext,'.xlsx')
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
+    filehead{end+1} = sprintf('Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     filehead{end+1}='';
     filehead{end+1}='';
     
@@ -1791,6 +1876,8 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
+    fprintf(fid,'Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     fprintf(fid,'\n');
     fprintf(fid,'\n');
     
@@ -1822,13 +1909,5 @@ end
 function iccout = iccfun(var_u,var_e)
 
 iccout = var_u.^2 ./ (var_u.^2 + var_e.^2);
-
-end
-
-function dep = depall(lme,num)
-
-[obsvar,resvar] = covarianceParameters(lme);
-
-dep = cell2mat(obsvar)/(cell2mat(obsvar)+(resvar/num));
 
 end

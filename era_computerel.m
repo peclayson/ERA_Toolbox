@@ -30,6 +30,9 @@ function RELout = era_computerel(varargin)
 %    were processed then this labels will be 'event_group' for each
 %    possible combination (e.g., 'Error_Controls' or 'Hits_Patients'' event 
 %    and group will be separated by an underscore)
+%  conv: nest for convergence data
+%   data: convergence statistics with three columns (parameter, n_eff,
+%    r_hat)
 %  stan_in: compiled model syntax that was passed to Stan
 
 %For more information about how variance components were estimated please
@@ -293,7 +296,6 @@ switch analysis
         
     case 2 %possible multiple groups 
 
-        
         
         %cmdstan requires the id variable to be numeric and sequential. 
         %an id2 variable is created to satisfy this requirement.
