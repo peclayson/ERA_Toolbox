@@ -201,7 +201,7 @@ end
 if isnumeric(dataout.id(:))
     newid = cellstr(num2str(dataout.id(:)));
     dataout.id = [];
-    dataout.id(:) = newid(:);
+    dataout.id = newid(:);
 end
 
 if ~isempty(groupcolname) && isnumeric(dataout.group(:))
@@ -213,7 +213,7 @@ end
 if ~isempty(eventcolname) && isnumeric(dataout.event(:)) 
     newevent = cellstr(num2str(dataout.event(:)));
     dataout.event = [];
-    dataout.event(:) = newevent(:);
+    dataout.event = newevent(:);
 end
 
 end

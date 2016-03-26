@@ -685,8 +685,8 @@ if RELout.out.conv.converged == 0
 else
     
     %chains converged. Let the user know.
-    str = 'Models successfully converged with %d chains and %d iterations';
-    fprintf(strcat('\n',str,'\n'),procpref.nchains,procprefs.niter);
+    %str = 'Models successfully converged with %d chains and %d iterations';
+    %fprintf(strcat('\n',str,'\n'),procpref.nchains,procprefs.niter);
     
 end
 
