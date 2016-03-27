@@ -590,15 +590,43 @@ end
 %close the gui
 close(varargin{9});
 
-%prompt the user to indicate where the output from stan should be saved
-[savename, savepath] = uiputfile(fullfile(pathpart,'*.mat'),...
-    'Where would you like to save the output files?');
+%cmdstan cannot handle paths with white space. User will be required to
+%provide a path to working directory that does not include a space.
+%space will be set to 1 and will be changed if the path does not include
+%whitespace
+space = 1;
+while space == 1
+    
+    %prompt the user to indicate where the output from stan should be saved
+    [savename, savepath] = uiputfile(fullfile(pathpart,'*.mat'),...
+        'Where would you like to save the output files?');
+    
+    if any(isspace(savename)) || any(isspace(savepath))
+       str = {};
+       str{end+1} = 'Cmdstan cannot handle file paths or filesnames with whitespace';
+       str{end+1} = 'Please specify a file path and filename without whitespace';
+        errordlg(str,'Whitespace detected');
+        
+    elseif ~any(isspace(savename)) && ~any(isspace(savepath))
+        
+        space = 0;
+        
+    end
+    
+    %if the user does not select a file, then take the user back to 
+    %era_startproc_fig    
+    if filepart == 0 
+        errordlg('No file selected','File Error');
+        era_startproc_fig(collist,filepart,pathpart,dataraw);
+    end
+    
+end %while space == 1
 
-%if the user does not select a file, then take the user back to 
-%era_startproc_fig    
-if filepart == 0 
-    errordlg('No file selected','File Error');
-    era_startproc_fig(collist,filepart,pathpart,dataraw);
+%in the event that the user cancels and does not specify and path and
+%filename
+if isempty(savename) || isempty(savepath)
+    %take the user back to era_startproc_fig
+        era_startproc_fig(collist,filepart,pathpart,dataraw);
 end
 
 %now that the headers have been specified, set up a data table to be passed
