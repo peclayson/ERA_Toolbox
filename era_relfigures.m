@@ -27,6 +27,16 @@ function era_relfigures(varargin)
 %  variance (between person v within person)
 % plotbetstddev - plot the between-person standard deviations stratified
 %  by group and event
+% plotdepline - indicate whether to plot 1-lower limit of credible
+%  interval, 2-point estimate, 3-upper limit of credible interval for the  
+%  plot of dependability v number of trials (default: 1)
+% plotntrials - indicate the number of trials to plot (x-axis) in the 
+%  dependability v number of trials plot (default: 50)
+% meascutoff - which estimate to use to define cutoff for number of trials
+%  1 - lower limit of credible interval, 2 - point estimate, 3 - upper
+%  limit of credible interval (default: 1)
+% depcentmeas - which measure of central tendency to use to estimate the
+%  overall dependability, 1 - mean, 2 - median (default: 1)
 %
 %Output:
 % Various figures may be plotted. Tables will also have buttons for
@@ -183,7 +193,43 @@ if ~isempty(varargin)
     else 
         plotbetstddev = 1; %default is 1
     end
-
+    
+    %check if plotdepline is provided
+    ind = find(strcmp('plotdepline',varargin),1);
+    if ~isempty(ind)
+        if iscell(varargin{ind+1})
+            plotdepline = cell2mat(varargin{ind+1}); 
+        elseif isnumeric(varargin{ind+1})
+            plotdepline = varargin{ind+1}; 
+        end
+    else 
+        plotdepline = 1; %default is 1 (lower limit of credible interval)
+    end
+    
+    %check if meascutoff is provided
+    ind = find(strcmp('meascutoff',varargin),1);
+    if ~isempty(ind)
+        if iscell(varargin{ind+1})
+            meascutoff = cell2mat(varargin{ind+1}); 
+        elseif isnumeric(varargin{ind+1})
+            meascutoff = varargin{ind+1}; 
+        end
+    else 
+        meascutoff = 1; %default is 1 (lower limit of credible interval)
+    end
+    
+    %check if depcentmeas is provided
+    ind = find(strcmp('depcentmeas',varargin),1);
+    if ~isempty(ind)
+        if iscell(varargin{ind+1})
+            depcentmeas = cell2mat(varargin{ind+1}); 
+        elseif isnumeric(varargin{ind+1})
+            depcentmeas = varargin{ind+1}; 
+        end
+    else 
+        depcentmeas = 1; %default is 1 (mean)
+    end
+    
 elseif ~isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
@@ -309,9 +355,10 @@ ntrials = plotntrials;
 x = 1:ntrials;
 
 %create an empty array for storing information into
+plotrel = zeros(ntrials,0);
 mrel = zeros(ntrials,0);
-% llrel = zeros(ntrials,0);
-% ulrel = zeros(ntrials,0);
+llrel = zeros(ntrials,0);
+ulrel = zeros(ntrials,0);
 
 %see how many subplots are needed
 if nevents > 2
@@ -334,20 +381,25 @@ fsize = 16;
 for eloc=1:nevents
     for gloc=1:ngroups
         for trial=1:ntrials
-            mrel(trial,gloc) = ...
-                mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,trial));
-%             llrel(trial,gloc) = ...
-%                 quantile(reliab(data.g(gloc).e(eloc).sig_u.raw,...
-%                 data.g(gloc).e(eloc).sig_e.raw,trial),.025);
-%             ulrel(trial,gloc) = ...
-%                 quantile(reliab(data.g(gloc).e(eloc).sig_u.raw,...
-%                 data.g(gloc).e(eloc).sig_e.raw,trial),.975);
+            switch plotdepline 
+                case 1 %lower limit
+                    plotrel(trial,gloc) = ...
+                        mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                        data.g(gloc).e(eloc).sig_e.raw,trial));
+                case 2 %point estimate
+                    plotrel(trial,gloc) = ...
+                        quantile(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                        data.g(gloc).e(eloc).sig_e.raw,trial),.025);
+                case 3 %upper limit
+                    plotrel(trial,gloc) = ...
+                        quantile(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                        data.g(gloc).e(eloc).sig_e.raw,trial),.975);
+            end
         end
     end
     
     subplot(yplots,xplots,eloc);   %Need to grab color from the subplot
-    h = plot(x,mrel);
+    h = plot(x,plotrel);
 %     clines = get(h,'Color');
 % 
 %     hold on
@@ -409,7 +461,15 @@ switch analysis
 
         %find the number of trials to reach cutoff based on the
         %lower limit of the confidence interval
-        trlcutoff = find(llrel >= depcutoff, 1);
+        switch meascutoff
+            case 1 
+                trlcutoff = find(llrel >= depcutoff, 1);
+            case 2
+                trlcutoff = find(mrel >= depcutoff, 1);
+            case 3
+                trlcutoff = find(ulrel >= depcutoff, 1);
+        end
+        
         
         if isempty(trlcutoff)
             
@@ -604,7 +664,7 @@ switch analysis
             relsummary.group(gloc).event(eloc).name = enames{eloc};
             
             %create empty arrays for storing dependability information
-            trltable = varfun(@length,REL.data{1},...
+            trltable = varfun(@length,REL.data,...
                 'GroupingVariables',{'id'});
 
             ntrials = max(trltable.GroupCount(:)) + 100;
@@ -626,7 +686,14 @@ switch analysis
 
             %find the number of trials to reach cutoff based on the
             %lower limit of the confidence interval
-            trlcutoff = find(llrel >= depcutoff, 1);
+            switch meascutoff
+                case 1 
+                    trlcutoff = find(llrel >= depcutoff, 1);
+                case 2
+                    trlcutoff = find(mrel >= depcutoff, 1);
+                case 3
+                    trlcutoff = find(ulrel >= depcutoff, 1);
+            end
             
             if isempty(trlcutoff)
 
@@ -649,7 +716,7 @@ switch analysis
 
             if trlcutoff == -1
                 
-                datatrls = REL.data{1};
+                datatrls = REL.data;
                 ind = strcmp(datatrls.group,gnames{gloc});
                 datatrls = datatrls(ind,:);
 
@@ -664,7 +731,7 @@ switch analysis
                 
             else
                 
-                datatrls = REL.data{1};
+                datatrls = REL.data;
                 ind = strcmp(datatrls.group,gnames{gloc});
                 datatrls = datatrls(ind,:);
 
@@ -697,7 +764,7 @@ switch analysis
 
         for gloc=1:ngroups
 
-            datatable = REL.data{1};
+            datatable = REL.data;
             ind = strcmp(datatable.group,gnames{gloc});
             datasubset = datatable(ind,:);
             
@@ -823,7 +890,14 @@ switch analysis
                 
                 %find the number of trials to reach cutoff based on the
                 %lower limit of the confidence interval
-                trlcutoff = find(llrel >= depcutoff, 1);
+                switch meascutoff
+                    case 1 
+                        trlcutoff = find(llrel >= depcutoff, 1);
+                    case 2
+                        trlcutoff = find(mrel >= depcutoff, 1);
+                    case 3
+                        trlcutoff = find(ulrel >= depcutoff, 1);
+                end
                 
                 if isempty(trlcutoff)
             
@@ -1022,7 +1096,14 @@ switch analysis
                 
                 %find the number of trials to reach cutoff based on the
                 %lower limit of the confidence interval
-                trlcutoff = find(llrel >= depcutoff, 1);
+                switch meascutoff
+                    case 1 
+                        trlcutoff = find(llrel >= depcutoff, 1);
+                    case 2
+                        trlcutoff = find(mrel >= depcutoff, 1);
+                    case 3
+                        trlcutoff = find(ulrel >= depcutoff, 1);
+                end
                 
                 if isempty(trlcutoff)
             
