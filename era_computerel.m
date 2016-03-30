@@ -1,17 +1,20 @@
 function RELout = era_computerel(varargin)
 %Prepare and execute cmdstan code for dependability analyses
 %
-%era_computerel('data',era_datatable)
+%era_computerel('data',era_datatable,'chains',3,'iter',1000)
 %
 %Lasted Updated 3/5/16
 %
-%Required Input:
+%Required Inputs:
 % data - data table outputted from the era_loadfile script (see era_loadfile
 %  for more information about table format)
 %  Note: era_loadfile sets up the datatable in a specific format with
 %  specific header names that are used in this script
 % chains - number of chains to run in stan 
 % iter - number of iterations to run in stan 
+%
+%Optional Inputs:
+% verbose - 1: Do not print iterations, 2: Print iterations
 %
 %Outputs:
 % RELout - structure array with the following fields.
@@ -116,12 +119,20 @@ if ~isempty(varargin)
         'See help era_computerel for more information on inputs'));
     end
     
+    %check whether verbose is specified
+    ind = find(strcmp('verbose',varargin),1);
+    if ~isempty(ind)
+        verbose = varargin{ind+1}; 
+    else 
+        verbose = 1;
+    end
+    
 elseif isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
-    strcat('WARNING: Optional inputs are incomplete \n\n',... 
+    strcat('WARNING: Inputs are incomplete \n\n',... 
     'Make sure each variable input is paired with a value \n',...
-    'See help era_computerel for more information on  inputs'));
+    'See help era_computerel for more information on inputs'));
     
 end %if ~isempty(varargin)
 
@@ -160,6 +171,12 @@ if exist('headerror','var')
     'See help era_loadfile for data table format \n'));
 end
 
+%change verbosity to match true or false
+if verbose == 1
+    verbosity = false;
+elseif verbose == 2
+    verbosity = true;
+end
 
 %check whether groups or events are in the table
 if sum(strcmpi(colnames,'group'))
@@ -278,7 +295,7 @@ switch analysis
         %fit model in cmdstan
         fit = stan('model_code', stan_in, 'model_name', modelname,...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-            niter/10, 'verbose', false, 'file_overwrite', true);
+            niter/10, 'verbose', verbosity, 'file_overwrite', true);
         
         %don't let the user continue to use the Matlab command window
         fit.block();
@@ -486,7 +503,7 @@ switch analysis
         %run cmdstan
         fit = stan('model_code', stan_in, 'model_name', modelname,...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-            niter/10, 'verbose', false, 'file_overwrite', true);
+            niter/10, 'verbose', verbosity, 'file_overwrite', true);
         
         %block user from using Matlab command window
         fit.block();
@@ -722,7 +739,7 @@ switch analysis
         %run in cmdstan
         fit = stan('model_code', stan_in, 'model_name', modelname,...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-            niter/10, 'verbose', false, 'file_overwrite', true);
+            niter/10, 'verbose', verbosity, 'file_overwrite', true);
         
         %block user from using Matlab command window 
         fit.block();
@@ -999,7 +1016,7 @@ switch analysis
             %run cmdstan
             fit = stan('model_code', stan_in, 'model_name', modelname,...
                 'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-                niter/10, 'verbose', false, 'file_overwrite', true);
+                niter/10, 'verbose', verbosity, 'file_overwrite', true);
             
             %block user from using Matlab command window
             fit.block();
