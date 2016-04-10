@@ -251,7 +251,8 @@ poorrel.trlmax = 0;
 %check whether any groups exist
 if strcmpi(REL.groups,'none')
     ngroups = 1;
-    gnames = cellstr(REL.groups);
+    %gnames = cellstr(REL.groups);
+    gnames ={''};
 else
     ngroups = length(REL.groups);
     gnames = REL.groups(:);
@@ -260,7 +261,8 @@ end
 %check whether any events exist
 if strcmpi(REL.events,'none')
     nevents = 1;
-    enames = cellstr(REL.events);
+    %enames = cellstr(REL.events);
+    enames = {''};
 else
     nevents = length(REL.events);
     enames = REL.events(:);
@@ -350,6 +352,19 @@ switch analysis
         end
 end %switch analysis
 
+%store the cutoff in relsummary to pass to other functions more easily
+relsummary.depcutoff = depcutoff;
+
+%store which measure was used to specify cutoff
+switch meascutoff
+    case 1
+        relsummary.meascutoff = 'Lower Limit of 95% Credible Interval';
+    case 2
+        relsummary.meascutoff = 'Point Estimate';
+    case 3
+        relsummary.meascutoff = 'Upper Limit of 95% Credible Interval';
+end
+
 %create an x-axis for the number of observations
 ntrials = plotntrials;
 x = 1:ntrials;
@@ -374,6 +389,7 @@ end
 
 %create the figure
 depplot = figure('Visible','Off');
+set(gcf,'NumberTitle','Off');
 depplot.Position = [125 630 900 450];
 fsize = 16;
 
@@ -386,20 +402,26 @@ for eloc=1:nevents
                     plotrel(trial,gloc) = ...
                         mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
                         data.g(gloc).e(eloc).sig_e.raw,trial));
+                    plottitle = 'Lower Limit of 95% Credible Interval';
                 case 2 %point estimate
                     plotrel(trial,gloc) = ...
                         quantile(reliab(data.g(gloc).e(eloc).sig_u.raw,...
                         data.g(gloc).e(eloc).sig_e.raw,trial),.025);
+                    plottitle = 'Point Estimate';
                 case 3 %upper limit
                     plotrel(trial,gloc) = ...
                         quantile(reliab(data.g(gloc).e(eloc).sig_u.raw,...
                         data.g(gloc).e(eloc).sig_e.raw,trial),.975);
+                    plottitle = 'Upper Limit of 95% Credible Interval';
             end
         end
     end
-    
-    subplot(yplots,xplots,eloc);   %Need to grab color from the subplot
+    pref = 'Dependability v Number of Trials: ';
+    set(gcf,'Name',[pref plottitle]);
+    subplot(yplots,xplots,eloc); 
     h = plot(x,plotrel);
+    
+%Need to grab color from the subplot
 %     clines = get(h,'Color');
 % 
 %     hold on
@@ -424,10 +446,8 @@ for eloc=1:nevents
         leg = legend(gnames{:},'Location','southeast');
         set(leg,'FontSize',fsize);
     end
-end
 
-%store the cutoff in relsummary to pass to other functions more easily
-relsummary.depcutoff = depcutoff;
+end
 
 switch analysis
     case 1 %no groups or event types to consider
@@ -1297,6 +1317,8 @@ RELout.relsummary = relsummary;
 if picc == 1
     iccplot = figure;
     iccplot.Position = [125 65 900 450];
+    set(gcf,'NumberTitle','Off');
+    set(gcf,'Name','ICC Estimates');
     miccm = zeros(nevents,ngroups);
     lliccm = zeros(nevents,ngroups);
     uliccm = zeros(nevents,ngroups);
@@ -1367,6 +1389,8 @@ end
 if plotbetstddev == 1
     sdplot = figure;
     sdplot.Position = [225 165 900 450];
+    set(gcf,'NumberTitle','Off');
+    set(gcf,'Name','Between-Person Standard Deviations');
     msd = zeros(nevents,ngroups);
     llsd = zeros(nevents,ngroups);
     ulsd = zeros(nevents,ngroups);
@@ -1570,7 +1594,7 @@ figheight = 400;
 
 %define space between rows and first row location
 rowspace = 25;
-row = figheight - rowspace*2;
+row = figheight - rowspace*1.6;
 
 era_inctrl= figure('unit','pix','Visible','off',...
   'position',[1150 700 figwidth figheight],...
@@ -1580,13 +1604,23 @@ era_inctrl= figure('unit','pix','Visible','off',...
   'numbertitle','off',...
   'resize','off');
 
-%Print the name of the loaded dataset
+figtitle = strcat('Dependability Analyses, %0.2f Cutoff\n',...
+    'Cutoff Used the %s');
+
+%Add table title
 uicontrol(era_inctrl,'Style','text','fontsize',16,...
     'HorizontalAlignment','center',...
     'String',...
-    sprintf('Dependability Analyses, %0.2f Cutoff',...
+    sprintf('Dependability Analyses, %0.2f Cutoff\n',...
     RELout.relsummary.depcutoff),...
-    'Position',[0 row figwidth 25]);          
+    'Position',[0 row figwidth 20]);   
+
+uicontrol(era_inctrl,'Style','text','fontsize',16,...
+    'HorizontalAlignment','center',...
+    'String',...
+    sprintf('Cutoff Used the %s',...
+    RELout.relsummary.meascutoff),...
+    'Position',[0 row-20 figwidth 20]); 
 
 %Start a table
 t = uitable('Parent',era_inctrl,'Position',...
@@ -1709,6 +1743,8 @@ if strcmp(ext,'.xlsx')
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
+    filehead{end+1} = sprintf('Cutoff Threshold used the %s',...
+        REL.relsummary.meascutoff);
     filehead{end+1} = sprintf('Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
     filehead{end+1}='';
@@ -1727,6 +1763,8 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
+    fprintf(fid,'Cutoff Threshold used the %s\n',...
+        REL.relsummary.meascutoff);
     fprintf(fid, 'Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
     fprintf(fid,'\n');
@@ -1776,11 +1814,13 @@ if strcmp(ext,'.xlsx')
     datap{3,1} = sprintf('Dataset: %s',REL.filename);
     datap{4,1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
-    datap{5,1} = sprintf('Chains: %d, Iterations: %d',...
+    datap{5,1} = sprintf('Cutoff Threshold used the %s',...
+        REL.relsummary.meascutoff);
+    datap{6,1} = sprintf('Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
-    datap{6,1}='';
     datap{7,1}='';
-    datap{8,1} = 'Good IDs'; datap{8,2} = 'Bad IDs';
+    datap{8,1}='';
+    datap{9,1} = 'Good IDs'; datap{8,2} = 'Bad IDs';
     
     gids = [];
     bids = [];
@@ -1791,11 +1831,11 @@ if strcmp(ext,'.xlsx')
     end
     
     for i = 1:length(gids)
-        datap{i+8,1}=char(gids(i));
+        datap{i+9,1}=char(gids(i));
     end
 
     for i = 1:length(bids)
-        datap{i+8,2}=char(bids(i));
+        datap{i+9,2}=char(bids(i));
     end
 
     xlswrite(fullfile(savepath,savename),datap);
@@ -1809,6 +1849,8 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
+    fprintf(fid,'Cutoff Threshold used the %s\n',...
+        REL.relsummary.meascutoff);
     fprintf(fid,'Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
     fprintf(fid,'\n');
@@ -1874,6 +1916,8 @@ if strcmp(ext,'.xlsx')
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
+    filehead{end+1} = sprintf('Cutoff Threshold used the %s',...
+        REL.relsummary.meascutoff);
     filehead{end+1} = sprintf('Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
     filehead{end+1}='';
@@ -1892,6 +1936,8 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
+    fprintf(fid,'Cutoff Threshold used the %s\n',...
+        REL.relsummary.meascutoff);
     fprintf(fid,'Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
     fprintf(fid,'\n');
@@ -1939,6 +1985,8 @@ if strcmp(ext,'.xlsx')
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
+    filehead{end+1} = sprintf('Cutoff Threshold used the %s',...
+        REL.relsummary.meascutoff);
     filehead{end+1} = sprintf('Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
     filehead{end+1}='';
@@ -1957,6 +2005,8 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
+    fprintf(fid,'Cutoff Threshold used the %s\n',...
+        REL.relsummary.meascutoff);
     fprintf(fid,'Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
     fprintf(fid,'\n');

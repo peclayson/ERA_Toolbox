@@ -66,6 +66,7 @@ if ~exist('file','var')
     if filepart == 0 
         errordlg('No file selected','File Error');
         era_start;
+        return;
     end
 
     fprintf('\n\nLoading Data...\n\n');

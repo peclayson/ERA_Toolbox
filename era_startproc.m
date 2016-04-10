@@ -60,6 +60,7 @@ end
 if filepart == 0 
     errordlg('No file selected','File Error');
     era_start;
+    return;
 end
 
 fprintf('\n\nLoading Data...');
@@ -682,6 +683,7 @@ while rerun ~= 0
         era_gui = findobj('Tag','era_gui');
         rerun = guidata(era_gui);
         close(era_gui);
+        delete(era_gui);
         
     else 
         %if chains converged, do no rerun.
