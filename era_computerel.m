@@ -136,6 +136,8 @@ elseif isempty(varargin)
     
 end %if ~isempty(varargin)
 
+eraver = .21;
+
 %store raw data to pass to era_checkconvergence in the event that the user
 %chooses to run with more iterations
 dataraw = datatable;
@@ -1053,6 +1055,7 @@ switch analysis
 
 end %switch analysis
 
+REL.eraver = eraver;
 RELout = REL;
 
 end

@@ -2193,14 +2193,14 @@ end
 
 
 function depout = reliab(var_u, var_e, obs)
-%calculate dependability 
+%calculate dependability from a Stanfit object 
 
 depout = var_u.^2 ./ (var_u.^2 + (var_e.^2./obs));
 
 end
 
 function iccout = iccfun(var_u,var_e)
-%calculate iccs
+%calculate iccs from a Stanfit object
 
 iccout = var_u.^2 ./ (var_u.^2 + var_e.^2);
 
