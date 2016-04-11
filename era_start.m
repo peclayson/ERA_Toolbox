@@ -28,7 +28,8 @@ function era_start
 % <insert citation here>
 %
 %Please cite both papers when using the ERA toolbox (Baldwin et al. paper
-%for the formulas and concept; Clayson and Miller paper for the toolbox)
+%for the formulas and concept; Clayson and Miller paper for the first 
+%mention of the toolbox)
 %
 %
 %Input
