@@ -525,14 +525,12 @@ switch analysis
             datatrls = REL.data;
 
             trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
-
-            ind2exclude = trltable.GroupCount(:);
             
             %define all of the data as bad, because the cutoff wasn't even
             %found
             relsummary.group(gloc).event(eloc).eventgoodids = 'none';
             relsummary.group(gloc).event(eloc).eventbadids =...
-                trltable.id(ind2exclude);
+                trltable.id;
 
             relsummary.group(gloc).goodids = 'none';
             relsummary.group(gloc).badids = ...
@@ -774,11 +772,9 @@ switch analysis
                 trltable = varfun(@length,datatrls,...
                     'GroupingVariables',{'id'});
 
-                ind2exclude = trltable.GroupCount(:);
-
                 relsummary.group(gloc).event(eloc).eventgoodids = 'none';
                 relsummary.group(gloc).event(eloc).eventbadids =...
-                    trltable.id(ind2exclude);   
+                    trltable.id;   
                 
             else
                 
@@ -986,15 +982,12 @@ switch analysis
                 trltable = varfun(@length,datatrls,...
                     'GroupingVariables',{'id'});
 
-                ind2include = 'none';
-                ind2exclude = trltable.GroupCount(:);
-
                 %store all of the participant ids as bad, becuase none
                 %reached the cutoff
                 relsummary.group(gloc).event(eloc).eventgoodids =...
                     'none';
                 relsummary.group(gloc).event(eloc).eventbadids =...
-                    trltable.id(ind2exclude);
+                    trltable.id;
 
             elseif ~isempty(trlcutoff) %if a cutoff was found
 
@@ -1216,12 +1209,10 @@ switch analysis
                 
                     trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
 
-                    ind2exclude = trltable.GroupCount(:);
-
                     relsummary.group(gloc).event(eloc).eventgoodids =...
                         'none';
                     relsummary.group(gloc).event(eloc).eventbadids =...
-                        trltable.id(ind2exclude);
+                        trltable.id;
                     
                 elseif ~isempty(trlcutoff) %if a cutoff was found
 
