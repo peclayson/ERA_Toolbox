@@ -216,10 +216,6 @@ elseif exist('ngroup','var') && exist('nevent','var')
     analysis = 4;
 end
 
-%variable to specify whether convergence between chains has been met. If
-%not, will keep running unless the user specifies otherwise.
-converged = 0;
-
 switch analysis
     case 1 %no groups or event types to consider
         
