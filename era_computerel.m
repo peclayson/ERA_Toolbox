@@ -31,8 +31,9 @@ function RELout = era_computerel(varargin)
 %   labels: labels for the data. If either events or groups were processed
 %    then this the labeles for events or groups. If both events and groups
 %    were processed then this labels will be 'event_group' for each
-%    possible combination (e.g., 'Error_Controls' or 'Hits_Patients'' event 
-%    and group will be separated by an underscore)
+%    possible combination (e.g., 'Error_;_Controls' or 'Hits_;_Patients'  
+%    event and group will be separated by _;_ to avoid using a common 
+%    delimeter that could be used by a researcher to label an event)
 %  conv: nest for convergence data
 %   data: convergence statistics with three columns (parameter, n_eff,
 %    r_hat)
@@ -136,7 +137,7 @@ elseif isempty(varargin)
     
 end %if ~isempty(varargin)
 
-eraver = .21;
+eraver = '0.3.1';
 
 %store raw data to pass to era_checkconvergence in the event that the user
 %chooses to run with more iterations
@@ -1042,7 +1043,7 @@ switch analysis
             %group name with an underscore
             for i=1:ngroup
                 REL.out.labels(:,end+1) = strcat(eventnames(j),...
-                    '_',groupnames(i));           
+                    '_;_',groupnames(i));           
             end
 
             REL.out.conv.data{end+1} = era_storeconv(fit);

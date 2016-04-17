@@ -102,14 +102,6 @@ if ~isempty(varargin)
         depcutoff = .70; %default level is .70
     end
     
-    %check if depmeas is provided
-    ind = find(strcmp('depmeas',varargin),1);
-    if ~isempty(ind)
-        depmeas = cell2mat(varargin{ind+1}); 
-    else 
-        depmeas = 'mean'; %default is 1
-    end
-    
     %check if plotdep is provided
     ind = find(strcmp('plotdep',varargin),1);
     if ~isempty(ind)
@@ -334,7 +326,7 @@ switch analysis
                 
             %use the underscores that were added in era_computerel to
             %differentiate where the group and event the data are for
-            lblstr = strsplit(REL.out.labels{i},'_');
+            lblstr = strsplit(REL.out.labels{i},'_;_');
 
             eloc = find(ismember(enames,lblstr(1)));
             gloc = find(ismember(gnames,lblstr(2)));
@@ -553,7 +545,7 @@ switch analysis
 
             %calculate dependability using either the mean or median (based
             %on user input)
-            switch depmeas
+            switch depcentmeas
                 case 'mean'
                     depcent = trlmean;
                 case 'median'
@@ -573,7 +565,7 @@ switch analysis
             relsummary.group(gloc).event(eloc).dep.m = mdep;
             relsummary.group(gloc).event(eloc).dep.ll = lldep;
             relsummary.group(gloc).event(eloc).dep.ul = uldep;
-            relsummary.group(gloc).event(eloc).dep.meas = depmeas;
+            relsummary.group(gloc).event(eloc).dep.meas = depcentmeas;
 
             relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
@@ -619,7 +611,7 @@ switch analysis
 
             %calculate dependability using either the mean or median (based
             %on user input)
-            switch depmeas
+            switch depcentmeas
                 case 'mean'
                     depcent = trlmean;
                 case 'median'
@@ -639,7 +631,7 @@ switch analysis
             relsummary.group(gloc).event(eloc).dep.m = mdep;
             relsummary.group(gloc).event(eloc).dep.ll = lldep;
             relsummary.group(gloc).event(eloc).dep.ul = uldep;
-            relsummary.group(gloc).event(eloc).dep.meas = depmeas;
+            relsummary.group(gloc).event(eloc).dep.meas = depcentmeas;
 
             relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
@@ -841,7 +833,7 @@ switch analysis
 
             %calculate dependability using either the mean or median (based
             %on user input)
-            switch depmeas
+            switch depcentmeas
                 case 'mean'
                     depcent = trlmean;
                 case 'median'
@@ -861,7 +853,7 @@ switch analysis
             relsummary.group(gloc).event(eloc).dep.m = mdep;
             relsummary.group(gloc).event(eloc).dep.ll = lldep;
             relsummary.group(gloc).event(eloc).dep.ul = uldep;
-            relsummary.group(gloc).event(eloc).dep.meas = depmeas;
+            relsummary.group(gloc).event(eloc).dep.meas = depcentmeas;
             
             relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
@@ -1070,7 +1062,7 @@ switch analysis
 
             %calculate dependability using either the mean or median (based
             %on user input)
-            switch depmeas
+            switch depcentmeas
                 case 'mean'
                     depcent = trlmean;
                 case 'median'
@@ -1090,7 +1082,7 @@ switch analysis
             relsummary.group(gloc).event(eloc).dep.m = mdep;
             relsummary.group(gloc).event(eloc).dep.ll = lldep;
             relsummary.group(gloc).event(eloc).dep.ul = uldep;
-            relsummary.group(gloc).event(eloc).dep.meas = depmeas;
+            relsummary.group(gloc).event(eloc).dep.meas = depcentmeas;
 
             relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
@@ -1309,7 +1301,7 @@ switch analysis
 
                 %calculate dependability using either the mean or median 
                 %(based on user input)
-                switch depmeas
+                switch depcentmeas
                     case 'mean'
                         depcent = trlmean;
                     case 'median'
@@ -1329,7 +1321,7 @@ switch analysis
                 relsummary.group(gloc).event(eloc).dep.m = mdep;
                 relsummary.group(gloc).event(eloc).dep.ll = lldep;
                 relsummary.group(gloc).event(eloc).dep.ul = uldep;
-                relsummary.group(gloc).event(eloc).dep.meas = depmeas;
+                relsummary.group(gloc).event(eloc).dep.meas = depcentmeas;
                 
                 relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
                 relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
@@ -1548,7 +1540,7 @@ if plotbetstddev == 1
     
     %add names to legend
     if ~(g > 1 && e == 1)
-        pl = legend(iccplot);
+        pl = legend(sdplot);
         pl.String = gnames;
     end
     
