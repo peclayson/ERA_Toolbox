@@ -4,6 +4,8 @@ function era_relfigures(varargin)
 %
 %era_relfigures('data',ERAData)
 %
+%Last Modified 4/18/16
+%
 %Note: The Statistics and Machine Learning Toolbox is required
 %
 %Required Inputs:
@@ -27,6 +29,16 @@ function era_relfigures(varargin)
 %  variance (between person v within person)
 % plotbetstddev - plot the between-person standard deviations stratified
 %  by group and event
+% plotdepline - indicate whether to plot 1-lower limit of credible
+%  interval, 2-point estimate, 3-upper limit of credible interval for the  
+%  plot of dependability v number of trials (default: 1)
+% plotntrials - indicate the number of trials to plot (x-axis) in the 
+%  dependability v number of trials plot (default: 50)
+% meascutoff - which estimate to use to define cutoff for number of trials
+%  1 - lower limit of credible interval, 2 - point estimate, 3 - upper
+%  limit of credible interval (default: 1)
+% depcentmeas - which measure of central tendency to use to estimate the
+%  overall dependability, 1 - mean, 2 - median (default: 1)
 %
 %Output:
 % Various figures may be plotted. Tables will also have buttons for
@@ -52,7 +64,7 @@ function era_relfigures(varargin)
 %
 
 %History 
-% by Peter Clayson (3/5/15)
+% by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 %
 
@@ -176,22 +188,65 @@ if ~isempty(varargin)
         plotbetstddev = 1; %default is 1
     end
     
+    %check if plotdepline is provided
+    ind = find(strcmp('plotdepline',varargin),1);
+    if ~isempty(ind)
+        if iscell(varargin{ind+1})
+            plotdepline = cell2mat(varargin{ind+1}); 
+        elseif isnumeric(varargin{ind+1})
+            plotdepline = varargin{ind+1}; 
+        end
+    else 
+        plotdepline = 1; %default is 1 (lower limit of credible interval)
+    end
+    
+    %check if meascutoff is provided
+    ind = find(strcmp('meascutoff',varargin),1);
+    if ~isempty(ind)
+        if iscell(varargin{ind+1})
+            meascutoff = cell2mat(varargin{ind+1}); 
+        elseif isnumeric(varargin{ind+1})
+            meascutoff = varargin{ind+1}; 
+        end
+    else 
+        meascutoff = 1; %default is 1 (lower limit of credible interval)
+    end
+    
+    %check if depcentmeas is provided
+    ind = find(strcmp('depcentmeas',varargin),1);
+    if ~isempty(ind)
+        if iscell(varargin{ind+1})
+            depcentmeas = cell2mat(varargin{ind+1}); 
+        elseif isnumeric(varargin{ind+1})
+            depcentmeas = varargin{ind+1}; 
+        end
+    else 
+        depcentmeas = 1; %default is 1 (mean)
+    end
+    
 elseif ~isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
-    strcat('WARNING: Optional inputs are incomplete \n\n',... 
+    strcat('WARNING: Inputs are incomplete \n\n',... 
     'Make sure each variable input is paired with a value \n',...
-    'See help era_relfigures for more information on optional inputs'));
+    'See help era_relfigures for more information on inputs'));
     
 end %if ~isempty(varargin)
 
 %create a data structure for storing outputs
 data = struct;
 
+%create variable to specify whether there are bad/unreliable data
+%default state: 0, will be changed to 1 if there is a problem
+poorrel = struct();
+poorrel.trlcutoff = 0;
+poorrel.trlmax = 0;
+
 %check whether any groups exist
 if strcmpi(REL.groups,'none')
     ngroups = 1;
-    gnames = cellstr(REL.groups);
+    %gnames = cellstr(REL.groups);
+    gnames ={''};
 else
     ngroups = length(REL.groups);
     gnames = REL.groups(:);
@@ -200,7 +255,8 @@ end
 %check whether any events exist
 if strcmpi(REL.events,'none')
     nevents = 1;
-    enames = cellstr(REL.events);
+    %enames = cellstr(REL.events);
+    enames = {''};
 else
     nevents = length(REL.events);
     enames = REL.events(:);
@@ -272,7 +328,7 @@ switch analysis
                 
             %use the underscores that were added in era_computerel to
             %differentiate where the group and event the data are for
-            lblstr = strsplit(REL.out.labels{i},'_');
+            lblstr = strsplit(REL.out.labels{i},'_;_');
 
             eloc = find(ismember(enames,lblstr(1)));
             gloc = find(ismember(gnames,lblstr(2)));
@@ -290,14 +346,28 @@ switch analysis
         end
 end %switch analysis
 
+%store the cutoff in relsummary to pass to other functions more easily
+relsummary.depcutoff = depcutoff;
+
+%store which measure was used to specify cutoff
+switch meascutoff
+    case 1
+        relsummary.meascutoff = 'Lower Limit of 95% Credible Interval';
+    case 2
+        relsummary.meascutoff = 'Point Estimate';
+    case 3
+        relsummary.meascutoff = 'Upper Limit of 95% Credible Interval';
+end
+
 %create an x-axis for the number of observations
 ntrials = plotntrials;
 x = 1:ntrials;
 
 %create an empty array for storing information into
+plotrel = zeros(ntrials,0);
 mrel = zeros(ntrials,0);
-% llrel = zeros(ntrials,0);
-% ulrel = zeros(ntrials,0);
+llrel = zeros(ntrials,0);
+ulrel = zeros(ntrials,0);
 
 %see how many subplots are needed
 if nevents > 2
@@ -313,6 +383,7 @@ end
 
 %create the figure
 depplot = figure('Visible','Off');
+set(gcf,'NumberTitle','Off');
 depplot.Position = [125 630 900 450];
 fsize = 16;
 
@@ -320,19 +391,31 @@ fsize = 16;
 for eloc=1:nevents
     for gloc=1:ngroups
         for trial=1:ntrials
-            mrel(trial,gloc) = ...
-                mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,trial));
-%             llrel(trial,gloc) = ...
-%                 quantile(reliab(data.g(gloc).e(eloc).sig_u.raw,...
-%                 data.g(gloc).e(eloc).sig_e.raw,trial),.025);
-%             ulrel(trial,gloc) = ...
-%                 quantile(reliab(data.g(gloc).e(eloc).sig_u.raw,...
-%                 data.g(gloc).e(eloc).sig_e.raw,trial),.975);
+            switch plotdepline 
+                case 1 %lower limit
+                    plotrel(trial,gloc) = ...
+                        mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                        data.g(gloc).e(eloc).sig_e.raw,trial));
+                    plottitle = 'Lower Limit of 95% Credible Interval';
+                case 2 %point estimate
+                    plotrel(trial,gloc) = ...
+                        quantile(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                        data.g(gloc).e(eloc).sig_e.raw,trial),.025);
+                    plottitle = 'Point Estimate';
+                case 3 %upper limit
+                    plotrel(trial,gloc) = ...
+                        quantile(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                        data.g(gloc).e(eloc).sig_e.raw,trial),.975);
+                    plottitle = 'Upper Limit of 95% Credible Interval';
+            end
         end
     end
-    subplot(yplots,xplots,eloc);   %Need to grab color from the subplot
-    h = plot(x,mrel);
+    pref = 'Dependability v Number of Trials: ';
+    set(gcf,'Name',[pref plottitle]);
+    subplot(yplots,xplots,eloc); 
+    h = plot(x,plotrel);
+    
+%Need to grab color from the subplot
 %     clines = get(h,'Color');
 % 
 %     hold on
@@ -357,25 +440,37 @@ for eloc=1:nevents
         leg = legend(gnames{:},'Location','southeast');
         set(leg,'FontSize',fsize);
     end
+
 end
 
-%create empty arrays for storing dependability information
-ntrials = length(data.g(gloc).e(eloc).sig_u.raw);
-mrel = zeros(0,ntrials);
-llrel = zeros(0,ntrials);
-ulrel = zeros(0,ntrials);
-
-%store the cutoff in relsummary to pass to other functions more easily
-relsummary.depcutoff = depcutoff;
-
+%compute dependability data for each group and event
 switch analysis
     case 1 %no groups or event types to consider
         
+        %the same generic structure is used for relsummary, so the event
+        %and group locations will both be 1 for the data
         eloc = 1;
         gloc = 1;
         
+        %grab the group names (if present)
         relsummary.group(gloc).name = gnames{gloc};
+        
+        %set the event name as measure
         relsummary.group(gloc).event(eloc).name = 'measure';
+        
+        try
+            %create empty arrays for storing dependability information
+            trltable = varfun(@length,REL.data{1},'GroupingVariables',{'id'});
+        catch
+            %create empty arrays for storing dependability information
+            trltable = varfun(@length,REL.data,'GroupingVariables',{'id'});
+        end
+        
+        %define the place holders for storing dependability information
+        ntrials = max(trltable.GroupCount(:)) + 100;
+        mrel = zeros(0,ntrials);
+        llrel = zeros(0,ntrials);
+        ulrel = zeros(0,ntrials);
         
         %compute dependability information
         for trial=1:ntrials
@@ -390,100 +485,243 @@ switch analysis
                 data.g(gloc).e(eloc).sig_e.raw,trial),.975);
         end
 
-        %find the number of trials to reach cutoff based on the
-        %lower limit of the confidence interval
-        trlcutoff = find(llrel >= depcutoff, 1);
-
-        %store information about cutoffs
-        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-        relsummary.group(gloc).event(eloc).mrel = mrel(trlcutoff);
-        relsummary.group(gloc).event(eloc).llrel = llrel(trlcutoff);
-        relsummary.group(gloc).event(eloc).ulrel = ulrel(trlcutoff);
-
-
-        %Only calculate overall dependability on the ids with
-        %enough trials
-
-        datatrls = REL.data;
-
-        trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
-
-        ind2include = trltable.GroupCount >= trlcutoff;
-        ind2exclude = trltable.GroupCount < trlcutoff;
-
-        relsummary.group(gloc).event(eloc).eventgoodids =...
-            trltable.id(ind2include);
-        relsummary.group(gloc).event(eloc).eventbadids =...
-            trltable.id(ind2exclude);
+        %find the number of trials to reach cutoff 
+        switch meascutoff
+            case 1 
+                trlcutoff = find(llrel >= depcutoff, 1);
+            case 2
+                trlcutoff = find(mrel >= depcutoff, 1);
+            case 3
+                trlcutoff = find(ulrel >= depcutoff, 1);
+        end
         
-        relsummary.group(gloc).goodids = ...
-            relsummary.group(gloc).event(eloc).eventgoodids;
-        relsummary.group(gloc).badids = ...
-            relsummary.group(gloc).event(eloc).eventbadids;
+        %see whether the trial cutoff was found. If not store all values as
+        %-1. If it is found, store the dependability information about the 
+        %cutoffs.
+        if isempty(trlcutoff)
+            
+            poorrel.trlcutoff = 1;
+            trlcutoff = -1;
+            relsummary.group(gloc).event(eloc).trlcutoff = -1;
+            relsummary.group(gloc).event(eloc).rel.m = -1;
+            relsummary.group(gloc).event(eloc).rel.ll = -1;
+            relsummary.group(gloc).event(eloc).rel.ul = -1;
+            
+        elseif ~isempty(trlcutoff)
+            
+            %store information about cutoffs
+            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+            relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
+            relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
+            relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
 
-        datatable = REL.data;
-
-        goodids = table(relsummary.group(gloc).goodids);
-
-        lmedata = innerjoin(datatable, goodids,...
-            'LeftKeys', 'id', 'RightKeys', 'Var1',...
-            'LeftVariables', {'id' 'meas'});
-
-        trltable = varfun(@length,lmedata,...
-            'GroupingVariables',{'id'});
-
-        trlmean = mean(trltable.GroupCount);
-
-        %perform calculations for overall reliability
-        lmeout = fitlme(lmedata, 'meas ~ 1 + (1|id)',...
-            'FitMethod','REML');
-
-        dep = depall(lmeout,trlmean);
-
-        relsummary.group(gloc).event(eloc).dependability = dep;
-        relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
-        relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
-        relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
-        relsummary.group(gloc).event(eloc).goodn = height(goodids);
+        end    
         
+        %find the participants without enough trials based on the cutoffs
+        if isempty(trlcutoff) %if the cutoff was not found in the data
+            
+            %Get information for the participants
+            datatrls = REL.data;
+
+            trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+            
+            %define all of the data as bad, because the cutoff wasn't even
+            %found
+            relsummary.group(gloc).event(eloc).eventgoodids = 'none';
+            relsummary.group(gloc).event(eloc).eventbadids =...
+                trltable.id;
+
+            relsummary.group(gloc).goodids = 'none';
+            relsummary.group(gloc).badids = ...
+                relsummary.group(gloc).event(eloc).eventbadids;
+            
+            %calculate the dependability estimates for the overall data
+            datatable = REL.data;
+
+            badids = table(relsummary.group(gloc).badids);
+
+            trlcdata = innerjoin(datatable, badids,...
+                'LeftKeys', 'id', 'RightKeys', 'Var1',...
+                'LeftVariables', {'id' 'meas'});
+
+            trltable = varfun(@length,trlcdata,...
+                'GroupingVariables',{'id'});
+
+            trlmean = mean(trltable.GroupCount);
+            trlmed = median(trltable.GroupCount);
+
+            %calculate dependability using either the mean or median (based
+            %on user input)
+            switch depcentmeas
+                case 1
+                    depcent = trlmean;
+                case 2
+                    depcent = trlmed;
+            end
+            
+            mdep = ...
+                mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,depcent)); 
+            lldep = quantile(reliab(...
+                data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,depcent),.025);
+            uldep = quantile(reliab(...
+                data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,depcent),.975);
+
+            relsummary.group(gloc).event(eloc).dep.m = mdep;
+            relsummary.group(gloc).event(eloc).dep.ll = lldep;
+            relsummary.group(gloc).event(eloc).dep.ul = uldep;
+            relsummary.group(gloc).event(eloc).dep.meas = depcent;
+
+            relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
+            relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
+            relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
+            relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
+            relsummary.group(gloc).event(eloc).goodn = 0;
+            
+        elseif ~isempty(trlcutoff)
+            
+            %Get trial information for those that meet cutoff
+            datatrls = REL.data;
+
+            trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+
+            ind2include = trltable.GroupCount >= trlcutoff;
+            ind2exclude = trltable.GroupCount < trlcutoff;
+            
+            %store the good ids and the bad ids (ids that don't meet the
+            %cutoff)
+            relsummary.group(gloc).event(eloc).eventgoodids =...
+                trltable.id(ind2include);
+            relsummary.group(gloc).event(eloc).eventbadids =...
+                trltable.id(ind2exclude);
+
+            relsummary.group(gloc).goodids = ...
+                relsummary.group(gloc).event(eloc).eventgoodids;
+            relsummary.group(gloc).badids = ...
+                relsummary.group(gloc).event(eloc).eventbadids;
+
+            datatable = REL.data;
+            
+            goodids = table(relsummary.group(gloc).goodids);
+
+            trlcdata = innerjoin(datatable, goodids,...
+                'LeftKeys', 'id', 'RightKeys', 'Var1',...
+                'LeftVariables', {'id' 'meas'});
+
+            trltable = varfun(@length,trlcdata,...
+                'GroupingVariables',{'id'});
+
+            trlmean = mean(trltable.GroupCount);
+            trlmed = median(trltable.GroupCount);
+
+            %calculate dependability using either the mean or median (based
+            %on user input)
+            switch depcentmeas
+                case 1
+                    depcent = trlmean;
+                case 2
+                    depcent = trlmed;
+            end
+
+            mdep = ...
+                mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,depcent)); 
+            lldep = quantile(reliab(...
+                data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,depcent),.025);
+            uldep = quantile(reliab(...
+                data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,depcent),.975);
+
+            relsummary.group(gloc).event(eloc).dep.m = mdep;
+            relsummary.group(gloc).event(eloc).dep.ll = lldep;
+            relsummary.group(gloc).event(eloc).dep.ul = uldep;
+            relsummary.group(gloc).event(eloc).dep.meas = depcent;
+
+            relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
+            relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
+            relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
+            relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
+            relsummary.group(gloc).event(eloc).goodn = height(goodids);
+            
+            %just in case a cutoff was extrapolated, the dependability
+            %information will be overwritten
+            if  relsummary.group(gloc).event(eloc).trlcutoff >...
+                    relsummary.group(gloc).event(eloc).trlinfo.max
+                
+                poorrel.trlmax = 1;
+                relsummary.group(gloc).event(eloc).rel.m = -1;
+                relsummary.group(gloc).event(eloc).rel.ll = -1;
+                relsummary.group(gloc).event(eloc).rel.ul = -1;
+
+            end
+            
+            
+        end
         
-        relsummary.group(gloc).event(eloc).micc = ...
+        %calculate iccs, between-subject standard deviations, and
+        %within-subject standard deviations
+        relsummary.group(gloc).event(eloc).icc.m = ...
             mean(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
             data.g(gloc).e(eloc).sig_e.raw)); 
-        relsummary.group(gloc).event(eloc).llicc = ...
+        relsummary.group(gloc).event(eloc).icc.ll = ...
             quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
             data.g(gloc).e(eloc).sig_e.raw),.025); 
-        relsummary.group(gloc).event(eloc).ulicc = ...
+        relsummary.group(gloc).event(eloc).icc.ul = ...
             quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
             data.g(gloc).e(eloc).sig_e.raw),.975); 
 
-        relsummary.group(gloc).event(eloc).mbetsd = ...
+        relsummary.group(gloc).event(eloc).betsd.m = ...
             mean(data.g(gloc).e(eloc).sig_u.raw); 
-        relsummary.group(gloc).event(eloc).llbetsd = ...
+        relsummary.group(gloc).event(eloc).betsd.ll = ...
             quantile(data.g(gloc).e(eloc).sig_u.raw,.025); 
-        relsummary.group(gloc).event(eloc).ulbetsd = ...
+        relsummary.group(gloc).event(eloc).betsd.ul = ...
             quantile(data.g(gloc).e(eloc).sig_u.raw,.975);
         
-        relsummary.group(gloc).event(eloc).mwitsd = ...
+        relsummary.group(gloc).event(eloc).witsd.m = ...
             mean(data.g(gloc).e(eloc).sig_e.raw); 
-        relsummary.group(gloc).event(eloc).llwitsd = ...
+        relsummary.group(gloc).event(eloc).witsd.ll = ...
             quantile(data.g(gloc).e(eloc).sig_e.raw,.025); 
-        relsummary.group(gloc).event(eloc).ulwitsd = ...
+        relsummary.group(gloc).event(eloc).witsd.ul = ...
             quantile(data.g(gloc).e(eloc).sig_e.raw,.975);
        
         
     case 2 %possible multiple groups but no event types to consider
         
+        %since the same generic structure is used for relsummary, the event
+        %location will be defined as 1. 
        	eloc = 1;
 
-        for gloc=1:ngroups
+        for gloc=1:ngroups %loop through each group
 
+            %store the name of the group
             if eloc == 1
                 relsummary.group(gloc).name = gnames{gloc};
             end
 
+            %store the name of the event
             relsummary.group(gloc).event(eloc).name = enames{eloc};
+            
+            try
+                %create empty arrays for storing dependability information
+                trltable = varfun(@length,REL.data{1},...
+                    'GroupingVariables',{'id'});
+            catch
+                %create empty arrays for storing dependability information
+                trltable = varfun(@length,REL.data,...
+                    'GroupingVariables',{'id'});
+            end
+        
 
+            %define the place holders for storing dependability information
+            ntrials = max(trltable.GroupCount(:)) + 100;
+            mrel = zeros(0,ntrials);
+            llrel = zeros(0,ntrials);
+            ulrel = zeros(0,ntrials);
+            
+            %calculate dependability information
             for trial=1:ntrials
                 mrel(trial) = ...
                     mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
@@ -496,35 +734,82 @@ switch analysis
                     data.g(gloc).e(eloc).sig_e.raw,trial),.975);
             end
 
-            %find the number of trials to reach cutoff based on the
-            %lower limit of the confidence interval
-            trlcutoff = find(llrel >= depcutoff, 1);
+            %find the number of trials to reach cutoff
+            switch meascutoff
+                case 1 
+                    trlcutoff = find(llrel >= depcutoff, 1);
+                case 2
+                    trlcutoff = find(mrel >= depcutoff, 1);
+                case 3
+                    trlcutoff = find(ulrel >= depcutoff, 1);
+            end
+            
+            %see whether the trial cutoff was found. If not store all 
+            %values as -1. If it is found, store the dependability 
+            %information about the cutoffs.
+            
+            if isempty(trlcutoff)
 
-            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-            relsummary.group(gloc).event(eloc).mrel = mrel(trlcutoff);
-            relsummary.group(gloc).event(eloc).llrel = llrel(trlcutoff);
-            relsummary.group(gloc).event(eloc).ulrel = ulrel(trlcutoff);
+                poorrel.trlcutoff = 1;
+                trlcutoff = -1;
+                relsummary.group(gloc).event(eloc).trlcutoff = -1;
+                relsummary.group(gloc).event(eloc).rel.m = -1;
+                relsummary.group(gloc).event(eloc).rel.ll = -1;
+                relsummary.group(gloc).event(eloc).rel.ul = -1;
 
+            elseif ~isempty(trlcutoff)
 
-            %Only calculate overall dependability on the ids with
-            %enough trials
+                %store information about cutoffs
+                relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
+                relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
+                relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
 
-            datatrls = REL.data;
-            ind = strcmp(datatrls.group,gnames{gloc});
-            datatrls = datatrls(ind,:);
+            end 
+            
+            %if the trial cutoff was not found in the specified data
+            if trlcutoff == -1
+                
+                %store all the ids as bad
+                datatrls = REL.data;
+                ind = strcmp(datatrls.group,gnames{gloc});
+                datatrls = datatrls(ind,:);
 
-            trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+                trltable = varfun(@length,datatrls,...
+                    'GroupingVariables',{'id'});
 
-            ind2include = trltable.GroupCount >= trlcutoff;
-            ind2exclude = trltable.GroupCount < trlcutoff;
+                relsummary.group(gloc).event(eloc).eventgoodids = 'none';
+                relsummary.group(gloc).event(eloc).eventbadids =...
+                    trltable.id;   
+                
+            else
+                
+                %store the ids for participants with enough trials as good,
+                %and the ids for participants with too few trials as bad
+                datatrls = REL.data;
+                ind = strcmp(datatrls.group,gnames{gloc});
+                datatrls = datatrls(ind,:);
 
-            relsummary.group(gloc).event(eloc).eventgoodids =...
-                trltable.id(ind2include);
-            relsummary.group(gloc).event(eloc).eventbadids =...
-                trltable.id(ind2exclude);
+                trltable = varfun(@length,datatrls,...
+                    'GroupingVariables',{'id'});
+
+                ind2include = trltable.GroupCount >= trlcutoff;
+                ind2exclude = trltable.GroupCount < trlcutoff;
+
+                relsummary.group(gloc).event(eloc).eventgoodids =...
+                    trltable.id(ind2include);
+                relsummary.group(gloc).event(eloc).eventbadids =...
+                    trltable.id(ind2exclude);
+                
+            end
+
+            
         end
 
-        %find the ids that have enough trials for each event type
+        %since there is only 1 event, those participants with good data for
+        %the event will be store as participants having good data for the
+        %whole group (this step makes more sense when there is more than
+        %one event per group)
         
         for gloc=1:ngroups
         
@@ -534,59 +819,104 @@ switch analysis
                 relsummary.group(gloc).event(eloc).eventbadids;
             
         end
-
+        
+        %calculate the dependability for the overall data for each group
         for gloc=1:ngroups
 
             datatable = REL.data;
             ind = strcmp(datatable.group,gnames{gloc});
             datasubset = datatable(ind,:);
+            
+            %only factor in the trial counts from those with good data
+            
+            if ~strcmp(relsummary.group(gloc).goodids,'none')
+                goodids = table(relsummary.group(gloc).goodids);
+            elseif strcmp(relsummary.group(gloc).goodids,'none')
+                goodids = table(relsummary.group(gloc).goodids);
+            end
 
-            goodids = table(relsummary.group(gloc).goodids);
-
-            lmedata = innerjoin(datasubset, goodids,...
+            trlcdata = innerjoin(datasubset, goodids,...
                 'LeftKeys', 'id', 'RightKeys', 'Var1',...
                 'LeftVariables', {'id' 'meas'});
 
-            trltable = varfun(@length,lmedata,...
+            trltable = varfun(@length,trlcdata,...
                 'GroupingVariables',{'id'});
 
             trlmean = mean(trltable.GroupCount);
+            trlmed = median(trltable.GroupCount);
 
-            %perform calculations for overall reliability
-            lmeout = fitlme(lmedata, 'meas ~ 1 + (1|id)',...
-                'FitMethod','REML');
+            %calculate dependability using either the mean or median (based
+            %on user input)
+            switch depcentmeas
+                case 1
+                    depcent = trlmean;
+                case 2
+                    depcent = trlmed;
+            end
 
-            dep = depall(lmeout,trlmean);
+            mdep = ...
+                mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,depcent)); 
+            lldep = quantile(reliab(...
+                data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,depcent),.025);
+            uldep = quantile(reliab(...
+                data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,depcent),.975);
 
-            relsummary.group(gloc).event(eloc).dependability = dep;
+            relsummary.group(gloc).event(eloc).dep.m = mdep;
+            relsummary.group(gloc).event(eloc).dep.ll = lldep;
+            relsummary.group(gloc).event(eloc).dep.ul = uldep;
+            relsummary.group(gloc).event(eloc).dep.meas = depcent;
+            
             relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
-            relsummary.group(gloc).event(eloc).goodn = height(goodids);
+            relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
             
+            %just in case a cutoff was extrapolated, the dependability
+            %information will be overwritten
+            if  relsummary.group(gloc).event(eloc).trlcutoff >...
+                    relsummary.group(gloc).event(eloc).trlinfo.max
+                
+                poorrel.trlmax = 1;
+                relsummary.group(gloc).event(eloc).rel.m = -1;
+                relsummary.group(gloc).event(eloc).rel.ll = -1;
+                relsummary.group(gloc).event(eloc).rel.ul = -1;
+
+            end
             
-            relsummary.group(gloc).event(eloc).micc = ...
+            if ~strcmp(relsummary.group(gloc).goodids,'none')
+                relsummary.group(gloc).event(eloc).goodn = height(goodids);
+            elseif strcmp(relsummary.group(gloc).goodids,'none')
+                relsummary.group(gloc).event(eloc).goodn = 0;
+            end
+            
+            %calculate iccs, between-subject standard deviations, and
+            %within-subject standard deviations            
+            
+            relsummary.group(gloc).event(eloc).icc.m = ...
                 mean(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                 data.g(gloc).e(eloc).sig_e.raw)); 
-            relsummary.group(gloc).event(eloc).llicc = ...
+            relsummary.group(gloc).event(eloc).icc.ll = ...
                 quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                 data.g(gloc).e(eloc).sig_e.raw),.025); 
-            relsummary.group(gloc).event(eloc).ulicc = ...
+            relsummary.group(gloc).event(eloc).icc.ul = ...
                 quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                 data.g(gloc).e(eloc).sig_e.raw),.975);
             
-            relsummary.group(gloc).event(eloc).mbetsd = ...
+            relsummary.group(gloc).event(eloc).betsd.m = ...
                 mean(data.g(gloc).e(eloc).sig_u.raw); 
-            relsummary.group(gloc).event(eloc).llbetsd = ...
+            relsummary.group(gloc).event(eloc).betsd.ll = ...
                 quantile(data.g(gloc).e(eloc).sig_u.raw,.025); 
-            relsummary.group(gloc).event(eloc).ulbetsd = ...
+            relsummary.group(gloc).event(eloc).betsd.ul = ...
                 quantile(data.g(gloc).e(eloc).sig_u.raw,.975);
 
-            relsummary.group(gloc).event(eloc).mwitsd = ...
+            relsummary.group(gloc).event(eloc).witsd.m = ...
                 mean(data.g(gloc).e(eloc).sig_e.raw); 
-            relsummary.group(gloc).event(eloc).llwitsd = ...
+            relsummary.group(gloc).event(eloc).witsd.ll = ...
                 quantile(data.g(gloc).e(eloc).sig_e.raw,.025); 
-            relsummary.group(gloc).event(eloc).ulwitsd = ...
+            relsummary.group(gloc).event(eloc).witsd.ul = ...
                 quantile(data.g(gloc).e(eloc).sig_e.raw,.975);
        
             
@@ -595,138 +925,257 @@ switch analysis
         
     case 3 %possible event types but no groups to consider
         
+        %since the relsummary structure is generic for any number of groups
+        %or events, the data will count as being from 1 group. 
         gloc = 1;
+        
+        %cylce through each event
         for eloc=1:nevents
                 
-                if eloc == 1
-                    relsummary.group(gloc).name = gnames{gloc};
-                end
-               
-                relsummary.group(gloc).event(eloc).name = enames{eloc};
-                
-                for trial=1:ntrials
-                    mrel(trial) = ...
-                        mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
-                        data.g(gloc).e(eloc).sig_e.raw,trial)); 
-                    llrel(trial) = quantile(reliab(...
-                        data.g(gloc).e(eloc).sig_u.raw,...
-                        data.g(gloc).e(eloc).sig_e.raw,trial),.025);
-                    ulrel(trial) = quantile(reliab(...
-                        data.g(gloc).e(eloc).sig_u.raw,...
-                        data.g(gloc).e(eloc).sig_e.raw,trial),.975);
-                end
-                
-                %find the number of trials to reach cutoff based on the
-                %lower limit of the confidence interval
-                trlcutoff = find(llrel >= depcutoff, 1);
-                
-                relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                relsummary.group(gloc).event(eloc).mrel = mrel(trlcutoff);
-                relsummary.group(gloc).event(eloc).llrel = llrel(trlcutoff);
-                relsummary.group(gloc).event(eloc).ulrel = ulrel(trlcutoff);
-                
-                
-                %Only calculate overall dependability on the ids with
-                %enough trials
-                
+            %get the group name
+            if eloc == 1
+                relsummary.group(gloc).name = gnames{gloc};
+            end
+            
+            %get the event name
+            relsummary.group(gloc).event(eloc).name = enames{eloc};
+            
+            %create empty arrays for storing dependability information
+            trltable = varfun(@length,REL.data{1},...
+                'GroupingVariables',{'id'});
+            
+            %define the place holders for storing dependability information
+            ntrials = max(trltable.GroupCount(:)) + 100;
+            mrel = zeros(0,ntrials);
+            llrel = zeros(0,ntrials);
+            ulrel = zeros(0,ntrials);
+
+            %compute dependability estimates to be used for the cutoffs
+            for trial=1:ntrials
+                mrel(trial) = ...
+                    mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw,trial)); 
+                llrel(trial) = quantile(reliab(...
+                    data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw,trial),.025);
+                ulrel(trial) = quantile(reliab(...
+                    data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw,trial),.975);
+            end
+
+            %find the number of trials to reach cutoffl
+            switch meascutoff
+                case 1 
+                    trlcutoff = find(llrel >= depcutoff, 1);
+                case 2
+                    trlcutoff = find(mrel >= depcutoff, 1);
+                case 3
+                    trlcutoff = find(ulrel >= depcutoff, 1);
+            end
+
+            
+            if isempty(trlcutoff) %if a cutoff wasn't found
+
+                poorrel.trlcutoff = 1;
+                trlcutoff = -1;
+                relsummary.group(gloc).event(eloc).trlcutoff = -1;
+                relsummary.group(gloc).event(eloc).rel.m = -1;
+                relsummary.group(gloc).event(eloc).rel.ll = -1;
+                relsummary.group(gloc).event(eloc).rel.ul = -1;
+
                 datatrls = REL.data{eloc};
-                
+
+                trltable = varfun(@length,datatrls,...
+                    'GroupingVariables',{'id'});
+
+                %store all of the participant ids as bad, becuase none
+                %reached the cutoff
+                relsummary.group(gloc).event(eloc).eventgoodids =...
+                    'none';
+                relsummary.group(gloc).event(eloc).eventbadids =...
+                    trltable.id;
+
+            elseif ~isempty(trlcutoff) %if a cutoff was found
+
+                %store information about cutoffs
+                relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
+                relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
+                relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+
+                datatrls = REL.data{eloc};
+
                 trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
-                
+
                 ind2include = trltable.GroupCount >= trlcutoff;
                 ind2exclude = trltable.GroupCount < trlcutoff;
-                
-                relsummary.group(gloc).event(eloc).eventgoodids = trltable.id(ind2include);
-                relsummary.group(gloc).event(eloc).eventbadids = trltable.id(ind2exclude);
+        
+                %store which participants had enough trials to meet cutoff
+                relsummary.group(gloc).event(eloc).eventgoodids =...
+                    trltable.id(ind2include);
+                relsummary.group(gloc).event(eloc).eventbadids =...
+                    trltable.id(ind2exclude);
 
+            end 
+                
         end
         
+        %cycle through the events and store information about which
+        %participants have good data across all event types.
         tempids = {};
         badids = [];
         for eloc=1:nevents
-            tempids{end+1} = relsummary.group(gloc).event(eloc).eventgoodids;
-
-            if eloc > 1
-                [~,ind]=setdiff(tempids{1},tempids{eloc});
-                new = tempids{1};
-                badids = vertcat(badids,...
-                        relsummary.group(gloc).event(eloc).eventbadids,...
-                        new(ind));
-                new(ind) = [];
-                tempids{1} = new;
+            if ~strcmp(relsummary.group(gloc).event(eloc).eventgoodids,'none')
+                tempids{end+1} = relsummary.group(gloc).event(eloc).eventgoodids;
+                if eloc == 1
+                    badids = relsummary.group(gloc).event(eloc).eventbadids;
+                elseif eloc > 1
+                    [~,ind]=setdiff(tempids{1},tempids{end});
+                    new = tempids{1};
+                    badids = vertcat(badids,...
+                            relsummary.group(gloc).event(eloc).eventbadids,...
+                            new(ind));
+                    new(ind) = [];
+                    tempids{1} = new;
+                end
             end
-
         end
-
+        
+        %if none the participants had good data for all events
+        if isempty(tempids)
+            tempids{1} = 'none';
+        end
+        
+        %store information about participants with good/bad ids
         relsummary.group(gloc).goodids = tempids{1};
         relsummary.group(gloc).badids = unique(badids);
         
+        %cycle through each event
         for eloc=1:nevents
+                
+            %get trial information to use for dependability estimates. only
+            %participants with enough data will contribute toward trial
+            %counts
+            datatable = REL.data{eloc};
 
-                datatable = REL.data{eloc};
-               
+            if ~strcmp(relsummary.group(gloc).goodids,'none')
                 goodids = table(relsummary.group(gloc).goodids);
-                
-                lmedata = innerjoin(datatable, goodids,...
-                    'LeftKeys', 'id', 'RightKeys', 'Var1',...
-                    'LeftVariables', {'id' 'meas'});
-                
-                trltable = varfun(@length,lmedata,...
-                    'GroupingVariables',{'id'});
-                
-                trlmean = mean(trltable.GroupCount);
-                
-                %perform calculations for overall reliability
-                lmeout = fitlme(lmedata, 'meas ~ 1 + (1|id)',...
-                    'FitMethod','REML');
-                
-                dep = depall(lmeout,trlmean);
-                
-                relsummary.group(gloc).event(eloc).dependability = dep;
-                relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
-                relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
-                relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
-                relsummary.group(gloc).event(eloc).goodn = height(goodids);
-                
-                
-                relsummary.group(gloc).event(eloc).micc = ...
-                    mean(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
-                    data.g(gloc).e(eloc).sig_e.raw)); 
-                relsummary.group(gloc).event(eloc).llicc = ...
-                    quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
-                    data.g(gloc).e(eloc).sig_e.raw),.025); 
-                relsummary.group(gloc).event(eloc).ulicc = ...
-                    quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
-                    data.g(gloc).e(eloc).sig_e.raw),.975);
-                
-                relsummary.group(gloc).event(eloc).mbetsd = ...
-                    mean(data.g(gloc).e(eloc).sig_u.raw); 
-                relsummary.group(gloc).event(eloc).llbetsd = ...
-                    quantile(data.g(gloc).e(eloc).sig_u.raw,.025); 
-                relsummary.group(gloc).event(eloc).ulbetsd = ...
-                    quantile(data.g(gloc).e(eloc).sig_u.raw,.975);
+            else
+                goodids = table(relsummary.group(gloc).badids);
+            end
 
-                relsummary.group(gloc).event(eloc).mwitsd = ...
-                    mean(data.g(gloc).e(eloc).sig_e.raw); 
-                relsummary.group(gloc).event(eloc).llwitsd = ...
-                    quantile(data.g(gloc).e(eloc).sig_e.raw,.025); 
-                relsummary.group(gloc).event(eloc).ulwitsd = ...
-                    quantile(data.g(gloc).e(eloc).sig_e.raw,.975);
+            trlcdata = innerjoin(datatable, goodids,...
+                'LeftKeys', 'id', 'RightKeys', 'Var1',...
+                'LeftVariables', {'id' 'meas'});
+
+            trltable = varfun(@length,trlcdata,...
+                'GroupingVariables',{'id'});
+
+            trlmean = mean(trltable.GroupCount);
+            trlmed = median(trltable.GroupCount);
+
+            %calculate dependability using either the mean or median (based
+            %on user input)
+            switch depcentmeas
+                case 1
+                    depcent = trlmean;
+                case 2
+                    depcent = trlmed;
+            end
+
+            mdep = ...
+                mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,depcent)); 
+            lldep = quantile(reliab(...
+                data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,depcent),.025);
+            uldep = quantile(reliab(...
+                data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw,depcent),.975);
+
+            relsummary.group(gloc).event(eloc).dep.m = mdep;
+            relsummary.group(gloc).event(eloc).dep.ll = lldep;
+            relsummary.group(gloc).event(eloc).dep.ul = uldep;
+            relsummary.group(gloc).event(eloc).dep.meas = depcent;
+
+            relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
+            relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
+            relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
+            relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
+            
+            %just in case a cutoff was extrapolated, the dependability
+            %information will be overwritten
+            if  relsummary.group(gloc).event(eloc).trlcutoff >...
+                    relsummary.group(gloc).event(eloc).trlinfo.max
+
+                poorrel.trlmax = 1;
+                relsummary.group(gloc).event(eloc).rel.m = -1;
+                relsummary.group(gloc).event(eloc).rel.ll = -1;
+                relsummary.group(gloc).event(eloc).rel.ul = -1;
+
+            end
+
+            if ~strcmp(relsummary.group(gloc).goodids,'none')
+                relsummary.group(gloc).event(eloc).goodn = height(goodids);
+            else
+                relsummary.group(gloc).event(eloc).goodn = 0;
+            end
+
+            %calculate iccs, between-subject standard deviations, and
+            %within-subject standard deviations
+            relsummary.group(gloc).event(eloc).icc.m = ...
+                mean(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw)); 
+            relsummary.group(gloc).event(eloc).icc.ll = ...
+                quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw),.025); 
+            relsummary.group(gloc).event(eloc).icc.ul = ...
+                quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
+                data.g(gloc).e(eloc).sig_e.raw),.975);
+
+            relsummary.group(gloc).event(eloc).betsd.m = ...
+                mean(data.g(gloc).e(eloc).sig_u.raw); 
+            relsummary.group(gloc).event(eloc).betsd.ll = ...
+                quantile(data.g(gloc).e(eloc).sig_u.raw,.025); 
+            relsummary.group(gloc).event(eloc).betsd.ul = ...
+                quantile(data.g(gloc).e(eloc).sig_u.raw,.975);
+
+            relsummary.group(gloc).event(eloc).witsd.m = ...
+                mean(data.g(gloc).e(eloc).sig_e.raw); 
+            relsummary.group(gloc).event(eloc).witsd.ll = ...
+                quantile(data.g(gloc).e(eloc).sig_e.raw,.025); 
+            relsummary.group(gloc).event(eloc).witsd.ul = ...
+                quantile(data.g(gloc).e(eloc).sig_e.raw,.975);
                 
         end
                 
     case 4 %groups and event types to consider
         
+        %cycle through each event
         for eloc=1:nevents
             
+            %cycle through each group
             for gloc=1:ngroups
                 
+                %store the group name
                 if eloc == 1
                     relsummary.group(gloc).name = gnames{gloc};
                 end
                
+                %store the event name
                 relsummary.group(gloc).event(eloc).name = enames{eloc};
                 
+                %create empty arrays for storing dependability information
+                trltable = varfun(@length,REL.data{1},...
+                    'GroupingVariables',{'id'});
+
+                %define the place holders for storing dependability information
+                ntrials = max(trltable.GroupCount(:)) + 100;
+                mrel = zeros(0,ntrials);
+                llrel = zeros(0,ntrials);
+                ulrel = zeros(0,ntrials);
+                
+                %calculate dependability estimates
                 for trial=1:ntrials
                     mrel(trial) = ...
                         mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
@@ -739,114 +1188,202 @@ switch analysis
                         data.g(gloc).e(eloc).sig_e.raw,trial),.975);
                 end
                 
-                %find the number of trials to reach cutoff based on the
-                %lower limit of the confidence interval
-                trlcutoff = find(llrel >= depcutoff, 1);
+                %find the number of trials to reach cutoff
+                switch meascutoff
+                    case 1 
+                        trlcutoff = find(llrel >= depcutoff, 1);
+                    case 2
+                        trlcutoff = find(mrel >= depcutoff, 1);
+                    case 3
+                        trlcutoff = find(ulrel >= depcutoff, 1);
+                end
                 
-                relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                relsummary.group(gloc).event(eloc).mrel = mrel(trlcutoff);
-                relsummary.group(gloc).event(eloc).llrel = llrel(trlcutoff);
-                relsummary.group(gloc).event(eloc).ulrel = ulrel(trlcutoff);
+                %if a cutoff was not found
+                if isempty(trlcutoff) 
                 
+                    %store all the participant ids as having bad data
+                    poorrel.trlcutoff = 1;
+                    trlcutoff = -1;
+                    relsummary.group(gloc).event(eloc).trlcutoff = -1;
+                    relsummary.group(gloc).event(eloc).rel.m = -1;
+                    relsummary.group(gloc).event(eloc).rel.ll = -1;
+                    relsummary.group(gloc).event(eloc).rel.ul = -1;
+                    
+                    datatrls = REL.data{eloc};
+                    ind = strcmp(datatrls.group,gnames{gloc});
+                    datatrls = datatrls(ind,:);
                 
-                %Only calculate overall dependability on the ids with
-                %enough trials
-                
-                datatrls = REL.data{eloc};
-                ind = strcmp(datatrls.group,gnames{gloc});
-                datatrls = datatrls(ind,:);
-                
-                trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
-                
-                ind2include = trltable.GroupCount >= trlcutoff;
-                ind2exclude = trltable.GroupCount < trlcutoff;
-                
-                relsummary.group(gloc).event(eloc).eventgoodids = trltable.id(ind2include);
-                relsummary.group(gloc).event(eloc).eventbadids = trltable.id(ind2exclude);
+                    trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
 
-                 
+                    relsummary.group(gloc).event(eloc).eventgoodids =...
+                        'none';
+                    relsummary.group(gloc).event(eloc).eventbadids =...
+                        trltable.id;
+                    
+                elseif ~isempty(trlcutoff) %if a cutoff was found
+
+                    %store information about cutoffs
+                    relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                    relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
+                    relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
+                    relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+
+                    datatrls = REL.data{eloc};
+                    ind = strcmp(datatrls.group,gnames{gloc});
+                    datatrls = datatrls(ind,:);
+                    
+                    %find ids with enough trials based on cutoff
+                    trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+
+                    ind2include = trltable.GroupCount >= trlcutoff;
+                    ind2exclude = trltable.GroupCount < trlcutoff;
+
+                    relsummary.group(gloc).event(eloc).eventgoodids =...
+                        trltable.id(ind2include);
+                    relsummary.group(gloc).event(eloc).eventbadids =...
+                        trltable.id(ind2exclude);
+                    
+                end 
+
             end
         end
         
         %find the ids that have enough trials for each event type
         
-        for gloc=1:ngroups
+        for gloc=1:ngroups 
             tempids = {};
             badids = [];
             
             for eloc=1:nevents
-                tempids{end+1} = relsummary.group(gloc).event(eloc).eventgoodids;
-
-                if eloc > 1
-                    [~,ind]=setdiff(tempids{1},tempids{eloc});
-                    new = tempids{1};
-                    badids = vertcat(badids,...
-                        relsummary.group(gloc).event(eloc).eventbadids,...
-                        new(ind));
-                    new(ind) = [];
-                    tempids{1} = new;
+                
+                if ~strcmp(relsummary.group(gloc).event(eloc).eventgoodids,'none')
+                    tempids{end+1} = relsummary.group(gloc).event(eloc).eventgoodids;
+                    
+                    if eloc == 1
+                        badids = relsummary.group(gloc).event(eloc).eventbadids;
+                    elseif eloc > 1
+                        [~,ind]=setdiff(tempids{1},tempids{end});
+                        new = tempids{1};
+                        badids = vertcat(badids,...
+                            relsummary.group(gloc).event(eloc).eventbadids,...
+                            new(ind));
+                        new(ind) = [];
+                        tempids{1} = new;
+                    end
+                    
                 end
+            end
+            
+            %if there were no participants with enough trials for all event
+            %types within a group, store 'none'
+            if isempty(tempids)
+                tempids{1} = 'none';
             end
             
             relsummary.group(gloc).goodids = tempids{1};
             relsummary.group(gloc).badids = unique(badids);
-
+            
         end
          
-        
+        %calculate dependability estimates for the overall data for each
+        %group and event type
         for eloc=1:nevents
 
             for gloc=1:ngroups
                 
+                %pull the data to calculate the trial information from
+                %participants with good data
                 datatable = REL.data{eloc};
                 ind = strcmp(datatable.group,gnames{gloc});
                 datasubset = datatable(ind,:);
                 
-                goodids = table(relsummary.group(gloc).goodids);
+                if ~strcmp(relsummary.group(gloc).goodids,'none')
+                    goodids = table(relsummary.group(gloc).goodids);
+                else
+                    goodids = table(relsummary.group(gloc).badids);
+                end
                 
-                lmedata = innerjoin(datasubset, goodids,...
+                trlcdata = innerjoin(datasubset, goodids,...
                     'LeftKeys', 'id', 'RightKeys', 'Var1',...
                     'LeftVariables', {'id' 'meas'});
                 
-                trltable = varfun(@length,lmedata,...
+                trltable = varfun(@length,trlcdata,...
                     'GroupingVariables',{'id'});
                 
                 trlmean = mean(trltable.GroupCount);
+                trlmed = median(trltable.GroupCount);
+
+                %calculate dependability using either the mean or median 
+                %(based on user input)
+                switch depcentmeas
+                    case 1
+                        depcent = trlmean;
+                    case 2
+                        depcent = trlmed;
+                end
+
+                mdep = ...
+                    mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw,depcent)); 
+                lldep = quantile(reliab(...
+                    data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw,depcent),.025);
+                uldep = quantile(reliab(...
+                    data.g(gloc).e(eloc).sig_u.raw,...
+                    data.g(gloc).e(eloc).sig_e.raw,depcent),.975);
+
+                relsummary.group(gloc).event(eloc).dep.m = mdep;
+                relsummary.group(gloc).event(eloc).dep.ll = lldep;
+                relsummary.group(gloc).event(eloc).dep.ul = uldep;
+                relsummary.group(gloc).event(eloc).dep.meas = depcent;
                 
-                %perform calculations for overall reliability
-                lmeout = fitlme(lmedata, 'meas ~ 1 + (1|id)',...
-                    'FitMethod','REML');
-                
-                dep = depall(lmeout,trlmean);
-                
-                relsummary.group(gloc).event(eloc).dependability = dep;
                 relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
                 relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
                 relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
-                relsummary.group(gloc).event(eloc).goodn = height(goodids);
+                relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
                 
-                relsummary.group(gloc).event(eloc).micc = ...
+                %check if trial cutoff for an event exceeded the total
+                %number of trials for any subjects
+                if  relsummary.group(gloc).event(eloc).trlcutoff >...
+                        relsummary.group(gloc).event(eloc).trlinfo.max
+                    
+                    poorrel.trlmax = 1;
+                    relsummary.group(gloc).event(eloc).rel.m = -1;
+                    relsummary.group(gloc).event(eloc).rel.ll = -1;
+                    relsummary.group(gloc).event(eloc).rel.ul = -1;
+                
+                end
+
+                if ~strcmp(relsummary.group(gloc).event(eloc).eventgoodids,'none')
+                    relsummary.group(gloc).event(eloc).goodn = height(goodids);
+                else
+                    relsummary.group(gloc).event(eloc).goodn = 0;
+                end
+                
+                %calculate iccs, between-subject standard deviations, and
+                %within-subject standard deviations
+                relsummary.group(gloc).event(eloc).icc.m = ...
                     mean(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                     data.g(gloc).e(eloc).sig_e.raw)); 
-                relsummary.group(gloc).event(eloc).llicc = ...
+                relsummary.group(gloc).event(eloc).icc.ll = ...
                     quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                     data.g(gloc).e(eloc).sig_e.raw),.025); 
-                relsummary.group(gloc).event(eloc).ulicc = ...
+                relsummary.group(gloc).event(eloc).icc.ul = ...
                     quantile(iccfun(data.g(gloc).e(eloc).sig_u.raw,...
                     data.g(gloc).e(eloc).sig_e.raw),.975); 
                
-                relsummary.group(gloc).event(eloc).mbetsd = ...
+                relsummary.group(gloc).event(eloc).betsd.m = ...
                     mean(data.g(gloc).e(eloc).sig_u.raw); 
-                relsummary.group(gloc).event(eloc).llbetsd = ...
+                relsummary.group(gloc).event(eloc).betsd.ll = ...
                     quantile(data.g(gloc).e(eloc).sig_u.raw,.025); 
-                relsummary.group(gloc).event(eloc).ulbetsd = ...
+                relsummary.group(gloc).event(eloc).betsd.ul = ...
                     quantile(data.g(gloc).e(eloc).sig_u.raw,.975);
 
-                relsummary.group(gloc).event(eloc).mwitsd = ...
+                relsummary.group(gloc).event(eloc).witsd.m = ...
                     mean(data.g(gloc).e(eloc).sig_e.raw); 
-                relsummary.group(gloc).event(eloc).llwitsd = ...
+                relsummary.group(gloc).event(eloc).witsd.ll = ...
                     quantile(data.g(gloc).e(eloc).sig_e.raw,.025); 
-                relsummary.group(gloc).event(eloc).ulwitsd = ...
+                relsummary.group(gloc).event(eloc).witsd.ul = ...
                     quantile(data.g(gloc).e(eloc).sig_e.raw,.975);
        
             end
@@ -855,24 +1392,31 @@ switch analysis
         
 end %switch analysis
 
+%store relsummary information
 RELout = REL;
 RELout.relsummary = relsummary;
 
+%if the user wants an icc plot
 if picc == 1
     iccplot = figure;
     iccplot.Position = [125 65 900 450];
+    set(gcf,'NumberTitle','Off');
+    set(gcf,'Name','ICC Estimates');
     miccm = zeros(nevents,ngroups);
     lliccm = zeros(nevents,ngroups);
     uliccm = zeros(nevents,ngroups);
     offsetm = zeros(nevents,ngroups);
+    
+    %grab icc information for each event and group
     for gloc=1:ngroups
        for eloc=1:nevents
-           miccm(eloc,gloc) = relsummary.group(gloc).event(eloc).micc;
-           lliccm(eloc,gloc) = relsummary.group(gloc).event(eloc).micc...
-               - relsummary.group(gloc).event(eloc).llicc;
-           uliccm(eloc,gloc) = relsummary.group(gloc).event(eloc).ulicc...
-               - relsummary.group(gloc).event(eloc).micc;
+           miccm(eloc,gloc) = relsummary.group(gloc).event(eloc).icc.m;
+           lliccm(eloc,gloc) = relsummary.group(gloc).event(eloc).icc.m...
+               - relsummary.group(gloc).event(eloc).icc.ll;
+           uliccm(eloc,gloc) = relsummary.group(gloc).event(eloc).icc.ul...
+               - relsummary.group(gloc).event(eloc).icc.m;
            
+           %figure out spacing for plot
            if gloc < median(1:ngroups)
                offsetm(eloc,gloc) = eloc - (.4/ngroups);
            elseif gloc > median(1:ngroups)
@@ -884,14 +1428,33 @@ if picc == 1
        end
     end
     
-    iccplot = errorbar(offsetm,miccm,lliccm,uliccm,'Marker','.',...
-        'MarkerSize',15,'LineWidth',1);
+    %find the dimensions
+    [e,g] = size(miccm); 
+    
+    %plot
+    if ~(g > 1 && e == 1)
+        iccplot = errorbar(offsetm,miccm,lliccm,uliccm,'Marker','.',...
+            'MarkerSize',15,'LineWidth',1);
+    elseif g > 1 && e == 1
+        hold on
+        for i = 1:g
+            iccplot = errorbar(offsetm(i),miccm(i),lliccm(i),uliccm(i),...
+                'Marker','.','MarkerSize',15,'LineWidth',1,...
+                'DisplayName',gnames{i});
+            legend('-DynamicLegend');
+        end
+        hold off
+    end
+    
+    %add y-axis label
     ylabel('Intraclass Correlation Coefficient','FontSize',fsize);
     
+    %remove extra lines
     for i = 1:length(iccplot)
         iccplot(i).LineStyle = 'none';
     end
     
+    %fix axes
     iccplot(1).Parent.XLim = [0 nevents+1+.25];
     if nevents == 1
         iccplot(1).Parent.YLim = [0 max(uliccm+miccm)+.05];
@@ -904,29 +1467,41 @@ if picc == 1
     iccplot(1).Parent.XTickLabel = enames;
     iccplot(1).Parent.FontSize = fsize;
     
-    pl = legend(iccplot);
-    pl.String = gnames;
+    %add names to legend
+    if ~(g > 1 && e == 1)
+        pl = legend(iccplot);
+        pl.String = gnames;
+    end
     
+    %change axis location and rotate plot
     iccplot(1).Parent.YAxisLocation = 'right';
     camroll(-90);
     
 end
 
+%if the user wants a between-person standard deviation plot
 if plotbetstddev == 1
     sdplot = figure;
     sdplot.Position = [225 165 900 450];
+    set(gcf,'NumberTitle','Off');
+    set(gcf,'Name','Between-Person Standard Deviations');
+    
+    %create placeholders
     msd = zeros(nevents,ngroups);
     llsd = zeros(nevents,ngroups);
     ulsd = zeros(nevents,ngroups);
     offsetm = zeros(nevents,ngroups);
+    
+    %store between-subject std dev info
     for gloc=1:ngroups
        for eloc=1:nevents
-           msd(eloc,gloc) = relsummary.group(gloc).event(eloc).mbetsd;
-           llsd(eloc,gloc) = relsummary.group(gloc).event(eloc).mbetsd...
-               - relsummary.group(gloc).event(eloc).llbetsd;
-           ulsd(eloc,gloc) = relsummary.group(gloc).event(eloc).ulbetsd...
-               - relsummary.group(gloc).event(eloc).mbetsd;
+           msd(eloc,gloc) = relsummary.group(gloc).event(eloc).betsd.m;
+           llsd(eloc,gloc) = relsummary.group(gloc).event(eloc).betsd.m...
+               - relsummary.group(gloc).event(eloc).betsd.ll;
+           ulsd(eloc,gloc) = relsummary.group(gloc).event(eloc).betsd.ul...
+               - relsummary.group(gloc).event(eloc).betsd.m;
            
+           %figure out spacing
            if gloc < median(1:ngroups)
                offsetm(eloc,gloc) = eloc - (.4/ngroups);
            elseif gloc > median(1:ngroups)
@@ -938,14 +1513,33 @@ if plotbetstddev == 1
        end
     end
     
-    sdplot = errorbar(offsetm,msd,llsd,ulsd,'Marker','.',...
-        'MarkerSize',15,'LineWidth',1);
+    %find dimensions
+    [e,g] = size(miccm); 
+    
+    %plot std devs
+    if ~(g > 1 && e == 1)
+        sdplot = errorbar(offsetm,msd,llsd,ulsd,'Marker','.',...
+            'MarkerSize',15,'LineWidth',1);
+    elseif g > 1 && e == 1
+        hold on
+        for i = 1:g
+            sdplot = errorbar(offsetm(i),msd(i),llsd(i),ulsd(i),...
+                'Marker','.','MarkerSize',15,'LineWidth',1,...
+                'DisplayName',gnames{i});
+            legend('-DynamicLegend');
+        end
+        hold off
+    end
+
+    %add y-axis label
     ylabel('Between-Person Standard Deviation','FontSize',fsize);
     
+    %remove extra lines
     for i = 1:length(sdplot)
         sdplot(i).LineStyle = 'none';
     end
     
+    %fix axes
     sdplot(1).Parent.XLim = [0 nevents+1+.25];
     if nevents == 1
         sdplot(1).Parent.YLim = [min(msd-llsd)-1.5 max(ulsd+msd)+1.5];
@@ -958,9 +1552,13 @@ if plotbetstddev == 1
     sdplot(1).Parent.XTickLabel = enames;
     sdplot(1).Parent.FontSize = fsize;
     
-    pl = legend(sdplot);
-    pl.String = gnames;
+    %add names to legend
+    if ~(g > 1 && e == 1)
+        pl = legend(sdplot);
+        pl.String = gnames;
+    end
     
+    %change axis location and rotate plot
     sdplot(1).Parent.YAxisLocation = 'right';
     camroll(-90);
     
@@ -972,7 +1570,7 @@ end
 %3 - possible event types but no groups to consider
 %4 - possible groups and event types to consider
 
-%Create table to display both sets of data
+%create placeholders for displaying data in tables in guis
 label = {};
 trlcutoff = {};
 dep = {};
@@ -986,10 +1584,11 @@ icc = {};
 betsd = {};
 witsd = {};
 
-%put data together in tables to display
-
+%put data together to display in tables
 for gloc=1:ngroups
     for eloc=1:nevents
+        
+        %label for group and/or event
         switch analysis
             case 1
                 label{end+1} = 'Measurement';
@@ -1000,47 +1599,71 @@ for gloc=1:ngroups
             case 4
                 label{end+1} = [gnames{gloc} ' - ' enames{eloc}];
         end
-        trlcutoff{end+1} = relsummary.group(gloc).event(eloc).trlcutoff;
-        dep{end+1} = sprintf('        %0.2f CI [%0.2f %0.2f]',...
-            relsummary.group(gloc).event(eloc).mrel,...
-            relsummary.group(gloc).event(eloc).llrel,...
-            relsummary.group(gloc).event(eloc).ulrel);
         
-        overalldep{end+1} = ...
-            relsummary.group(gloc).event(eloc).dependability;
+        %pull the trial cutoff
+        trlcutoff{end+1} = relsummary.group(gloc).event(eloc).trlcutoff;
+        
+        %create a string with the dependability point estimate and credible
+        %interval for cutoff data
+        dep{end+1} = sprintf('        %0.2f CI [%0.2f %0.2f]',...
+            relsummary.group(gloc).event(eloc).rel.m,...
+            relsummary.group(gloc).event(eloc).rel.ll,...
+            relsummary.group(gloc).event(eloc).rel.ul);
+        
+        %create a string with the dependability point estimate and credible
+        %interval for overall data
+        overalldep{end+1} = sprintf('        %0.2f CI [%0.2f %0.2f]',...
+            relsummary.group(gloc).event(eloc).dep.m,...
+            relsummary.group(gloc).event(eloc).dep.ll,...
+            relsummary.group(gloc).event(eloc).dep.ul);
+        
+        %put together trial summary information
         mintrl{end+1} = relsummary.group(gloc).event(eloc).trlinfo.min;
         maxtrl{end+1} = relsummary.group(gloc).event(eloc).trlinfo.max;
         meantrl{end+1} = relsummary.group(gloc).event(eloc).trlinfo.mean;
+        
+        %pull good and bad ns
         goodn{end+1} = relsummary.group(gloc).event(eloc).goodn;
         badn{end+1} = length(relsummary.group(gloc).badids);
+        
+        %create a string with the icc point estimate and credible interval
         icc{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
-            relsummary.group(gloc).event(eloc).micc,...
-            relsummary.group(gloc).event(eloc).llicc,...
-            relsummary.group(gloc).event(eloc).ulicc);
+            relsummary.group(gloc).event(eloc).icc.m,...
+            relsummary.group(gloc).event(eloc).icc.ll,...
+            relsummary.group(gloc).event(eloc).icc.ul);
         
+        %create a string with the between-person standard devation point 
+        %estimate and credible interval
         betsd{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
-            relsummary.group(gloc).event(eloc).mbetsd,...
-            relsummary.group(gloc).event(eloc).llbetsd,...
-            relsummary.group(gloc).event(eloc).ulbetsd);
+            relsummary.group(gloc).event(eloc).betsd.m,...
+            relsummary.group(gloc).event(eloc).betsd.ll,...
+            relsummary.group(gloc).event(eloc).betsd.ul);
         
+        %create a string with the within-person standard devation point 
+        %estimate and credible interval
         witsd{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
-            relsummary.group(gloc).event(eloc).mwitsd,...
-            relsummary.group(gloc).event(eloc).llwitsd,...
-            relsummary.group(gloc).event(eloc).ulwitsd);
+            relsummary.group(gloc).event(eloc).witsd.m,...
+            relsummary.group(gloc).event(eloc).witsd.ll,...
+            relsummary.group(gloc).event(eloc).witsd.ul);
         
     end 
 end
 
+%create table for displaying between-person and within-person standard
+%deviation information
 stddevtable = table(label',goodn',betsd',witsd');
 
 stddevtable.Properties.VariableNames = {'Label','n_Included',...
     'Between_StdDev','Within_StdDev'};
 
+%create table to display the cutoff information with its associated
+%dependability info
 inctrltable = table(label',trlcutoff',dep');
 
 inctrltable.Properties.VariableNames = {'Label','Trial_Cutoff',...
     'Dependability'};
 
+%create table to describe the data including all trials 
 overalltable = table(label',goodn',badn',overalldep',icc',meantrl',...
     mintrl',maxtrl');
 
@@ -1060,11 +1683,12 @@ rowspace = 25;
 row = figheight - rowspace*2;
 name = ['Point and 95% Interval Estimates for the Between-'...
     'and Within-Person Standard Deviations'];
+
+%create gui for standard-deviation table
 era_stddev= figure('unit','pix','Visible','off',...
   'position',[1250 600 figwidth figheight],...
   'menub','no',...
-  'name',...
-  name,...
+  'name',name,...
   'numbertitle','off',...
   'resize','off');
 
@@ -1100,8 +1724,9 @@ figheight = 400;
 
 %define space between rows and first row location
 rowspace = 25;
-row = figheight - rowspace*2;
+row = figheight - rowspace*1.6;
 
+%create a gui to display the cutoff information table
 era_inctrl= figure('unit','pix','Visible','off',...
   'position',[1150 700 figwidth figheight],...
   'menub','no',...
@@ -1110,13 +1735,20 @@ era_inctrl= figure('unit','pix','Visible','off',...
   'numbertitle','off',...
   'resize','off');
 
-%Print the name of the loaded dataset
+%Add table title
 uicontrol(era_inctrl,'Style','text','fontsize',16,...
     'HorizontalAlignment','center',...
     'String',...
-    sprintf('Dependability Analyses, %0.2f Cutoff',...
+    sprintf('Dependability Analyses, %0.2f Cutoff\n',...
     RELout.relsummary.depcutoff),...
-    'Position',[0 row figwidth 25]);          
+    'Position',[0 row figwidth 20]);   
+
+uicontrol(era_inctrl,'Style','text','fontsize',16,...
+    'HorizontalAlignment','center',...
+    'String',...
+    sprintf('Cutoff Used the %s',...
+    RELout.relsummary.meascutoff),...
+    'Position',[0 row-20 figwidth 20]); 
 
 %Start a table
 t = uitable('Parent',era_inctrl,'Position',...
@@ -1143,6 +1775,7 @@ figheight = 500;
 rowspace = 25;
 row = figheight - rowspace*2;
 
+%create a gui for displaying the overall trial information
 era_overall= figure('unit','pix','Visible','off',...
   'position',[1150 150 figwidth figheight],...
   'menub','no',...
@@ -1180,29 +1813,54 @@ uicontrol(era_overall,'Style','push','fontsize',14,...
     'Position', [5*figwidth/8 25 figwidth/4 50],...
     'Callback',{@era_saveids,RELout}); 
 
+%show the standard deviation table if it is wanted
 if showstddevt == 1
     set(era_stddev,'Visible','on');
 end
 
+%show the dependability plot if it is wanted
 if pdep == 1
     set(depplot,'Visible','on');
 end
 
+%show the cutoff table if it is wanted
 if showinct == 1
     set(era_inctrl,'Visible','on');
 end
 
+%show the overall table if it is wanted
 if showoverallt == 1
     set(era_overall,'Visible','on');
+end
+
+%show an error if the dependability threshold was never met for the cutoff
+if poorrel.trlcutoff == 1
+    errorstr = {};
+    errorstr{end+1} = 'Trial cutoffs for adequate dependability could not be calculated';
+    errorstr{end+1} = 'Data are too variable or there are not enough trials';
+
+    errordlg(errorstr);
+end
+
+%show an error if none of the data had enough trials to meet the cutoff
+if poorrel.trlmax == 1
+    errorstr = {};
+    errorstr{end+1} = 'Not enough trials are present in the current data';
+    errorstr{end+1} = 'Cutoffs represent an extrapolation beyond the data';
+    
+    errordlg(errorstr);
 end
 
 end
 
 function era_saveoveralltable(varargin)
+%if the button to save the overall trial information table was pressed
 
+%parse inputs
 REL = varargin{3};
 overalltable = varargin{4};
 
+%ask the user where the file should be saved
 if ~ismac %macs can't use xlswrite
     [savename, savepath] = uiputfile(...
         {'*.xlsx','Excel File (.xlsx)';'*.csv',...
@@ -1217,21 +1875,29 @@ end
 
 [~,~,ext] = fileparts(fullfile(savepath,savename));
 
+%save either an excel or csv file
 if strcmp(ext,'.xlsx')
     
+    %print header information about the dataset
     filehead = {'Dependability Table Generated on'; datestr(clock);''}; 
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
+    filehead{end+1} = sprintf('Cutoff Threshold used the %s',...
+        REL.relsummary.meascutoff);
+    filehead{end+1} = sprintf('Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     filehead{end+1}='';
     filehead{end+1}='';
     
+    %write table
     xlswrite(fullfile(savepath,savename),filehead);
     writetable(overalltable,fullfile(savepath,savename),...
         'Range',strcat('A',num2str(length(filehead))));
     
 elseif strcmp(ext,'.csv')
     
+    %print header information about dataset
     fid = fopen(fullfile(savepath,savename),'w');
     fprintf(fid,'%s\n','Dependability Table Generated on');
     fprintf(fid,'%s\n',datestr(clock));
@@ -1239,6 +1905,10 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
+    fprintf(fid,'Cutoff Threshold used the %s\n',...
+        REL.relsummary.meascutoff);
+    fprintf(fid, 'Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     fprintf(fid,'\n');
     fprintf(fid,'\n');
     
@@ -1246,8 +1916,10 @@ elseif strcmp(ext,'.csv')
         'Dependability,ICC,Mean Num of Trials,Min Num of Trials,',...
         'Max Num of Trials'));
     fprintf(fid,'\n');
+    
+    %write the table information
     for i = 1:height(overalltable)
-         formatspec = '%s,%d,%d,%0.4f,%s,%0.4f,%d,%d\n';
+         formatspec = '%s,%d,%d,%s,%s,%0.4f,%d,%d\n';
          fprintf(fid,formatspec,char(overalltable{i,1}),...
              cell2mat(overalltable{i,2}),cell2mat(overalltable{i,3}),...
              cell2mat(overalltable{i,4}),char(overalltable{i,5}),...
@@ -1262,9 +1934,12 @@ end
 end
 
 function era_saveids(varargin)
+%if the user pressed the button to save which ids were considered good and
+%which were considered bad (based on whether data met the cutoff thresholds
 
 REL = varargin{3};
 
+%ask the user where the file should be saved
 if ~ismac
     [savename, savepath] = uiputfile(...
         {'*.xlsx','Excel File (.xlsx)';'*.csv',...
@@ -1279,6 +1954,7 @@ end
 
 [~,~,ext] = fileparts(fullfile(savepath,savename));
 
+%save the information in either an excel or csv format
 if strcmp(ext,'.xlsx')
     
     datap{1,1} = 'Data Generated on';
@@ -1286,18 +1962,30 @@ if strcmp(ext,'.xlsx')
     datap{3,1} = sprintf('Dataset: %s',REL.filename);
     datap{4,1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
-    datap{5,1}='';
-    datap{6,1}='';
-    datap{7,1} = 'Good IDs'; datap{7,2} = 'Bad IDs';
-    gids = REL.relsummary.group.goodids;
-    for i = 1:length(gids)
-        datap{i+7,1}=char(gids(i));
-    end
-    bids = REL.relsummary.group.badids;
-    for i = 1:length(bids)
-        datap{i+7,2}=char(bids(i));
+    datap{5,1} = sprintf('Cutoff Threshold used the %s',...
+        REL.relsummary.meascutoff);
+    datap{6,1} = sprintf('Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
+    datap{7,1}='';
+    datap{8,1}='';
+    datap{9,1} = 'Good IDs'; datap{8,2} = 'Bad IDs';
+    
+    gids = [];
+    bids = [];
+    
+    for j=1:length(REL.relsummary.group)
+        gids = [gids;REL.relsummary.group(j).goodids(:)];
+        bids = [bids;REL.relsummary.group(j).badids(:)];
     end
     
+    for i = 1:length(gids)
+        datap{i+9,1}=char(gids(i));
+    end
+
+    for i = 1:length(bids)
+        datap{i+9,2}=char(bids(i));
+    end
+
     xlswrite(fullfile(savepath,savename),datap);
     
 elseif strcmp(ext,'.csv')
@@ -1309,12 +1997,21 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
+    fprintf(fid,'Cutoff Threshold used the %s\n',...
+        REL.relsummary.meascutoff);
+    fprintf(fid,'Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     fprintf(fid,'\n');
     fprintf(fid,'\n');
     fprintf(fid,'%s\n','Good IDs,Bad IDs');
     
-    gids = REL.relsummary.group.goodids;
-    bids = REL.relsummary.group.badids;
+    gids = [];
+    bids = [];
+    
+    for j=1:length(REL.relsummary.group)
+        gids = [gids;REL.relsummary.group(j).goodids(:)];
+        bids = [bids;REL.relsummary.group(j).badids(:)];
+    end
 
     maxlength = max([length(gids) length(bids)]);
     minlength = min([length(gids) length(bids)]);
@@ -1343,10 +2040,14 @@ end
 end
 
 function era_saveinctrltable(varargin)
+%if the user pressed the button to save the table with the information
+%about the cutoffs
 
+%parse inputs
 REL = varargin{3};
 incltrltable = varargin{4};
 
+%ask the user where the file should be saved
 if ~ismac %macs can't use xlswrite
     [savename, savepath] = uiputfile(...
         {'*.xlsx','Excel File (.xlsx)';'*.csv',...
@@ -1361,12 +2062,17 @@ end
 
 [~,~,ext] = fileparts(fullfile(savepath,savename));
 
+%save as either excel or csv file
 if strcmp(ext,'.xlsx')
     
     filehead = {'Table Generated on'; datestr(clock);''}; 
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
+    filehead{end+1} = sprintf('Cutoff Threshold used the %s',...
+        REL.relsummary.meascutoff);
+    filehead{end+1} = sprintf('Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     filehead{end+1}='';
     filehead{end+1}='';
     
@@ -1383,6 +2089,10 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
+    fprintf(fid,'Cutoff Threshold used the %s\n',...
+        REL.relsummary.meascutoff);
+    fprintf(fid,'Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     fprintf(fid,'\n');
     fprintf(fid,'\n');
     
@@ -1404,10 +2114,14 @@ end
 
 
 function era_savestddevtable(varargin)
+%if the user pressed the button to save the table with the information
+%about between- and within-person standard deviations
 
+%parse inputs
 REL = varargin{3};
 stddevtable = varargin{4};
 
+%ask the user where the file should be saved
 if ~ismac %macs can't use xlswrite
     [savename, savepath] = uiputfile(...
         {'*.xlsx','Excel File (.xlsx)';'*.csv',...
@@ -1422,12 +2136,17 @@ end
 
 [~,~,ext] = fileparts(fullfile(savepath,savename));
 
+%save as either excel or csv file
 if strcmp(ext,'.xlsx')
     
     filehead = {'Table Generated on'; datestr(clock);''}; 
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
+    filehead{end+1} = sprintf('Cutoff Threshold used the %s',...
+        REL.relsummary.meascutoff);
+    filehead{end+1} = sprintf('Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     filehead{end+1}='';
     filehead{end+1}='';
     
@@ -1444,6 +2163,10 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
+    fprintf(fid,'Cutoff Threshold used the %s\n',...
+        REL.relsummary.meascutoff);
+    fprintf(fid,'Chains: %d, Iterations: %d',...
+        REL.nchains,REL.niter);
     fprintf(fid,'\n');
     fprintf(fid,'\n');
     
@@ -1467,21 +2190,15 @@ end
 
 
 function depout = reliab(var_u, var_e, obs)
+%calculate dependability from a Stanfit object 
 
 depout = var_u.^2 ./ (var_u.^2 + (var_e.^2./obs));
 
 end
 
 function iccout = iccfun(var_u,var_e)
+%calculate iccs from a Stanfit object
 
 iccout = var_u.^2 ./ (var_u.^2 + var_e.^2);
-
-end
-
-function dep = depall(lme,num)
-
-[obsvar,resvar] = covarianceParameters(lme);
-
-dep = cell2mat(obsvar)/(cell2mat(obsvar)+(resvar/num));
 
 end

@@ -3,7 +3,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 3/5/16
+%Last Updated 4/18/16
 %
 %
 %Input
@@ -14,8 +14,8 @@ function era_startproc(varargin)
 %Output
 % This script will not output any variables to the workspace. A .mat with
 %  processed data from Stan will be saved in a user specified locaiton.
-%  This .mat will automatically be loaded into era_startview for viewing the
-%  data
+%  This .mat will automatically be loaded into era_startview for viewing 
+%  the data
 %
 
 % Copyright (C) 2016 Peter E. Clayson
@@ -36,29 +36,37 @@ function era_startproc(varargin)
 %
 
 %History 
-% by Peter Clayson (3/5/16)
+% by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 %
 
-%close the era_start gui
-close(varargin{3});
+%check if era_gui is open. If the user executes era_startproc and skips
+%era_start then there will be no gui to close.
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    close(era_gui);
+end
 
 %ask the user to identify the data file to be loaded
-[filepart, pathpart] = uigetfile({'*.xlsx','Excel File (.xlsx)';'*.xls',...
-        'Excel File 97-2003 (.xls)';'*.csv',...
-        'Comma-Separated Vale File (.csv)';'*.txt',...
-        'Text, Tab delimited (.txt)'},'Data');
+[filepart, pathpart] = uigetfile({'*.xlsx;*.xls;*.csv;*.dat;*.txt;*.ods',...
+    'All Readable Files'; '*.xlsx','Excel File (.xlsx)';'*.xls',...
+    'Excel File 97-2003 (.xls)';'*.csv',...
+    'Comma-Separated Vale File (.csv)';'*.dat',...
+    'Tab-Delimited Text (.dat)';'*.txt',...
+    'Raw Text File (.txt)';'*.ods',...
+    'OpenDocument Spreadsheet (.ods)'},'Data');
 
 %if the user does not select a file, then take the user back to era_start    
 if filepart == 0 
     errordlg('No file selected','File Error');
     era_start;
+    return;
 end
 
 fprintf('\n\nLoading Data...');
 fprintf('\nThis may take awhile depending on the amount of data...\n\n');
 %load file
-dataraw = readtable(fullfile(pathpart,filepart));
+dataraw = era_readtable('file',fullfile(pathpart,filepart));
 
 %pull the headernames from the file
 collist = dataraw.Properties.VariableNames;
@@ -114,8 +122,9 @@ if ~isempty(varargin)
         procprefs = varargin{ind+1}; 
     else
         %define default preferences for processing data in stan
-        procprefs.nchains = 5;
-        procprefs.niter = 250;
+        procprefs.nchains = 3;
+        procprefs.niter = 1000;
+        procprefs.verbose = 1;
     end
 
     %check if inpchoices has already been defined
@@ -128,8 +137,9 @@ if ~isempty(varargin)
 
 elseif isempty(varargin) %just in case none of the optional inputs are used
     
-    procprefs.nchains = 5;
-    procprefs.niter = 250;
+    procprefs.nchains = 3;
+    procprefs.niter = 1000;
+    procprefs.verbose = 1;
     inpchoices = [];
     
 end %if ~isempty(varargin)
@@ -139,6 +149,7 @@ figwidth = 600;
 figheight = 400;
 collist_nonone = collist;
 collist_nonone(end) = [];
+fsize = get(0,'DefaultTextFontSize');
 
 %if the assignment of which columns belong to which category has already
 %been made, then use those choices. Otherwise, load the defaults and try to
@@ -215,7 +226,7 @@ era_gui= figure('unit','pix',...
   'resize','off');
 
 %Print the name of the loaded dataset
-uicontrol(era_gui,'Style','text','fontsize',16,...
+uicontrol(era_gui,'Style','text','fontsize',fsize+2,...
     'HorizontalAlignment','center',...
     'String',['Dataset:  ' filepart],...
     'Position',[0 row figwidth 25]);          
@@ -224,12 +235,12 @@ uicontrol(era_gui,'Style','text','fontsize',16,...
 row = row - rowspace*1.5;
 
 %Print the gui headers
-uicontrol(era_gui,'Style','text','fontsize',16,...
+uicontrol(era_gui,'Style','text','fontsize',fsize+2,...
     'HorizontalAlignment','center',...
     'String','Variable',...
     'Position', [figwidth/8 row figwidth/4 25]);  
 
-uicontrol(era_gui,'Style','text','fontsize',16,...
+uicontrol(era_gui,'Style','text','fontsize',fsize+2,...
     'HorizontalAlignment','center',...
     'String','Input',...
     'Position',[5*(figwidth/8) row figwidth/4 25]);
@@ -239,12 +250,12 @@ row = row - rowspace*1.5;
 
 %print the name of the variables and place a listbox with possible options
 %start with participant ID row
-uicontrol(era_gui,'Style','text','fontsize',14,...
+uicontrol(era_gui,'Style','text','fontsize',fsize,...
     'HorizontalAlignment','left',...
     'String','Participant ID:',...
     'Position', [lcol row figwidth/4 25]);  
 
-inplists(1) = uicontrol(era_gui,'Style','pop','fontsize',14,...
+inplists(1) = uicontrol(era_gui,'Style','pop','fontsize',fsize,...
     'String',collist_nonone,'Value',defls.id,...
     'Position', [rcol row figwidth/2 25]);  
 
@@ -252,12 +263,12 @@ inplists(1) = uicontrol(era_gui,'Style','pop','fontsize',14,...
 row = row - rowspace;
 
 %measurement row
-uicontrol(era_gui,'Style','text','fontsize',14,...
+uicontrol(era_gui,'Style','text','fontsize',fsize,...
     'HorizontalAlignment','left',...
     'String','Measurement:',...
     'Position', [lcol row figwidth/4 25]);  
 
-inplists(2) = uicontrol(era_gui,'Style','pop','fontsize',14,...
+inplists(2) = uicontrol(era_gui,'Style','pop','fontsize',fsize,...
     'String',collist_nonone,'Value',defls.meas,...
     'Position', [rcol row figwidth/2 25]); 
 
@@ -265,12 +276,12 @@ inplists(2) = uicontrol(era_gui,'Style','pop','fontsize',14,...
 row = row - rowspace;
 
 %group row
-uicontrol(era_gui,'Style','text','fontsize',14,...
+uicontrol(era_gui,'Style','text','fontsize',fsize,...
     'HorizontalAlignment','left',...
     'String','Group ID:',...
     'Position', [lcol row figwidth/4 25]);  
 
-inplists(3) = uicontrol(era_gui,'Style','pop','fontsize',14,...
+inplists(3) = uicontrol(era_gui,'Style','pop','fontsize',fsize,...
     'String',collist,'Value',defls.group,...
     'Position', [rcol row figwidth/2 25]); 
 
@@ -278,12 +289,12 @@ inplists(3) = uicontrol(era_gui,'Style','pop','fontsize',14,...
 row = row - rowspace;
 
 %event row
-uicontrol(era_gui,'Style','text','fontsize',14,...
+uicontrol(era_gui,'Style','text','fontsize',fsize,...
     'HorizontalAlignment','left',...
     'String','Event Type:',...
     'Position', [lcol row figwidth/4 25]);  
 
-inplists(4) = uicontrol(era_gui,'Style','pop','fontsize',14,...
+inplists(4) = uicontrol(era_gui,'Style','pop','fontsize',fsize,...
     'String',collist,'Value',defls.event,...
     'Position', [rcol row figwidth/2 25]); 
 
@@ -291,14 +302,14 @@ inplists(4) = uicontrol(era_gui,'Style','pop','fontsize',14,...
 row = row - rowspace*2.5;
 
 %Create a back button that will take the user back to era_start
-uicontrol(era_gui,'Style','push','fontsize',14,...
+uicontrol(era_gui,'Style','push','fontsize',fsize,...
     'HorizontalAlignment','center',...
     'String','Back',...
     'Position', [figwidth/8 row figwidth/5 50],...
     'Callback',{@bb_call,era_gui}); 
 
 %Create button that will check the inputs and begin processing the data
-uicontrol(era_gui,'Style','push','fontsize',14,...
+uicontrol(era_gui,'Style','push','fontsize',fsize,...
     'HorizontalAlignment','center',...
     'String','Analyze',...
     'Position', [3*figwidth/8 row figwidth/5 50],...
@@ -306,12 +317,15 @@ uicontrol(era_gui,'Style','push','fontsize',14,...
     dataraw,procprefs,era_gui}); 
 
 %Create button that will display preferences
-uicontrol(era_gui,'Style','push','fontsize',14,...
+uicontrol(era_gui,'Style','push','fontsize',fsize,...
     'HorizontalAlignment','center',...
     'String','Preferences',...
     'Position', [5*figwidth/8 row figwidth/5 50],...
     'Callback',{@era_procprefs,inplists,collist,filepart,pathpart,...
     dataraw,era_gui,procprefs}); 
+
+%tag gui
+era_gui.Tag = 'era_gui';
 
 end
 
@@ -346,17 +360,28 @@ function era_procprefs(varargin)
 %
 
 %parse inputs
-h_era_gui.inpchoices = cell2mat(get(varargin{3},'value'));
+if any(ishandle(varargin{3}))
+    h_era_gui.inpchoices = cell2mat(get(varargin{3},'value'));
+else
+    h_era_gui.inpchoices = varargin{3};
+end
+
 h_era_gui.collist = varargin{4};
 h_era_gui.filepart = varargin{5};
 h_era_gui.pathpart = varargin{6};
 h_era_gui.dataraw = varargin{7};
 initialprefs = varargin{9};
 newprefs = varargin{9};
-pos = varargin{8}.Position;
+fsize = get(0,'DefaultTextFontSize');
 
-%close era_gui
-close(varargin{8});
+%check if era_gui is open.
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    pos = varargin{8}.Position;
+    close(era_gui);
+else
+    pos=[400 400 600 400];
+end
 
 %define space between rows and first row location
 rowspace = 35;
@@ -375,12 +400,12 @@ era_prefs= figure('unit','pix',...
   'resize','off');    
 
 %print the gui headers
-uicontrol(era_prefs,'Style','text','fontsize',16,...
+uicontrol(era_prefs,'Style','text','fontsize',fsize+2,...
     'HorizontalAlignment','center',...
     'String','Preferences',...
     'Position', [pos(4)/7 row pos(4)/3 25]);  
 
-uicontrol(era_prefs,'Style','text','fontsize',16,...
+uicontrol(era_prefs,'Style','text','fontsize',fsize+2,...
     'HorizontalAlignment','center',...
     'String','Input',...
     'Position',[6*(pos(4)/7) row pos(4)/3 25]);
@@ -389,12 +414,12 @@ uicontrol(era_prefs,'Style','text','fontsize',16,...
 row = row - rowspace*1.75;
 
 %ask for an input for the number of stan chains
-uicontrol(era_prefs,'Style','text','fontsize',14,...
+uicontrol(era_prefs,'Style','text','fontsize',fsize,...
     'HorizontalAlignment','left',...
     'String','Number of Chains:',...
     'Position', [lcol row pos(4)/2 35]);  
 
-newprefs.nchains = uicontrol(era_prefs,'Style','edit','fontsize',14,...
+newprefs.nchains = uicontrol(era_prefs,'Style','edit','fontsize',fsize,...
     'String',newprefs.nchains,...
     'Position', [rcol row pos(4)/2 25]);  
 
@@ -402,28 +427,41 @@ newprefs.nchains = uicontrol(era_prefs,'Style','edit','fontsize',14,...
 row = row - rowspace;
 
 %input for number of stan iterations
-uicontrol(era_prefs,'Style','text','fontsize',14,...
+uicontrol(era_prefs,'Style','text','fontsize',fsize,...
     'HorizontalAlignment','left',...
     'String','Number of iterations:',...
     'Position', [lcol row pos(4)/2 25]);  
 
-newprefs.niter = uicontrol(era_prefs,'Style','edit','fontsize',14,...
+newprefs.niter = uicontrol(era_prefs,'Style','edit','fontsize',fsize,...
     'String',newprefs.niter,...
     'Position', [rcol row pos(4)/2 25]);  
 
+%next row
+row = row - rowspace;
+
+%input for number of stan iterations
+uicontrol(era_prefs,'Style','text','fontsize',fsize,...
+    'HorizontalAlignment','left',...
+    'String','Verbose Stan output (print each iteration):',...
+    'Position', [lcol row pos(4)/2 25]);  
+
+newprefs.verbose = uicontrol(era_prefs,'Style','pop',...
+    'fontsize',fsize,'String',{'No';'Yes'},...
+    'Value',newprefs.verbose,...
+    'Position', [rcol row pos(4)/2 25]);  
 
 %next row with extra space
 row = row - rowspace*2.5;
 
 %Create a back button that will save inputs for preferences
-uicontrol(era_prefs,'Style','push','fontsize',14,...
+uicontrol(era_prefs,'Style','push','fontsize',fsize,...
     'HorizontalAlignment','center',...
     'String','Save',...
     'Position', [pos(4)/7 row pos(4)/3 50],...
     'Callback',{@era_prefs_save,era_prefs,newprefs,h_era_gui}); 
 
 %Create button that will go back to era_gui without saving
-uicontrol(era_prefs,'Style','push','fontsize',14,...
+uicontrol(era_prefs,'Style','push','fontsize',fsize,...
     'HorizontalAlignment','center',...
     'String','Back',...
     'Position', [6*pos(4)/7 row pos(4)/3 50],...
@@ -437,6 +475,7 @@ function era_prefs_save(varargin)
 %pull the preferences from the gui
 procprefs.nchains = str2double(varargin{4}.nchains.String);
 procprefs.niter = str2double(varargin{4}.niter.String);
+procprefs.verbose = varargin{4}.verbose.Value;
 
 %close era_prefs gui
 close(varargin{3});
@@ -444,10 +483,36 @@ close(varargin{3});
 %pull the era_gui data
 h_era_gui = varargin{5};
 
-%execute era_startproc_fic with the new preferences
-era_startproc_fig(h_era_gui.collist,h_era_gui.filepart,...
-    h_era_gui.pathpart,h_era_gui.dataraw,'procprefs',procprefs,...
-    'inpchoices',h_era_gui.inpchoices);
+if procprefs.nchains >= 3 && procprefs.niter > 0
+    %execute era_startproc_fic with the new preferences
+    era_startproc_fig(h_era_gui.collist,h_era_gui.filepart,...
+        h_era_gui.pathpart,h_era_gui.dataraw,'procprefs',procprefs,...
+        'inpchoices',h_era_gui.inpchoices);
+end
+
+%make sure the user has defined at least 3 chains and more than 0
+%iterations
+if procprefs.nchains < 3 
+   
+    errordlg('You must have at least three chains to test convergence');
+    procprefs.nchains = 3;
+    
+    era_procprefs([],[],h_era_gui.inpchoices,h_era_gui.collist,...
+        h_era_gui.filepart,h_era_gui.pathpart,...
+        h_era_gui.dataraw,[],procprefs);
+    
+end
+
+if procprefs.niter <= 0
+   
+    errordlg('You must have more than zero iterations per chain');
+    procprefs.niter = 1000;
+    
+    era_procprefs([],[],h_era_gui.inpchoices,h_era_gui.collist,...
+        h_era_gui.filepart,h_era_gui.pathpart,...
+        h_era_gui.dataraw,[],procprefs);
+    
+end
 
 end
 
@@ -545,15 +610,43 @@ end
 %close the gui
 close(varargin{9});
 
-%prompt the user to indicate where the output from stan should be saved
-[savename, savepath] = uiputfile(fullfile(pathpart,'*.mat'),...
-    'Where would you like to save the output files?');
+%cmdstan cannot handle paths with white space. User will be required to
+%provide a path to working directory that does not include a space.
+%space will be set to 1 and will be changed if the path does not include
+%whitespace
+space = 1;
+while space == 1
+    
+    %prompt the user to indicate where the output from stan should be saved
+    [savename, savepath] = uiputfile(fullfile(pathpart,'*.mat'),...
+        'Where would you like to save the output files?');
+    
+    if any(isspace(savename)) || any(isspace(savepath))
+       str = {};
+       str{end+1} = 'Cmdstan cannot handle file paths or filesnames with whitespace';
+       str{end+1} = 'Please specify a file path and filename without whitespace';
+        errordlg(str,'Whitespace detected');
+        
+    elseif ~any(isspace(savename)) && ~any(isspace(savepath))
+        
+        space = 0;
+        
+    end
+    
+    %if the user does not select a file, then take the user back to 
+    %era_startproc_fig    
+    if filepart == 0 
+        errordlg('No file selected','File Error');
+        era_startproc_fig(collist,filepart,pathpart,dataraw);
+    end
+    
+end %while space == 1
 
-%if the user does not select a file, then take the user back to 
-%era_startproc_fig    
-if filepart == 0 
-    errordlg('No file selected','File Error');
-    era_startproc_fig(collist,filepart,pathpart,dataraw);
+%in the event that the user cancels and does not specify and path and
+%filename
+if isempty(savename) || isempty(savepath)
+    %take the user back to era_startproc_fig
+        era_startproc_fig(collist,filepart,pathpart,dataraw);
 end
 
 %now that the headers have been specified, set up a data table to be passed
@@ -563,13 +656,60 @@ dataout = era_loadfile('file',fullfile(pathpart,filepart),...
     'eventcol',eventheader,'dataraw',dataraw);
 
 %Change working dir for temporary Stan files
-mkdir(savepath,'Temp_StanFiles');
+if ~exist(fullfile(savepath,'Temp_StanFiles'), 'dir')
+  mkdir(savepath,'Temp_StanFiles');
+end
 origdir = cd(fullfile(savepath,'Temp_StanFiles'));
 
-%pass the data to era_computerel for analysis
-RELout = era_computerel('data',dataout,'chains',procprefs.nchains,...
-    'iter',procprefs.niter);
+%set initial state of rerun to 1
+%this will run era_computerel
+%if chains properly converged then rerun will be changed to 0 and the while
+%loop will be exited
+rerun = 1;
 
+%whether chains converged will be checked each time era_computerel is run
+while rerun ~= 0
+
+    %pass the data to era_computerel for analysis
+    REL = era_computerel('data',dataout,'chains',procprefs.nchains,...
+        'iter',procprefs.niter,'verbose',procprefs.verbose);
+    
+    %check convergence of chains
+    RELout = era_checkconv(REL);
+    
+    if RELout.out.conv.converged == 0
+       
+        era_reruncheck;
+        era_gui = findobj('Tag','era_gui');
+        rerun = guidata(era_gui);
+        close(era_gui);
+        delete(era_gui);
+        
+    else 
+        %if chains converged, do no rerun.
+        rerun = 0;
+        
+    end
+    
+    %if convergence was not met and the user would like to rerun the model,
+    %double the number of iterations (if the doubled number is less than
+    %1000, then run 1000 iterations)
+    if rerun == 1
+        procprefs.niter = procprefs.niter * 2;
+        if procprefs.niter < 1000
+            procprefs.niter = 1000;
+        end
+        fprintf('\nIncreasing number of iterations to %d\n',...
+            procprefs.niter);
+    end
+end
+
+%sometimes the era_gui doesn't close
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    close(era_gui);
+end
+    
 %change the working directory back to the original directory 
 cd(origdir);
 
@@ -581,7 +721,22 @@ try
 catch
     
     fprintf('\n\nTemporary directory could not be removed.');
-    sprintf('\nPath: %s\n',savepath);
+    fprintf('\nPath: %s\n',savepath);
+end
+
+%if the chains did not converge send the user back to era_startproc_fig
+if RELout.out.conv.converged == 0
+
+    era_startproc_fig(collist,filepart,pathpart,dataraw,'procprefs',...
+        procprefs,'inpchoices',choices);
+    return
+    
+else
+    
+    %chains converged. Let the user know.
+    %str = 'Models successfully converged with %d chains and %d iterations';
+    %fprintf(strcat('\n',str,'\n'),procpref.nchains,procprefs.niter);
+    
 end
 
 fprintf('\nSaving Processed Data...\n\n');

@@ -2,7 +2,7 @@ function era_start
 %
 %Initiate Matlab gui to use the ERP Reliability Analysis (ERA) toolbox
 %
-%version .85 - Last Updated 3/5/16
+%version 0.3.1 - Last Updated 4/18/16
 %
 
 %The ERA toolbox uses generalizability theory as a method for evaluating 
@@ -25,10 +25,9 @@ function era_start
 %The notion of reporting estimates of reliability in all ERP studies and 
 % this toolbox are specifically discussed in 
 %
-% <insert citation here>
-%
-%Please cite both papers when using the ERA toolbox (Baldwin et al. paper
-%for the formulas and concept; Clayson and Miller paper for the toolbox)
+% Clayson, P. E., & Miller, G. A. (under review). Psycometric
+% considerations in the measurement of event-related brain potentials:
+% Guidelines for measurement and reporting
 %
 %
 %Input
@@ -88,13 +87,15 @@ function era_start
 %and help I can to fix it.
 
 %History 
-% by Peter Clayson (2/22/16)
+% by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 %
 
-%Output info about ERA Toolbox
-fprintf('\n\n\nERP Reliability Analysis Toolbox Version .85\n\n');
+%set version number of ERA Toolbox
+eraver = '0.3.1';
 
+%Output info about ERA Toolbox
+fprintf('\n\n\nERP Reliability Analysis Toolbox Version %s\n\n',eraver);
 
 %check whether dependencies are contained in the Matlab path
 %first look for ERA toolbox files
@@ -156,6 +157,7 @@ fprintf('\n\n');
 %define parameters for figure position
 figwidth = 400;
 figheight = 200;
+fsize = get(0,'DefaultTextFontSize');
 
 %define space between rows and first row location
 rowspace = 25;
@@ -167,17 +169,18 @@ era_gui= figure('unit','pix','Visible','off',...
   'menub','no',...
   'numbertitle','off',...
   'resize','off');
+
 movegui(era_gui,'center');
 
-%Print the name of the loaded dataset
-uicontrol(era_gui,'Style','text','fontsize',16,...
+%Write text
+uicontrol(era_gui,'Style','text','fontsize',fsize+2,...
     'HorizontalAlignment','center',...
     'String','What would you like to do?',...
     'Position',[0 row figwidth 25]);          
 
 %Create a button that will take the user to the gui for setting the inputs
 %to process data
-uicontrol(era_gui,'Style','push','fontsize',14,...
+uicontrol(era_gui,'Style','push','fontsize',fsize,...
     'HorizontalAlignment','center',...
     'String','<html><center>Process <br>New Data',...
     'Position', [figwidth/8 25 figwidth/3 75],...
@@ -185,11 +188,14 @@ uicontrol(era_gui,'Style','push','fontsize',14,...
 
 %Create button that will take the user to the gui for setting the inputs
 %for viewing the data
-uicontrol(era_gui,'Style','push','fontsize',14,...
+uicontrol(era_gui,'Style','push','fontsize',fsize,...
     'HorizontalAlignment','center',...
     'String','View Results',...
     'Position', [5*figwidth/8 25 figwidth/3 75],...
     'Callback',{@era_startview,era_gui}); 
+
+%tag gui
+era_gui.Tag = 'era_gui';
 
 %display gui
 set(era_gui,'Visible','on');

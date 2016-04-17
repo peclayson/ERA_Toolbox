@@ -1,19 +1,20 @@
 function RELout = era_computerel(varargin)
 %Prepare and execute cmdstan code for dependability analyses
 %
-%era_computerel('data',era_datatable)
+%era_computerel('data',era_datatable,'chains',3,'iter',1000)
 %
-%Lasted Updated 3/5/16
+%Lasted Updated 4/17/16
 %
-%Required Input:
+%Required Inputs:
 % data - data table outputted from the era_loadfile script (see era_loadfile
 %  for more information about table format)
 %  Note: era_loadfile sets up the datatable in a specific format with
 %  specific header names that are used in this script
+% chains - number of chains to run in stan 
+% iter - number of iterations to run in stan 
 %
 %Optional Inputs:
-%  chains - number of chains to run in stan (default: 5)
-%  iter - number of iterations to run in stan (default: 250)
+% verbose - 1: Do not print iterations, 2: Print iterations
 %
 %Outputs:
 % RELout - structure array with the following fields.
@@ -30,8 +31,12 @@ function RELout = era_computerel(varargin)
 %   labels: labels for the data. If either events or groups were processed
 %    then this the labeles for events or groups. If both events and groups
 %    were processed then this labels will be 'event_group' for each
-%    possible combination (e.g., 'Error_Controls' or 'Hits_Patients'' event 
-%    and group will be separated by an underscore)
+%    possible combination (e.g., 'Error_;_Controls' or 'Hits_;_Patients'  
+%    event and group will be separated by _;_ to avoid using a common 
+%    delimeter that could be used by a researcher to label an event)
+%  conv: nest for convergence data
+%   data: convergence statistics with three columns (parameter, n_eff,
+%    r_hat)
 %  stan_in: compiled model syntax that was passed to Stan
 
 %For more information about how variance components were estimated please
@@ -42,7 +47,7 @@ function RELout = era_computerel(varargin)
 % clinical sample: A generalizability and decision analysis of the ERN and 
 % Pe. Psychophysiology, 52(6), 790-800. http://doi.org/10.1111/psyp.12401
 %
-%It would be terribly remiss of me not thank Scott Baldwin for
+%It would be terribly remiss of me not thank Dr. Scott Baldwin for
 %conceptualizing and developing the formulas that are implemented in this
 %toolbox. Dr. Baldwin also wrote the original Stan syntax in R and 
 %graciously provided me with all of his code. This Matlab code is based
@@ -66,7 +71,7 @@ function RELout = era_computerel(varargin)
 %
 
 %History
-% by Peter Clayson (3/5/16)
+% by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 
 %somersault through varargin inputs to check for which inputs were
@@ -98,7 +103,10 @@ if ~isempty(varargin)
     if ~isempty(ind)
         nchains = varargin{ind+1}; 
     else 
-        nchains = 5;
+        error('varargin:nchains',... %Error code and associated error
+        strcat('WARNING: Number of chains not specified \n\n',... 
+        'Please input the number of chains for stan\n',...
+        'See help era_computerel for more information on inputs'));
     end
     
     %check whether iter is specified
@@ -106,17 +114,34 @@ if ~isempty(varargin)
     if ~isempty(ind)
         niter = varargin{ind+1}; 
     else 
-        niter = 250;
+        error('varargin:niter',... %Error code and associated error
+        strcat('WARNING: Number of iterations not specified \n\n',... 
+        'Please input the number of iterations for stan\n',...
+        'See help era_computerel for more information on inputs'));
+    end
+    
+    %check whether verbose is specified
+    ind = find(strcmp('verbose',varargin),1);
+    if ~isempty(ind)
+        verbose = varargin{ind+1}; 
+    else 
+        verbose = 1;
     end
     
 elseif isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
-    strcat('WARNING: Optional inputs are incomplete \n\n',... 
+    strcat('WARNING: Inputs are incomplete \n\n',... 
     'Make sure each variable input is paired with a value \n',...
-    'See help era_computerel for more information on optional inputs'));
+    'See help era_computerel for more information on inputs'));
     
 end %if ~isempty(varargin)
+
+eraver = '0.3.1';
+
+%store raw data to pass to era_checkconvergence in the event that the user
+%chooses to run with more iterations
+dataraw = datatable;
 
 %ensure the necessary columns are present in the table (at least the
 %headers for id and meas)
@@ -149,6 +174,12 @@ if exist('headerror','var')
     'See help era_loadfile for data table format \n'));
 end
 
+%change verbosity to match true or false
+if verbose == 1
+    verbosity = false;
+elseif verbose == 2
+    verbosity = true;
+end
 
 %check whether groups or events are in the table
 if sum(strcmpi(colnames,'group'))
@@ -263,7 +294,7 @@ switch analysis
         %fit model in cmdstan
         fit = stan('model_code', stan_in, 'model_name', modelname,...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-            niter/10, 'verbose', false, 'file_overwrite', true);
+            niter/10, 'verbose', verbosity, 'file_overwrite', true);
         
         %don't let the user continue to use the Matlab command window
         fit.block();
@@ -276,11 +307,11 @@ switch analysis
         %label is simply measure (no events or groups to deal with)
         REL.out.labels = 'measure';
         
+        REL.out.conv.data = era_storeconv(fit);
         
         
     case 2 %possible multiple groups 
 
-        
         
         %cmdstan requires the id variable to be numeric and sequential. 
         %an id2 variable is created to satisfy this requirement.
@@ -471,7 +502,7 @@ switch analysis
         %run cmdstan
         fit = stan('model_code', stan_in, 'model_name', modelname,...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-            niter/10, 'verbose', false, 'file_overwrite', true);
+            niter/10, 'verbose', verbosity, 'file_overwrite', true);
         
         %block user from using Matlab command window
         fit.block();
@@ -507,12 +538,10 @@ switch analysis
             REL.out.labels(:,end+1) = groupnames(i);           
         end
         
-        
+        REL.out.conv.data = era_storeconv(fit);
         
     case 3 %possible event types but no groups to consider
 
-        
-        
         %cmdstan requires the id variable to be numeric and sequential. 
         %an id2 variable is created to satisfy this requirement.
         
@@ -709,7 +738,7 @@ switch analysis
         %run in cmdstan
         fit = stan('model_code', stan_in, 'model_name', modelname,...
             'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-            niter/10, 'verbose', false, 'file_overwrite', true);
+            niter/10, 'verbose', verbosity, 'file_overwrite', true);
         
         %block user from using Matlab command window 
         fit.block();
@@ -721,6 +750,7 @@ switch analysis
         REL.out.sig_u = [];
         REL.out.sig_e = [];
         REL.out.labels = {};
+        REL.out.conv.data = {};
         
         %parse outputs
         for i=1:nevent
@@ -746,7 +776,7 @@ switch analysis
             REL.out.labels(:,end+1) = eventnames(i);           
         end
        
-        
+        REL.out.conv.data = era_storeconv(fit);
         
     case 4 %possible groups and event types to consider
 
@@ -836,6 +866,7 @@ switch analysis
         REL.out.sig_u = [];
         REL.out.sig_e = [];
         REL.out.labels = {};
+        REL.out.conv.data = {};
         REL.stan_in = {};
         
         %separate syntax will need to be generated for each event because
@@ -984,7 +1015,7 @@ switch analysis
             %run cmdstan
             fit = stan('model_code', stan_in, 'model_name', modelname,...
                 'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-                niter/10, 'verbose', false, 'file_overwrite', true);
+                niter/10, 'verbose', verbosity, 'file_overwrite', true);
             
             %block user from using Matlab command window
             fit.block();
@@ -1012,15 +1043,52 @@ switch analysis
             %group name with an underscore
             for i=1:ngroup
                 REL.out.labels(:,end+1) = strcat(eventnames(j),...
-                    '_',groupnames(i));           
+                    '_;_',groupnames(i));           
             end
 
+            REL.out.conv.data{end+1} = era_storeconv(fit);
+            
         end %for j=1:nevent
 
 end %switch analysis
 
-%output the REL structure
+REL.eraver = eraver;
 RELout = REL;
+
+end
+
+function convstats = era_storeconv(fit)
+%pull out r_hats from Stanfit model
+
+%pull summary using the print function
+%there's no other way to get at the r_hat values, so output will also be
+%printed in the command window
+output = print(fit);
+
+%define cell array that holds the r_hats
+convstats = cell(0,3);
+convstats{1,1} = 'name';
+convstats{1,2} = 'n_eff';
+convstats{1,3} = 'r_hat';
+
+%cycle through the important inputs
+%depending on whether there are multiple events/groups there may be 
+%multiple mu_, sig_u_, and sig_e_
+inp2check = {'lp__' 'mu_' 'sig_u_' 'sig_e_'}; 
+
+for j = 1:length(inp2check)
+    check = strncmp(output,inp2check{j},length(inp2check{j}));
+    ind2check = find(check == 1);
+    for i = 1:length(ind2check)
+        pullrow = strsplit(output{ind2check(i),:},' ');
+        label = pullrow{1};
+        neff = str2num(pullrow{end-2});
+        rhat = str2num(pullrow{end});
+        convstats{end+1,1} = label;
+        convstats{end,2} = neff;
+        convstats{end,3} = rhat;
+    end
+end
 
 end
 
