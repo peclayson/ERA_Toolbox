@@ -4,7 +4,7 @@ function dataout = era_readtable(varargin)
 %
 %era_readtable('file','J:\Data\MyData.xlsx')
 %
-%Last Updated 3/23/16
+%Last Updated 4/18/16
 %
 %
 %Input
@@ -37,7 +37,7 @@ function dataout = era_readtable(varargin)
 %
 
 %History 
-% by Peter Clayson (3/23/16)
+% by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 %
 

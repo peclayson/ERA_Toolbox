@@ -3,7 +3,7 @@ function RELout = era_computerel(varargin)
 %
 %era_computerel('data',era_datatable,'chains',3,'iter',1000)
 %
-%Lasted Updated 3/5/16
+%Lasted Updated 4/17/16
 %
 %Required Inputs:
 % data - data table outputted from the era_loadfile script (see era_loadfile
@@ -71,7 +71,7 @@ function RELout = era_computerel(varargin)
 %
 
 %History
-% by Peter Clayson (3/5/16)
+% by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 
 %somersault through varargin inputs to check for which inputs were

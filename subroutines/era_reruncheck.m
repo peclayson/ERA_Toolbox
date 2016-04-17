@@ -1,6 +1,38 @@
 function era_reruncheck
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+%
+%Execute gui to ask user whether to rerun model with more iterations
+%
+%Last Updated 4/18/16
+%
+%
+%Input
+% No inputs required
+%
+%Output
+% No output generated. The user's choice will be check in era_startproc
+%
+
+% Copyright (C) 2016 Peter E. Clayson
+% 
+%     This program is free software: you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published by
+%     the Free Software Foundation, either version 3 of the License, or
+%     any later version.
+% 
+%     This program is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+%     GNU General Public License for more details.
+% 
+%     You should have received a copy of the GNU General Public License
+%     along with this program (gpl.txt). If not, see 
+%     <http://www.gnu.org/licenses/>.
+%
+
+%History 
+% by Peter Clayson (4/18/16)
+% peter.clayson@gmail.com
+%
 
 %define parameters for figure position
 figwidth = 500;
@@ -28,16 +60,14 @@ uicontrol(era_gui,'Style','text','fontsize',16,...
     'String',str,...
     'Position',[0 row figwidth 50]);          
 
-%Create a button that will take the user to the gui for setting the inputs
-%to process data
+%Create a button that will not rerun the model
 uicontrol(era_gui,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','<html><center>Do Not<br>Rerun',...
     'Position', [figwidth/8 25 figwidth/3 75],...
     'Callback',{@era_setrerun,0,era_gui}); 
 
-%Create button that will take the user to the gui for setting the inputs
-%for viewing the data
+%Create button that will rerun the model with more iterations
 uicontrol(era_gui,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Rerun',...
@@ -56,9 +86,8 @@ uiwait(era_gui);
 
 end
 
-
 function era_setrerun(varargin)
-
+%to rerun or not to rerun the model
 uiresume;
 era_gui = findobj('Tag','era_gui');
 guidata(era_gui,varargin{3});

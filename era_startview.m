@@ -4,6 +4,8 @@ function era_startview(varargin)
 %
 %era_startview('file','/Users/REL/SomeERAData.mat')
 %
+%Last Updated 4/18/16
+%
 %Required Inputs:
 % No inputs are required.
 %
@@ -35,7 +37,7 @@ function era_startview(varargin)
 %
 
 %History 
-% by Peter Clayson (3/1/15)
+% by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 
 %see if the file for the figures and tables has been specified in

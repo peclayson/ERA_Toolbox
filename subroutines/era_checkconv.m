@@ -5,7 +5,7 @@ function RELout = era_checkconv(REL)
 %
 %[REL, rerun] = era_checkconv(REL)
 %
-%Lasted Updated 3/24/16
+%Lasted Updated 4/18/16
 %
 %Required Input:
 % REL - structure array created by era_computerel
@@ -32,7 +32,7 @@ function RELout = era_checkconv(REL)
 %
 
 %History
-% by Peter Clayson (3/24/16)
+% by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 
 %make sure an input was provided

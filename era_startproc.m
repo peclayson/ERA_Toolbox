@@ -3,7 +3,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 3/5/16
+%Last Updated 4/18/16
 %
 %
 %Input
@@ -36,7 +36,7 @@ function era_startproc(varargin)
 %
 
 %History 
-% by Peter Clayson (3/5/16)
+% by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 %
 

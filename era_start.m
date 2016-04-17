@@ -87,7 +87,7 @@ function era_start
 %and help I can to fix it.
 
 %History 
-% by Peter Clayson (2/22/16)
+% by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 %
 

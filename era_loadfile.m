@@ -3,6 +3,8 @@ function dataout = era_loadfile(varargin)
 %
 %era_loadfile('file',filename)
 %
+%Last Modified 4/18/16
+%
 %Required Inputs:
 % file - location of file to be loaded and prepared for dependability
 %  analyses
@@ -44,7 +46,7 @@ function dataout = era_loadfile(varargin)
 %
 
 %History 
-% by Peter Clayson (12/15/15)
+% by Peter Clayson (4/17/16)
 % peter.clayson@gmail.com
 
 %somersault through varargin inputs to check for which inputs were
