@@ -522,6 +522,7 @@ function era_prefs_back(varargin)
 %pull the old preferences
 procprefs.nchains = varargin{4}.nchains;
 procprefs.niter = varargin{4}.niter;
+procprefs.verbose = varargin{4}.verbose;
 
 %close era_prefs gui
 close(varargin{3});
