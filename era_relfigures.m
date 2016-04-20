@@ -71,6 +71,9 @@ function era_relfigures(varargin)
 % bug fix: point estimate and lower limit were flipped for dependability
 %  plot
 % changed spacing in guis a bit
+% add median number of trials to the overall inclusion table (gui and
+%  output table)
+% aesthetic changes: fixed spacings in csv table outputs
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -1582,6 +1585,7 @@ overalldep = {};
 mintrl = {};
 maxtrl = {};
 meantrl = {};
+medtrl = {};
 goodn = {};
 badn = {};
 icc = {};
@@ -1625,6 +1629,7 @@ for gloc=1:ngroups
         mintrl{end+1} = relsummary.group(gloc).event(eloc).trlinfo.min;
         maxtrl{end+1} = relsummary.group(gloc).event(eloc).trlinfo.max;
         meantrl{end+1} = relsummary.group(gloc).event(eloc).trlinfo.mean;
+        medtrl{end+1} = relsummary.group(gloc).event(eloc).trlinfo.med;
         
         %pull good and bad ns
         goodn{end+1} = relsummary.group(gloc).event(eloc).goodn;
@@ -1669,11 +1674,12 @@ inctrltable.Properties.VariableNames = {'Label','Trial_Cutoff',...
 
 %create table to describe the data including all trials 
 overalltable = table(label',goodn',badn',overalldep',icc',meantrl',...
-    mintrl',maxtrl');
+    medtrl',mintrl',maxtrl');
 
 overalltable.Properties.VariableNames = {'Label' ...
     'n_Included' 'n_Excluded' ...
-    'Dependability' 'ICC' 'Mean_Num_Trials' 'Min_Num_Trials'...
+    'Dependability' 'ICC' 'Mean_Num_Trials' 'Med_Num_Trials'...
+    'Min_Num_Trials'...
     'Max_Num_Trials'};
 
 
@@ -1772,7 +1778,7 @@ uicontrol(era_inctrl,'Style','push','fontsize',14,...
 
 
 %define parameters for figure size
-figwidth = 750;
+figwidth = 850;
 figheight = 500;
 
 %define space between rows and first row location
@@ -1798,8 +1804,8 @@ t = uitable('Parent',era_overall,'Position',...
     [25 100 figwidth-50 figheight-175],...
     'Data',table2cell(overalltable));
 set(t,'ColumnName',{'Label' 'n Included' 'n Excluded' ...
-    'Dependability' 'ICC' 'Mean # of Trials' 'Min # of Trials'...
-    'Max # of Trials'});
+    'Dependability' 'ICC' 'Mean # of Trials' 'Med # of Trials'...
+    'Min # of Trials' 'Max # of Trials'});
 set(t,'ColumnWidth',{'auto' 'auto' 'auto' 110 110 'auto' 'auto' 'auto'});
 set(t,'RowName',[]);
 
@@ -1905,7 +1911,7 @@ elseif strcmp(ext,'.csv')
     fid = fopen(fullfile(savepath,savename),'w');
     fprintf(fid,'%s\n','Dependability Table Generated on');
     fprintf(fid,'%s\n',datestr(clock));
-    fprintf(fid,'\n');
+    fprintf(fid,' \n');
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
@@ -1913,22 +1919,22 @@ elseif strcmp(ext,'.csv')
         REL.relsummary.meascutoff);
     fprintf(fid, 'Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
-    fprintf(fid,'\n');
-    fprintf(fid,'\n');
+    fprintf(fid,' \n');
+    fprintf(fid,' \n');
     
     fprintf(fid,'%s', strcat('Label,N Included,N Excluded,',...
-        'Dependability,ICC,Mean Num of Trials,Min Num of Trials,',...
-        'Max Num of Trials'));
-    fprintf(fid,'\n');
+        'Dependability,ICC,Mean Num of Trials,Med Num of Trials,',...
+        'Min Num of Trials,Max Num of Trials'));
+    fprintf(fid,' \n');
     
     %write the table information
     for i = 1:height(overalltable)
-         formatspec = '%s,%d,%d,%s,%s,%0.4f,%d,%d\n';
+         formatspec = '%s,%d,%d,%s,%s,%0.4f,%d,%d,%d\n';
          fprintf(fid,formatspec,char(overalltable{i,1}),...
              cell2mat(overalltable{i,2}),cell2mat(overalltable{i,3}),...
              cell2mat(overalltable{i,4}),char(overalltable{i,5}),...
              cell2mat(overalltable{i,6}),cell2mat(overalltable{i,7}),...
-             cell2mat(overalltable{i,8}));
+             cell2mat(overalltable{i,8}),cell2mat(overalltable{i,9}));
     end
     
     fclose(fid);
@@ -1997,7 +2003,7 @@ elseif strcmp(ext,'.csv')
     fid = fopen(fullfile(savepath,savename),'w');
     fprintf(fid,'%s\n','Data Generated on');
     fprintf(fid,'%s\n',datestr(clock));
-    fprintf(fid,'\n');
+    fprintf(fid,' \n');
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
@@ -2005,8 +2011,8 @@ elseif strcmp(ext,'.csv')
         REL.relsummary.meascutoff);
     fprintf(fid,'Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
-    fprintf(fid,'\n');
-    fprintf(fid,'\n');
+    fprintf(fid,' \n');
+    fprintf(fid,' \n');
     fprintf(fid,'%s\n','Good IDs,Bad IDs');
     
     gids = [];
@@ -2089,7 +2095,7 @@ elseif strcmp(ext,'.csv')
     fid = fopen(fullfile(savepath,savename),'w');
     fprintf(fid,'%s\n','Table Generated on');
     fprintf(fid,'%s\n',datestr(clock));
-    fprintf(fid,'\n');
+    fprintf(fid,' \n');
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
@@ -2097,11 +2103,11 @@ elseif strcmp(ext,'.csv')
         REL.relsummary.meascutoff);
     fprintf(fid,'Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
-    fprintf(fid,'\n');
-    fprintf(fid,'\n');
+    fprintf(fid,' \n');
+    fprintf(fid,' \n');
     
     fprintf(fid,'%s', strcat('Label,Trial Cutoff,Dependability'));
-    fprintf(fid,'\n');
+    fprintf(fid,' \n');
     
     for i = 1:height(incltrltable)
          formatspec = '%s,%d,%s\n';
@@ -2163,7 +2169,7 @@ elseif strcmp(ext,'.csv')
     fid = fopen(fullfile(savepath,savename),'w');
     fprintf(fid,'%s\n','Table Generated on');
     fprintf(fid,'%s\n',datestr(clock));
-    fprintf(fid,'\n');
+    fprintf(fid,' \n');
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
         REL.relsummary.depcutoff);
@@ -2171,12 +2177,12 @@ elseif strcmp(ext,'.csv')
         REL.relsummary.meascutoff);
     fprintf(fid,'Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
-    fprintf(fid,'\n');
-    fprintf(fid,'\n');
+    fprintf(fid,' \n');
+    fprintf(fid,' \n');
     
     fprintf(fid,'%s', strcat('Label,n Included,Beteen-Person Std Dev',...
         ',Within-Person Std Dev'));
-    fprintf(fid,'\n');
+    fprintf(fid,' \n');
     
     for i = 1:height(stddevtable)
          formatspec = '%s,%d,%s,%s\n';
