@@ -39,6 +39,9 @@ function era_startproc(varargin)
 % by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 %
+%4/20/16 PC
+% Add line to print that model converged successfully
+%
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -689,7 +692,7 @@ while rerun ~= 0
     else 
         %if chains converged, do no rerun.
         rerun = 0;
-        
+        fprintf('\nModel converged\n');
     end
     
     %if convergence was not met and the user would like to rerun the model,
