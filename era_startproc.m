@@ -41,7 +41,7 @@ function era_startproc(varargin)
 %
 %4/20/16 PC
 % Add line to print that model converged successfully
-%
+% Added ERA Toolbox specific format for saving data (extension: .erat)
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -622,7 +622,7 @@ space = 1;
 while space == 1
     
     %prompt the user to indicate where the output from stan should be saved
-    [savename, savepath] = uiputfile(fullfile(pathpart,'*.mat'),...
+    [savename, savepath] = uiputfile(fullfile(pathpart,'*.erat'),...
         'Where would you like to save the output files?');
     
     if any(isspace(savename)) || any(isspace(savepath))

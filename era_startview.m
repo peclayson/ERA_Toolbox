@@ -39,6 +39,9 @@ function era_startview(varargin)
 %History 
 % by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
+%
+%4/20/16 PC
+% changes consistent with ERA Toolbox file format (extension: .erat)
 
 %see if the file for the figures and tables has been specified in
 %varargin
@@ -63,7 +66,8 @@ end
 %if the file was not specified, prompt the user to indicate where the file
 %is located.
 if ~exist('file','var')
-    [filepart, pathpart] = uigetfile({'*.mat','MAT-files (*.mat)'},'Data');
+    [filepart, pathpart] = uigetfile({'*.erat',...
+        'ERA Toolbox files (*.erat)'},'Data');
 
     if filepart == 0 
         errordlg('No file selected','File Error');
@@ -397,7 +401,7 @@ function era_svh(varargin)
 filename = strsplit(varargin{3},'.');
 
 %load the data to be viewed
-REL = load(fullfile(varargin{4},[filename{1} '.mat']));
+REL = load(fullfile(varargin{4},[filename{1} '.erat']),'-mat');
 REL = REL.RELout;
 
 %pull the inputs out of varargin
