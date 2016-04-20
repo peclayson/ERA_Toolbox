@@ -1,6 +1,8 @@
+#ignore folder attributes on OSX
 .DS_Store
-.Rhistory
-*.asv
-*.m~
 
-.DS_Store
+#ignore the temp Windows default
+*.asv
+
+#ignore OSX autosave
+*.m~
