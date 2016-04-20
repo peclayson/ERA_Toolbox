@@ -67,6 +67,10 @@ function era_relfigures(varargin)
 % by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 %
+%4/20/16 PC
+% bug fix: point estimate and lower limit were flipped for dependability
+%  plot
+% changed spacing in guis a bit
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -394,13 +398,13 @@ for eloc=1:nevents
             switch plotdepline 
                 case 1 %lower limit
                     plotrel(trial,gloc) = ...
-                        mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
-                        data.g(gloc).e(eloc).sig_e.raw,trial));
+                        quantile(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                        data.g(gloc).e(eloc).sig_e.raw,trial),.025);
                     plottitle = 'Lower Limit of 95% Credible Interval';
                 case 2 %point estimate
                     plotrel(trial,gloc) = ...
-                        quantile(reliab(data.g(gloc).e(eloc).sig_u.raw,...
-                        data.g(gloc).e(eloc).sig_e.raw,trial),.025);
+                        mean(reliab(data.g(gloc).e(eloc).sig_u.raw,...
+                        data.g(gloc).e(eloc).sig_e.raw,trial));
                     plottitle = 'Point Estimate';
                 case 3 %upper limit
                     plotrel(trial,gloc) = ...
@@ -1605,14 +1609,14 @@ for gloc=1:ngroups
         
         %create a string with the dependability point estimate and credible
         %interval for cutoff data
-        dep{end+1} = sprintf('        %0.2f CI [%0.2f %0.2f]',...
+        dep{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
             relsummary.group(gloc).event(eloc).rel.m,...
             relsummary.group(gloc).event(eloc).rel.ll,...
             relsummary.group(gloc).event(eloc).rel.ul);
         
         %create a string with the dependability point estimate and credible
         %interval for overall data
-        overalldep{end+1} = sprintf('        %0.2f CI [%0.2f %0.2f]',...
+        overalldep{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
             relsummary.group(gloc).event(eloc).dep.m,...
             relsummary.group(gloc).event(eloc).dep.ll,...
             relsummary.group(gloc).event(eloc).dep.ul);
@@ -1768,7 +1772,7 @@ uicontrol(era_inctrl,'Style','push','fontsize',14,...
 
 
 %define parameters for figure size
-figwidth = 725;
+figwidth = 750;
 figheight = 500;
 
 %define space between rows and first row location
@@ -1796,7 +1800,7 @@ t = uitable('Parent',era_overall,'Position',...
 set(t,'ColumnName',{'Label' 'n Included' 'n Excluded' ...
     'Dependability' 'ICC' 'Mean # of Trials' 'Min # of Trials'...
     'Max # of Trials'});
-set(t,'ColumnWidth',{'auto' 'auto' 'auto' 'auto' 100 'auto' 'auto' 'auto'});
+set(t,'ColumnWidth',{'auto' 'auto' 'auto' 110 110 'auto' 'auto' 'auto'});
 set(t,'RowName',[]);
 
 %Create a save button that will take save the table
