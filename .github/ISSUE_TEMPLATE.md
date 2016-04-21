@@ -3,6 +3,7 @@
 
 ## Context
 <!--- Provide a more detailed introduction to the issue itself, and why you consider it to be a bug -->
+<!--- e.g., How has this bug affected you? What were you trying to accomplish? -->
 
 ## Expected Behavior
 <!--- Tell me what should happen -->
@@ -20,9 +21,6 @@
 2.
 3.
 4.
-
-## Context
-<!--- How has this bug affected you? What were you trying to accomplish? -->
 
 ## Screenshot
 <!--- If it is helpful to include a screenshot, do so here -->
