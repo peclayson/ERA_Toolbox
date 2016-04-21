@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="ERP Reliability Analysis Toolbox : Matlab toolbox for obtaining dependability estimates for ERP measurements">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>ERP Reliability Analysis Toolbox</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/peclayson/ERA_Toolbox">View on GitHub</a>
+
+          <h1 id="project_title">ERP Reliability Analysis Toolbox</h1>
+          <h2 id="project_tagline">Matlab toolbox for obtaining dependability estimates for ERP measurements</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/peclayson/ERA_Toolbox/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/peclayson/ERA_Toolbox/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p>The ERP Reliability Analysis (ERA) toolbox is an open-source Matlab program that uses generalizability (G) theory to evaluate the reliability of ERP data. The purpose of the toolbox is to characterize the dependability (G-theory analog of reliability) of ERP scores to facilitate their calculation on a study-by-study basis and increase the reporting of these estimates.</p>
+
+<p>The ERA Toolbox provides information about the minimum number of trials needed for dependable ERP scores and describes the overall dependability of ERP measurements. All information provided by the ERA Toolbox is stratified by group and condition to allow the user to directly compare dependability (e.g., a particular group may require more trials to achieve an acceptable level of dependability than another group). The code used by the toolbox was based on the formulas discussed in detail by <a href="http://onlinelibrary.wiley.com/doi/10.1111/psyp.12401/abstract">Baldwin, Larson, and Clayson (2015)</a>.</p>
+
+<p>Check out the <a href="https://github.com/peclayson/ERA_Toolbox/wiki">wiki</a>.</p>
+
+<h3>
+<a id="why-another-toolbox" class="anchor" href="#why-another-toolbox" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Why another toolbox?</h3>
+
+<p>Reliability is a property of scores (the data in hand), not a property of measures. This means that P3, error-related negativity (ERN), late positive potential (LPP), (insert your favorite ERP component here) is not reliable in some "universal" sense. Since reliability is context dependent, demonstrating the reliability of LPP scores in undergraduates at UCLA does not mean LPP scores recorded from children in New York can be assumed to be reliable. Measurement reliability needs to be demonstrated on a population-by-population, study-by-study, component-by-component basis.</p>
+
+<p>The purpose of the ERA Toolbox is to facilitate the calculation of dependability estimates to characterize observed ERP scores. ERP psychometric studies have been useful in suggesting cutoffs and characterizing the overall reliability of ERP components in those studies. When designing a study, that information can help guide decisions about, for example, the number of trials to present to a participant for a given population. However, just because the observed data meet the previously recommended trial cutoff does not mean that the ERP scores are necessarily reliable. ERP score reliability cannot be inferred from trial counts, despite that trial counts and reliability are certainly related.</p>
+
+<p>My hope is that the ERA Toolbox will make it easier to demonstrate the reliability of ERP scores on a study-by-study basis.</p>
+
+<p>Mismeasurement of ERPs leads to misunderstood phenomena and mistaken conclusions. Poor ERP score reliability from mismeasurement compromises validity. Improving ERP measurement, by ensuring score reliability, can improve our trust of the inferences drawn from observed scores and the likelihood of our findings replicating.</p>
+
+<h3>
+<a id="a-little-history" class="anchor" href="#a-little-history" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>A Little History</h3>
+
+<p>This project was started in December 2015 by Peter Clayson (<a href="https://github.com/peclayson" class="user-mention">@peclayson</a>). What started as some in-house code turned into a flexible gui that I hope can help others. After all, there's no need to rebuild the wheel! </p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">ERP Reliability Analysis Toolbox maintained by <a href="https://github.com/peclayson">peclayson</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
