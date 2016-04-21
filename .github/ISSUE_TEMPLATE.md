@@ -1,3 +1,4 @@
+<!--- This template is for reporting bugs -->
 <!--- Provide a general summary of the issue in the Title above -->
 
 ## Context
@@ -22,6 +23,9 @@
 
 ## Context
 <!--- How has this bug affected you? What were you trying to accomplish? -->
+
+## Screenshot
+<!--- If it is helpful to include a screenshot, do so here -->
 
 ## Your Environment
 <!--- Include as many relevant details about the environment you experienced the bug in -->
