@@ -1,4 +1,5 @@
 <!--- This template is for reporting bugs -->
+<!--- Template for reporting improvements below -->
 <!--- Provide a general summary of the issue in the Title above -->
 
 ## Context
@@ -33,3 +34,17 @@
 * CmdStan Version (if applicable):
 * MatlabStan Version (if applicable):
 * MatlabProcessManager Version (if applicable):
+
+
+<!--- This is the template for recommending new features -->
+<!--- Provide a general summary of the issue in the Title above -->
+
+## Detailed Description
+<!--- Provide a detailed description of the change or addition you are proposing -->
+
+## Context
+<!--- Why is this change important to you? How would you use it? -->
+<!--- How can it benefit other users? -->
+
+## Possible Implementation
+<!--- Not obligatory, but suggest an idea for implementing addition or change -->
