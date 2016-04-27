@@ -4,7 +4,7 @@ function era_relfigures(varargin)
 %
 %era_relfigures('data',ERAData)
 %
-%Last Modified 4/18/16
+%Last Modified 4/27/16
 %
 %Note: The Statistics and Machine Learning Toolbox is required
 %
@@ -74,6 +74,11 @@ function era_relfigures(varargin)
 % add median number of trials to the overall inclusion table (gui and
 %  output table)
 % aesthetic changes: fixed spacings in csv table outputs
+%
+%4/27/16 PC
+% added version number to table ouputs
+% minor code changes to how cell array is created for datap when create
+%  excel file for saving IDs
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -1890,6 +1895,8 @@ if strcmp(ext,'.xlsx')
     
     %print header information about the dataset
     filehead = {'Dependability Table Generated on'; datestr(clock);''}; 
+    filehead{end+1} = sprintf('ERA Toolbox v%s',REL.eraver);
+    filehead{end+1} = '';
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
@@ -1909,8 +1916,9 @@ elseif strcmp(ext,'.csv')
     
     %print header information about dataset
     fid = fopen(fullfile(savepath,savename),'w');
-    fprintf(fid,'%s\n','Dependability Table Generated on');
+    fprintf(fid,'%s','Dependability Table Generated on ');
     fprintf(fid,'%s\n',datestr(clock));
+    fprintf(fid,'ERA Toolbox v%s\n',REL.eraver);
     fprintf(fid,' \n');
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
@@ -1968,20 +1976,23 @@ end
 if strcmp(ext,'.xlsx')
     
     datap{1,1} = 'Data Generated on';
-    datap{2,1} = datestr(clock); 
-    datap{3,1} = sprintf('Dataset: %s',REL.filename);
-    datap{4,1} = sprintf('Dependability Cutoff: %0.2f',...
+    datap{end+1,1} = datestr(clock); 
+    datap{end+1,1} = sprintf('ERA Toolbox v%s',REL.eraver);
+    datap{end+1,1} = '';
+    datap{end+1,1} = sprintf('Dataset: %s',REL.filename);
+    datap{end+1,1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
-    datap{5,1} = sprintf('Cutoff Threshold used the %s',...
+    datap{end+1,1} = sprintf('Cutoff Threshold used the %s',...
         REL.relsummary.meascutoff);
-    datap{6,1} = sprintf('Chains: %d, Iterations: %d',...
+    datap{end+1,1} = sprintf('Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
-    datap{7,1}='';
-    datap{8,1}='';
-    datap{9,1} = 'Good IDs'; datap{8,2} = 'Bad IDs';
+    datap{end+1,1}='';
+    datap{end+1,1}='';
+    datap{end+1,1} = 'Good IDs'; datap{end,2} = 'Bad IDs';
     
     gids = [];
     bids = [];
+    srow = length(datap);
     
     for j=1:length(REL.relsummary.group)
         gids = [gids;REL.relsummary.group(j).goodids(:)];
@@ -1989,11 +2000,11 @@ if strcmp(ext,'.xlsx')
     end
     
     for i = 1:length(gids)
-        datap{i+9,1}=char(gids(i));
+        datap{i+srow,1}=char(gids(i));
     end
 
     for i = 1:length(bids)
-        datap{i+9,2}=char(bids(i));
+        datap{i+srow,2}=char(bids(i));
     end
 
     xlswrite(fullfile(savepath,savename),datap);
@@ -2003,6 +2014,7 @@ elseif strcmp(ext,'.csv')
     fid = fopen(fullfile(savepath,savename),'w');
     fprintf(fid,'%s\n','Data Generated on');
     fprintf(fid,'%s\n',datestr(clock));
+    fprintf(fid,'ERA Toolbox v%s\n',REL.eraver);
     fprintf(fid,' \n');
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
@@ -2076,6 +2088,8 @@ end
 if strcmp(ext,'.xlsx')
     
     filehead = {'Table Generated on'; datestr(clock);''}; 
+    filehead{end+1} = sprintf('ERA Toolbox v%s',REL.eraver);
+    filehead{end+1} = '';
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
@@ -2095,6 +2109,7 @@ elseif strcmp(ext,'.csv')
     fid = fopen(fullfile(savepath,savename),'w');
     fprintf(fid,'%s\n','Table Generated on');
     fprintf(fid,'%s\n',datestr(clock));
+    fprintf(fid,'ERA Toolbox v%s\n',REL.eraver);
     fprintf(fid,' \n');
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...
@@ -2150,6 +2165,8 @@ end
 if strcmp(ext,'.xlsx')
     
     filehead = {'Table Generated on'; datestr(clock);''}; 
+    filehead{end+1} = sprintf('ERA Toolbox v%s',REL.eraver);
+    filehead{end+1} = '';
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
     filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
         REL.relsummary.depcutoff);
@@ -2169,6 +2186,7 @@ elseif strcmp(ext,'.csv')
     fid = fopen(fullfile(savepath,savename),'w');
     fprintf(fid,'%s\n','Table Generated on');
     fprintf(fid,'%s\n',datestr(clock));
+    fprintf(fid,'ERA Toolbox v%s\n',REL.eraver);
     fprintf(fid,' \n');
     fprintf(fid,'Dataset: %s\n',REL.filename);
     fprintf(fid,'Dependability Cutoff: %0.2f\n',...

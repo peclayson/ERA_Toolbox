@@ -4,7 +4,7 @@ function era_startview(varargin)
 %
 %era_startview('file','/Users/REL/SomeERAData.mat')
 %
-%Last Updated 4/18/16
+%Last Updated 4/27/16
 %
 %Required Inputs:
 % No inputs are required.
