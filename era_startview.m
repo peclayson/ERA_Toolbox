@@ -4,7 +4,7 @@ function era_startview(varargin)
 %
 %era_startview('file','/Users/REL/SomeERAData.mat')
 %
-%Last Updated 4/18/16
+%Last Updated 4/27/16
 %
 %Required Inputs:
 % No inputs are required.
@@ -42,6 +42,10 @@ function era_startview(varargin)
 %
 %4/20/16 PC
 % changes consistent with ERA Toolbox file format (extension: .erat)
+%
+%4/27/16 PC
+% add check to ensure that dependability estimate provided by user is
+%  numeric and between 0 and 1
 
 %see if the file for the figures and tables has been specified in
 %varargin
@@ -397,17 +401,61 @@ function era_svh(varargin)
 %  5 - inputs from gui
 %  6 - preferences for viewing
 
+%pull the inputs out of varargin
+inputs = varargin{5};
+
+viewprefs = varargin{6};
+
+%check whether the dependability estimate provided is numeric and between 0
+%and 1
+depeval = depcheck(str2double(inputs.h(1).String));
+
+%if the dependability estimate was not numeric or between 0 and 1, give the
+%user an error and take the user back.
+if depeval ~= 0 
+    
+    %create a structure to store the inputs to era_relfig
+    h_view_gui = struct;
+
+    h_view_gui.filename = varargin{3};
+    h_view_gui.pathname = varargin{4};
+    h_view_gui.inputs = [];
+    h_view_gui.inputs.depvalue = str2double(varargin{5}.h(1).String);
+    h_view_gui.inputs.plotdep = varargin{5}.h(2).Value;
+    h_view_gui.inputs.ploticc = varargin{5}.h(3).Value;
+    h_view_gui.inputs.inctrltable = varargin{5}.h(4).Value;
+    h_view_gui.inputs.overalltable = varargin{5}.h(5).Value;
+    h_view_gui.inputs.showstddevt = varargin{5}.h(6).Value;
+    h_view_gui.inputs.showstddevf = varargin{5}.h(7).Value;
+    
+    %check if era_gui is open.
+    era_gui = findobj('Tag','era_gui');
+    if ~isempty(era_gui)
+        pos = era_gui.Position;
+        close(era_gui);
+    end
+    
+    %create error text
+    errorstr = {};
+    errorstr{end+1} = 'The dependability estimate must be numeric';
+    errorstr{end+1} = 'and between 0 and 1 (inclusive)';
+    
+    %display error prompt
+    errordlg(errorstr);
+    
+    %execute era_startview_fig with the new preferences
+    era_startview_fig(h_view_gui.filename,h_view_gui.pathname,'inputs',...
+        h_view_gui.inputs,'viewprefs',viewprefs);
+    
+    return;
+end
+
 %need to take extension off file
 filename = strsplit(varargin{3},'.');
 
 %load the data to be viewed
 REL = load(fullfile(varargin{4},[filename{1} '.erat']),'-mat');
 REL = REL.RELout;
-
-%pull the inputs out of varargin
-inputs = varargin{5};
-
-viewprefs = varargin{6};
 
 %pass inputs from gui to era_relfigures
 era_relfigures('data',REL,'depcutoff',str2double(inputs.h(1).String),...
@@ -432,7 +480,6 @@ function era_viewprefs(varargin)
 %create a structure to store the inputs to era_relfig
 h_view_gui = struct;
 
-%need to take extension off file
 h_view_gui.filename = varargin{3};
 h_view_gui.pathname = varargin{4};
 h_view_gui.inputs = [];
@@ -453,6 +500,28 @@ if ~isempty(era_gui)
     close(era_gui);
 else
     pos=[400 400 550 550];
+end
+
+%check whether the dependability estimate provided is numeric and between 0
+%and 1
+depeval = depcheck(h_view_gui.inputs.depvalue);
+
+%if the dependability estimate was not numeric or between 0 and 1, give the
+%user an error and take the user back.
+if depeval ~= 0 
+    %create error text
+    errorstr = {};
+    errorstr{end+1} = 'The dependability estimate must be numeric';
+    errorstr{end+1} = 'and between 0 and 1 (inclusive)';
+    
+    %display error prompt
+    errordlg(errorstr);
+    
+    %execute era_startview_fig with the new preferences
+    era_startview_fig(h_view_gui.filename,h_view_gui.pathname,'inputs',...
+        h_view_gui.inputs,'viewprefs',initialprefs);
+    
+    return;
 end
 
 %define list for plotting dependability against number of trials
@@ -604,5 +673,32 @@ close(varargin{3});
 %execute era_startview_fig with the new preferences
 era_startview_fig(h_view_gui.filename,h_view_gui.pathname,'inputs',...
     h_view_gui.inputs,'viewprefs',viewprefs);
+
+end
+
+function checkout = depcheck(depvalue)
+%ensure that the provided dependability estimate is numeric and between 0
+%and 1
+%
+%Input
+% depvalue - dependability threshold estimate from era_startview_fig
+%
+%Output
+% checkout
+%   0: dependability estimate is numeric and between 0 and 1
+%   1: dependability is string
+%   2: dependability is not between 0 and 1
+
+%check whether depvalue is numeric
+if isnan(depvalue)
+    checkout = 1;
+else
+    %check whether depvalue is between 0 and 1
+    if depvalue > 0 && depvalue < 1
+        checkout = 0;
+    else
+        checkout = 2;
+    end
+end
 
 end

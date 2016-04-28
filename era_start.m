@@ -2,7 +2,7 @@ function era_start
 %
 %Initiate Matlab gui to use the ERP Reliability Analysis (ERA) toolbox
 %
-%version 0.3.1 - Last Updated 4/18/16
+%version 0.3.2 - Last Updated 4/27/16
 %
 
 %The ERA toolbox uses generalizability theory as a method for evaluating 
@@ -91,10 +91,10 @@ function era_start
 % peter.clayson@gmail.com
 %
 %4/20/16 PC
-% added subroutines to dependents check
+% added subroutine to check whether there is a new release posted on github
 
 %set version number of ERA Toolbox
-eraver = '0.3.1';
+eraver = '0.3.2';
 
 %Output info about ERA Toolbox
 fprintf('\n\n\nERP Reliability Analysis Toolbox Version %s\n\n',eraver);
@@ -109,12 +109,13 @@ if exist('era_startproc.m','file') ~= 2 || ...
         exist('era_relfigures.m','file') ~= 2 || ...
         exist('era_checkconv.m','file') ~= 2 || ...
         exist('era_readtable.m','file') ~= 2 || ...
-        exist('era_reruncheck.m','file') ~= 2
+        exist('era_reruncheck.m','file') ~= 2 || ...
+        exist('era_updatecheck.m','file') ~= 2
 
     dlg = {'Warning: Dependencies for the ERA toolbox are not located';...
         'in the Matlab path. Please include the folder containing the';...
         'scripts for the RA toolbox in your Matlab path.';...
-        'Please see RA_UserManual.pdf for more information'};
+        'Please see UserManual.pdf for more information'};
     
     for i = 1:length(dlg)
         fprintf('%s\n',dlg{i});
@@ -143,7 +144,7 @@ if exist('mcmc.m','file') ~= 2 || ...
         'in the Matlab path. Please include the folders containing the';...
         'scripts for CmdStan, MatlabProcessManager, and MatlabStan';...
         'in your Matlab path.';...
-        'Please see RA_UserManual.pdf for more information'};
+        'Please see UserManual.pdf for more information'};
     
     for i = 1:length(dlg)
         fprintf('%s\n',dlg{i});
@@ -153,6 +154,9 @@ if exist('mcmc.m','file') ~= 2 || ...
 else
     fprintf('\nCmdStan, MatlabProcessManager, and MatlabStan files found');
 end
+
+%check whether running the newest release of the toolbox
+era_updatecheck(eraver);
 
 fprintf('\n\n');
 

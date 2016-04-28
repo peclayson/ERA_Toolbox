@@ -3,7 +3,7 @@ function RELout = era_computerel(varargin)
 %
 %era_computerel('data',era_datatable,'chains',3,'iter',1000)
 %
-%Lasted Updated 4/17/16
+%Lasted Updated 4/27/16
 %
 %Required Inputs:
 % data - data table outputted from the era_loadfile script (see era_loadfile
@@ -137,7 +137,7 @@ elseif isempty(varargin)
     
 end %if ~isempty(varargin)
 
-eraver = '0.3.1';
+eraver = '0.3.2';
 
 %store raw data to pass to era_checkconvergence in the event that the user
 %chooses to run with more iterations
