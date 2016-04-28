@@ -8,6 +8,7 @@ single-subject average for a given group and event increases.
 
 See the [User Manual](ERA_Toolbox/documentation/UserManual.pdf) or [wiki](https://github.com/peclayson/ERA_Toolbox/wiki) for more information about the ERA toolbox.
 
+&nbsp; 
 
 Clayosn, P. E. (2016). ERP Reliability Analysis Toolbox [Computer software]. Retrieved from https://github.com/peclayson/ERA_Toolbox. doi: 10.5281/zenodo.50591
 
