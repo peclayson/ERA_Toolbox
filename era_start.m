@@ -91,7 +91,7 @@ function era_start
 % peter.clayson@gmail.com
 %
 %4/20/16 PC
-% added subroutines to dependents check
+% added subroutine to check whether there is a new release posted on github
 
 %set version number of ERA Toolbox
 eraver = '0.3.2';
@@ -109,7 +109,8 @@ if exist('era_startproc.m','file') ~= 2 || ...
         exist('era_relfigures.m','file') ~= 2 || ...
         exist('era_checkconv.m','file') ~= 2 || ...
         exist('era_readtable.m','file') ~= 2 || ...
-        exist('era_reruncheck.m','file') ~= 2
+        exist('era_reruncheck.m','file') ~= 2 || ...
+        exist('era_updatecheck.m','file') ~= 2
 
     dlg = {'Warning: Dependencies for the ERA toolbox are not located';...
         'in the Matlab path. Please include the folder containing the';...
@@ -153,6 +154,9 @@ if exist('mcmc.m','file') ~= 2 || ...
 else
     fprintf('\nCmdStan, MatlabProcessManager, and MatlabStan files found');
 end
+
+%check whether running the newest release of the toolbox
+era_updatecheck(eraver);
 
 fprintf('\n\n');
 
