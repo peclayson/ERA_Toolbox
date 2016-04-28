@@ -6,10 +6,8 @@ The influence of number of trials on dependability of measurements will also be 
 inclusion of ERP data will be provided based on the stability of measurement as the number of trials included in a 
 single-subject average for a given group and event increases.
 
-See [User Manual](ERA_Toolbox/documentation/UserManual.pdf) for more information about the ERA toolbox.
+See the [User Manual](ERA_Toolbox/documentation/UserManual.pdf) or [wiki](https://github.com/peclayson/ERA_Toolbox/wiki) for more information about the ERA toolbox.
 
-As a reminder: in order for the ERA toolbox to analyze data, MatlabStan and its dependents, CmdStan and MatlabProcessManager, 
-must be installed and on the Matlab path.
 
 Clayosn, P. E. (2016). ERP Reliability Analysis Toolbox [Computer software]. Retrieved from https://github.com/peclayson/ERA_Toolbox. doi: 10.5281/zenodo.50591
 
