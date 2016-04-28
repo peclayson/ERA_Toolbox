@@ -11,6 +11,10 @@ See [User Manual](ERA_Toolbox/documentation/UserManual.pdf) for more information
 As a reminder: in order for the ERA toolbox to analyze data, MatlabStan and its dependents, CmdStan and MatlabProcessManager, 
 must be installed and on the Matlab path.
 
+Clayosn, P. E. (2016). ERP Reliability Analysis Toolbox [Computer software]. Retrieved from https://github.com/peclayson/ERA_Toolbox. doi: 10.5281/zenodo.50591
+
+[![DOI](https://zenodo.org/badge/21655/peclayson/ERA_Toolbox.svg)](https://zenodo.org/badge/latestdoi/21655/peclayson/ERA_Toolbox)
+
 ***
 
 Copyright (C) 2016 Peter E. Clayson
