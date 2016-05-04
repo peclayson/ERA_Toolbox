@@ -10,7 +10,7 @@ See the [User Manual](ERA_Toolbox/documentation/UserManual.pdf) or [wiki](https:
 
 &nbsp; 
 
-Clayosn, P. E. (2016). ERP Reliability Analysis Toolbox [Computer software]. Retrieved from https://github.com/peclayson/ERA_Toolbox. doi: 10.5281/zenodo.50591
+Clayson, P. E. (2016). ERP Reliability Analysis Toolbox [Computer software]. Retrieved from https://github.com/peclayson/ERA_Toolbox. doi: 10.5281/zenodo.50591
 
 [![DOI](https://zenodo.org/badge/21655/peclayson/ERA_Toolbox.svg)](https://zenodo.org/badge/latestdoi/21655/peclayson/ERA_Toolbox)
 
