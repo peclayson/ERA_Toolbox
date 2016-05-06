@@ -1,4 +1,4 @@
-# ERA_Toolbox
+# ERA Toolbox
 
 The ERP Reliability Analysis (ERA) toolbox uses generalizability theory as a method for evaluating reliability of ERP data. 
 Dependability estimates (generalizability-theory analog to reliability) can be computed for any number of groups or events. 
