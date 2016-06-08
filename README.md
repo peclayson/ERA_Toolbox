@@ -6,7 +6,7 @@ The influence of number of trials on dependability of measurements will also be 
 inclusion of ERP data will be provided based on the stability of measurement as the number of trials included in a 
 single-subject average for a given group and event increases.
 
-See the [User Manual](ERA_Toolbox/documentation/UserManual.pdf) or [wiki](https://github.com/peclayson/ERA_Toolbox/wiki) for more information about the ERA toolbox.
+See the [User Manual](documentation/UserManual.pdf) or [wiki](https://github.com/peclayson/ERA_Toolbox/wiki) for more information about the ERA toolbox.
 
 &nbsp; 
 
