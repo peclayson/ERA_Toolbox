@@ -79,6 +79,9 @@ function era_relfigures(varargin)
 % added version number to table ouputs
 % minor code changes to how cell array is created for datap when create
 %  excel file for saving IDs
+%
+%7/18/16 PC
+% fixed the legend of icc and betstddev plot
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -1462,8 +1465,10 @@ if picc == 1
     ylabel('Intraclass Correlation Coefficient','FontSize',fsize);
     
     %remove extra lines
-    for i = 1:length(iccplot)
-        iccplot(i).LineStyle = 'none';
+    if nevents > 1
+        for i = 1:length(iccplot) 
+            iccplot(i).LineStyle = 'none';
+        end
     end
     
     %fix axes
@@ -1547,8 +1552,10 @@ if plotbetstddev == 1
     ylabel('Between-Person Standard Deviation','FontSize',fsize);
     
     %remove extra lines
-    for i = 1:length(sdplot)
-        sdplot(i).LineStyle = 'none';
+    if nevents > 1
+        for i = 1:length(sdplot)
+            sdplot(i).LineStyle = 'none';
+        end
     end
     
     %fix axes
