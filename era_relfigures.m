@@ -86,6 +86,8 @@ function era_relfigures(varargin)
 %7/19/16 PC
 % removed 'n Inlcluded' from stddev stable to avoid confusion (as stddev
 %  takes into account variance from entire sample)
+% fixed naming of variable that wasn't correctly grabbing the number of
+%  trials to plot for the depplot
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -172,7 +174,7 @@ if ~isempty(varargin)
     end
     
     %check if depplotntrials is provided
-    ind = find(strcmp('depplotntrials',varargin),1);
+    ind = find(strcmp('plotntrials',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
             plotntrials = cell2mat(varargin{ind+1}); 
