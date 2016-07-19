@@ -82,6 +82,10 @@ function era_relfigures(varargin)
 %
 %7/18/16 PC
 % fixed the legend of icc and betstddev plot
+%
+%7/19/16 PC
+% removed 'n Inlcluded' from stddev stable to avoid confusion (as stddev
+%  takes into account variance from entire sample)
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -1672,9 +1676,9 @@ end
 
 %create table for displaying between-person and within-person standard
 %deviation information
-stddevtable = table(label',goodn',betsd',witsd');
+stddevtable = table(label',betsd',witsd');
 
-stddevtable.Properties.VariableNames = {'Label','n_Included',...
+stddevtable.Properties.VariableNames = {'Label',...
     'Between_StdDev','Within_StdDev'};
 
 %create table to display the cutoff information with its associated
@@ -1697,7 +1701,7 @@ overalltable.Properties.VariableNames = {'Label' ...
 
 
 %define parameters for figure size
-figwidth = 650;
+figwidth = 534;
 figheight = 400;
 
 %define space between rows and first row location
@@ -1725,9 +1729,9 @@ uicontrol(era_stddev,'Style','text','fontsize',16,...
 t = uitable('Parent',era_stddev,'Position',...
     [25 100 figwidth-50 figheight-175],...
     'Data',table2cell(stddevtable));
-set(t,'ColumnName',{'Label' 'n Included' 'Between Std Dev'...
+set(t,'ColumnName',{'Label' 'Between Std Dev'...
     'Within Std Dev'});
-set(t,'ColumnWidth',{200 'auto' 140 140});
+set(t,'ColumnWidth',{200 140 140});
 set(t,'RowName',[]);
 
 %Create a save button that will take save the table
@@ -2175,10 +2179,6 @@ if strcmp(ext,'.xlsx')
     filehead{end+1} = sprintf('ERA Toolbox v%s',REL.eraver);
     filehead{end+1} = '';
     filehead{end+1} = sprintf('Dataset: %s',REL.filename);
-    filehead{end+1} = sprintf('Dependability Cutoff: %0.2f',...
-        REL.relsummary.depcutoff);
-    filehead{end+1} = sprintf('Cutoff Threshold used the %s',...
-        REL.relsummary.meascutoff);
     filehead{end+1} = sprintf('Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
     filehead{end+1}='';
@@ -2196,24 +2196,19 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'ERA Toolbox v%s\n',REL.eraver);
     fprintf(fid,' \n');
     fprintf(fid,'Dataset: %s\n',REL.filename);
-    fprintf(fid,'Dependability Cutoff: %0.2f\n',...
-        REL.relsummary.depcutoff);
-    fprintf(fid,'Cutoff Threshold used the %s\n',...
-        REL.relsummary.meascutoff);
     fprintf(fid,'Chains: %d, Iterations: %d',...
         REL.nchains,REL.niter);
     fprintf(fid,' \n');
     fprintf(fid,' \n');
     
-    fprintf(fid,'%s', strcat('Label,n Included,Beteen-Person Std Dev',...
+    fprintf(fid,'%s', strcat('Label,Beteen-Person Std Dev',...
         ',Within-Person Std Dev'));
     fprintf(fid,' \n');
     
     for i = 1:height(stddevtable)
-         formatspec = '%s,%d,%s,%s\n';
+         formatspec = '%s,%s,%s\n';
          fprintf(fid,formatspec,char(stddevtable{i,1}),...
-             cell2mat(stddevtable{i,2}),char(stddevtable{i,3}),...
-             char(stddevtable{i,4}));
+             char(stddevtable{i,2}), char(stddevtable{i,3}));
     end
     
     fclose(fid);
