@@ -34,10 +34,14 @@ function era_updatecheck(eraver)
 %History
 % by Peter Clayson (4/27/16)
 % peter.clayson@gmail.com
+%
+%7/19/16 PC
+% chaanged url to check 
+%  https://github.com/peclayson/ERA_Toolbox/releases/latest
 
 try
     %pull webpage from github
-    urlstr = 'https://github.com/peclayson/ERA_Toolbox/releases';
+    urlstr = 'https://github.com/peclayson/ERA_Toolbox/releases/latest';
     webraw = webread(urlstr,'text','html');
 
     %pull the string that contain the version number
@@ -56,7 +60,7 @@ try
     else
         str = 'There is a new version of the toolbox available on ';
         str = [str... 
-            '<a href="matlab:web(''https://github.com/peclayson/ERA_Toolbox/releases'',''-browser'')">Github</a>'];
+            '<a href="matlab:web(''https://github.com/peclayson/ERA_Toolbox/releases/latest'',''-browser'')">Github</a>'];
         fprintf('\n%s\n',str);
     end
 catch
