@@ -73,6 +73,10 @@ function RELout = era_computerel(varargin)
 %History
 % by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
+%
+%7/19/16 PC
+% Changes associate with updating to cmdstan-2.10.0
+%  changed <- to = (<- is not deprecated)
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -265,7 +269,7 @@ switch analysis
           '}'
           'transformed parameters {'
           '  vector[NSUB] u;'
-          '  u <- mu + sig_u*u_raw;'
+          '  u = mu + sig_u*u_raw;'
           '}'
           'model {'
           '  u_raw ~ normal(0,1);'
@@ -419,7 +423,7 @@ switch analysis
 
         for i=1:ngroup
             stan_in{end+1,1} = ...
-                sprintf('  u_G%d <- mu_G%d + sig_u_G%d*u_raw_G%d;',...
+                sprintf('  u_G%d = mu_G%d + sig_u_G%d*u_raw_G%d;',...
                 i,i,i,i);
         end
 
@@ -658,7 +662,7 @@ switch analysis
 
         for i=1:nevent
             stan_in{end+1,1} = ...
-                sprintf('  u_E%d <- mu_E%d + sig_u_E%d*u_raw_E%d;',...
+                sprintf('  u_E%d = mu_E%d + sig_u_E%d*u_raw_E%d;',...
                 i,i,i,i);
         end
 
@@ -932,7 +936,7 @@ switch analysis
 
             for i=1:ngroup
                 stan_in{end+1,1} = ...
-                    sprintf('  u_G%d <- mu_G%d + sig_u_G%d*u_raw_G%d;',...
+                    sprintf('  u_G%d = mu_G%d + sig_u_G%d*u_raw_G%d;',...
                     i,i,i,i);
             end
 
