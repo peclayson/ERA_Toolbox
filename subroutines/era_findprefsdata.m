@@ -1,4 +1,4 @@
-function [era_prefs,era_data] = era_findprefsdata(varargin)
+function [era_prefs,era_data] = era_findprefsdata(varin)
 %
 %Somersault through inputs to find era_prefs and era_data
 %
@@ -7,7 +7,7 @@ function [era_prefs,era_data] = era_findprefsdata(varargin)
 %Last Updated 7/21/16 
 %
 %Input
-% varargin - varargin from guis
+% varin - varargin from guis
 %
 %output
 % era_prefs - ERA Toolbox structure array containing preferences
@@ -36,19 +36,18 @@ function [era_prefs,era_data] = era_findprefsdata(varargin)
 % peter.clayson@gmail.com
 %
 
-
 %Somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
 %check if era_prefs has been defined
-ind = find(strcmp('era_prefs',varargin),1);
+ind = find(strcmp('era_prefs',varin),1);
 if ~isempty(ind)
-    era_prefs = varargin{ind+1}; 
+    era_prefs = varin{ind+1}; 
 end
 
 %check if era_data has been defined
-ind = find(strcmp('era_data',varargin),1);
+ind = find(strcmp('era_data',varin),1);
 if ~isempty(ind)
-    era_data = varargin{ind+1}; 
+    era_data = varin{ind+1}; 
 end
 
 end
