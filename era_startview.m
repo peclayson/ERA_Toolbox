@@ -1,10 +1,10 @@
 function era_startview(varargin)
-%Prepares the data for viewing and lets user specify what tables and
+%Prepares the data for viewing and lets user specify which tables and
 %figures to present
 %
 %era_startview('file','/Users/REL/SomeERAData.mat')
 %
-%Last Updated 4/27/16
+%Last Updated 7/20/16
 %
 %Required Inputs:
 % No inputs are required.
@@ -46,6 +46,9 @@ function era_startview(varargin)
 %4/27/16 PC
 % add check to ensure that dependability estimate provided by user is
 %  numeric and between 0 and 1
+%
+%7/20/16 PC
+% consolidate option for requesting tables for ICCs and stddevs
 
 %see if the file for the figures and tables has been specified in
 %varargin
@@ -324,7 +327,7 @@ row = row - rowspace;
 
 %between- and within-person standard deviation tables
 str = ['Would you like a table of the overall relative '...
-    'sizes of sources of variance?'];
+    'sizes of sources of variance and ICCs?'];
 uicontrol(era_gui,'Style','text','fontsize',fsize,...
     'HorizontalAlignment','left',...
     'String',...

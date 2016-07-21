@@ -4,7 +4,7 @@ function era_relfigures(varargin)
 %
 %era_relfigures('data',ERAData)
 %
-%Last Modified 4/27/16
+%Last Modified 7/20/16
 %
 %Note: The Statistics and Machine Learning Toolbox is required
 %
@@ -88,6 +88,10 @@ function era_relfigures(varargin)
 %  takes into account variance from entire sample)
 % fixed naming of variable that wasn't correctly grabbing the number of
 %  trials to plot for the depplot
+%
+%7/20/16 PC
+% removed ICCs from overall dep table and put in stddev table
+%  changes associated with viewing and saving the information 
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -1678,10 +1682,10 @@ end
 
 %create table for displaying between-person and within-person standard
 %deviation information
-stddevtable = table(label',betsd',witsd');
+stddevtable = table(label',betsd',witsd',icc');
 
 stddevtable.Properties.VariableNames = {'Label',...
-    'Between_StdDev','Within_StdDev'};
+    'Between_StdDev','Within_StdDev','ICC'};
 
 %create table to display the cutoff information with its associated
 %dependability info
@@ -1691,26 +1695,26 @@ inctrltable.Properties.VariableNames = {'Label','Trial_Cutoff',...
     'Dependability'};
 
 %create table to describe the data including all trials 
-overalltable = table(label',goodn',badn',overalldep',icc',meantrl',...
+overalltable = table(label',goodn',badn',overalldep',meantrl',...
     medtrl',mintrl',maxtrl');
 
-overalltable.Properties.VariableNames = {'Label' ...
-    'n_Included' 'n_Excluded' ...
-    'Dependability' 'ICC' 'Mean_Num_Trials' 'Med_Num_Trials'...
-    'Min_Num_Trials'...
+overalltable.Properties.VariableNames = {'Label', ...
+    'n_Included','n_Excluded', ...
+    'Dependability', 'Mean_Num_Trials', 'Med_Num_Trials',...
+    'Min_Num_Trials',...
     'Max_Num_Trials'};
 
 
 
 %define parameters for figure size
-figwidth = 534;
+figwidth = 674;
 figheight = 400;
 
 %define space between rows and first row location
 rowspace = 25;
 row = figheight - rowspace*2;
 name = ['Point and 95% Interval Estimates for the Between-'...
-    'and Within-Person Standard Deviations'];
+    'and Within-Person Standard Deviations and ICCs'];
 
 %create gui for standard-deviation table
 era_stddev= figure('unit','pix','Visible','off',...
@@ -1724,7 +1728,7 @@ era_stddev= figure('unit','pix','Visible','off',...
 uicontrol(era_stddev,'Style','text','fontsize',16,...
     'HorizontalAlignment','center',...
     'String',...
-    'Between- and Within-Person Standard Deviations',...
+    'Between- and Within-Person Standard Deviations and ICCs',...
     'Position',[0 row figwidth 25]);          
 
 %Start a table
@@ -1732,8 +1736,8 @@ t = uitable('Parent',era_stddev,'Position',...
     [25 100 figwidth-50 figheight-175],...
     'Data',table2cell(stddevtable));
 set(t,'ColumnName',{'Label' 'Between Std Dev'...
-    'Within Std Dev'});
-set(t,'ColumnWidth',{200 140 140});
+    'Within Std Dev' 'ICC'});
+set(t,'ColumnWidth',{200 140 140 140});
 set(t,'RowName',[]);
 
 %Create a save button that will take save the table
@@ -1796,7 +1800,7 @@ uicontrol(era_inctrl,'Style','push','fontsize',14,...
 
 
 %define parameters for figure size
-figwidth = 850;
+figwidth = 725;
 figheight = 500;
 
 %define space between rows and first row location
@@ -1822,9 +1826,9 @@ t = uitable('Parent',era_overall,'Position',...
     [25 100 figwidth-50 figheight-175],...
     'Data',table2cell(overalltable));
 set(t,'ColumnName',{'Label' 'n Included' 'n Excluded' ...
-    'Dependability' 'ICC' 'Mean # of Trials' 'Med # of Trials'...
+    'Dependability' 'Mean # of Trials' 'Med # of Trials'...
     'Min # of Trials' 'Max # of Trials'});
-set(t,'ColumnWidth',{'auto' 'auto' 'auto' 110 110 'auto' 'auto' 'auto'});
+set(t,'ColumnWidth',{'auto' 'auto' 'auto' 110 'auto' 'auto' 'auto'});
 set(t,'RowName',[]);
 
 %Create a save button that will take save the table
@@ -1944,18 +1948,18 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,' \n');
     
     fprintf(fid,'%s', strcat('Label,N Included,N Excluded,',...
-        'Dependability,ICC,Mean Num of Trials,Med Num of Trials,',...
+        'Dependability,Mean Num of Trials,Med Num of Trials,',...
         'Min Num of Trials,Max Num of Trials'));
     fprintf(fid,' \n');
     
     %write the table information
     for i = 1:height(overalltable)
-         formatspec = '%s,%d,%d,%s,%s,%0.4f,%d,%d,%d\n';
+         formatspec = '%s,%d,%d,%s,%0.2f,%d,%d,%d\n';
          fprintf(fid,formatspec,char(overalltable{i,1}),...
              cell2mat(overalltable{i,2}),cell2mat(overalltable{i,3}),...
-             cell2mat(overalltable{i,4}),char(overalltable{i,5}),...
+             char(overalltable{i,4}),cell2mat(overalltable{i,5}),...
              cell2mat(overalltable{i,6}),cell2mat(overalltable{i,7}),...
-             cell2mat(overalltable{i,8}),cell2mat(overalltable{i,9}));
+             cell2mat(overalltable{i,8}));
     end
     
     fclose(fid);
@@ -2204,13 +2208,14 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,' \n');
     
     fprintf(fid,'%s', strcat('Label,Beteen-Person Std Dev',...
-        ',Within-Person Std Dev'));
+        ',Within-Person Std Dev,ICC'));
     fprintf(fid,' \n');
     
     for i = 1:height(stddevtable)
-         formatspec = '%s,%s,%s\n';
+         formatspec = '%s,%s,%s,%s\n';
          fprintf(fid,formatspec,char(stddevtable{i,1}),...
-             char(stddevtable{i,2}), char(stddevtable{i,3}));
+             char(stddevtable{i,2}), char(stddevtable{i,3}),...
+             char(stddevtable{i,4}));
     end
     
     fclose(fid);
