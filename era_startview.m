@@ -157,7 +157,7 @@ end %if ~isempty(varargin)
 %define default inputs
 if isempty(inputs)
     %value to be used for dependability cutoff
-    inputs.depvalue = .70;
+    inputs.depvalue = .80;
 
     %for the inputs below a value of 1 (default) indicates that the
     %figure/table should be viewed; a value of 0 indicates the figure/table
@@ -193,7 +193,7 @@ if isempty(viewprefs)
     %1 - lower limit
     %2 - point estimate
     %3 - upper limit
-    viewprefs.plotdepline = 1;
+    viewprefs.plotdepline = 2;
     
     %how many trials to plot on dependability figure
     viewprefs.ntrials = 50;
@@ -202,7 +202,7 @@ if isempty(viewprefs)
     %1 - lower limit
     %2 - point estimate
     %3 - upper limit
-    viewprefs.meascutoff = 1;
+    viewprefs.meascutoff = 2;
     
     %which central tendency measure to use to estimate overall
     %dependability
