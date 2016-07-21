@@ -101,9 +101,10 @@ function era_start
 %
 %7/21/16 PC
 % changes associated with adding a new data structure
+% change with setting version number
 
-%set version number of ERA Toolbox
-eraver = '0.4.0';
+%pull version for the ERA Toolbox
+eraver = era_defineversion;
 
 %Output info about ERA Toolbox
 fprintf('\n\n\nERP Reliability Analysis Toolbox Version %s\n\n',eraver);
