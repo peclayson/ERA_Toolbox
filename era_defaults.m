@@ -1,4 +1,5 @@
 function era_prefs = era_defaults
+%
 %Default settings for the ERA Toolbox
 %
 %Last Updated 7/21/16
