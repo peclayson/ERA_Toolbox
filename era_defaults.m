@@ -66,7 +66,7 @@ era_prefs.proc.verbose = 1;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %Value to be used for dependability cutoff/threshold
-era_prefs.view.depvalue = .80;
+era_prefs.view.depvalue = .8;
 
 %For the inputs below a value of 1 (default) indicates that the
 %figure/table should be viewed; a value of 0 indicates the figure/table

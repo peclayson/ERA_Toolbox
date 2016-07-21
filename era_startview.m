@@ -50,11 +50,14 @@ function era_startview(varargin)
 %7/20/16 PC
 % consolidate option for requesting tables for ICCs and stddevs
 
+%somersault through varargin inputs to check for era_prefs and era_data
+[era_prefs, era_data] = era_findprefsdata(varargin);
+
 %see if the file for the figures and tables has been specified in
 %varargin
-if ~isempty(varargin)
+if ~isempty(varargin) && (isempty(era_data) && isempty(era_prefs))
     
-    %check if data have been provided
+    %check if data file has been provided
     ind = find(strcmp('file',varargin),1);
     if ~isempty(ind)
         file = varargin{ind+1};
@@ -72,7 +75,7 @@ end
 
 %if the file was not specified, prompt the user to indicate where the file
 %is located.
-if ~exist('file','var')
+if ~exist('file','var') && isempty(era_data)
     [filepart, pathpart] = uigetfile({'*.erat',...
         'ERA Toolbox files (*.erat)'},'Data');
 
@@ -83,34 +86,29 @@ if ~exist('file','var')
     end
 
     fprintf('\n\nLoading Data...\n\n');
+    
+    %load data
+    load(fullfile(pathpart,filepart),'-mat');
+   
+end
+
+%if era_prefs does not exist, load the default preferences. If this window
+%was not gotten to using era_start, era_prefs will need to be defined
+if isempty(era_prefs)
+    era_prefs = era_defaults;
+    era_prefs.ver = era_defineversion;
 end
 
 %create a gui to allow the user to specify what aspects of the data will be
 %viewed
-era_startview_fig(filepart,pathpart);
+era_startview_fig('era_prefs',era_prefs,'era_data',era_data);
 
 end
 
-function era_startview_fig(filepart,pathpart,varargin)
+function era_startview_fig(varargin)
 %Input
-% filepart - filename to be loaded
-% patherpart - path to the file
-%
-%Optional Inputs:
-% viewprefs - preferences for viewing data
-%  .plotdepline - what to plot on dependability v number of trials figure
-%  .depcutoff - which estimate to use for cutoff
-%  .depcentmeas - which central tendency
-%  .ntrials - number of trials to plot on dependability figure
-% inputs
-%  .depvalue - value to use for dependability cutoff
-%  .plotdep - plot dependability figure
-%  .ploticc - plot icc figure
-%  .incltrltable - show info about cutoffs
-%  .overalltable - show info about overall dependability
-%  .showstddevt - show info about between- and within-person standard
-%   deviations
-%  .showstddevf - plot between-person standard deviations
+% era_data - ERA Toolbox data structure array
+% era_prefs - ERA Toolbox preferences structure array
 %
 %Output
 % No variables will be outputted to the Matlab workspace. Based on the
@@ -118,104 +116,18 @@ function era_startview_fig(filepart,pathpart,varargin)
 %  figures and tables (for more information about the tables and figures
 %  see the user manual for the ERA toolbox)
 
-%somersault through varargin inputs to check for which inputs were
-%defined and store those values. 
-if ~isempty(varargin)
-    
-    %the optional inputs check assumes that there was an even number of 
-    %optional inputs entered. If not, an error will displayed and the
-    %script will terminate.
-    if mod(length(varargin),2)  
-        error('varargin:incomplete',... %Error code and associated error
-        strcat('WARNING: Inputs are incomplete \n\n',... 
-        'Make sure each variable input is paired with a value\n'));
-    end
- 
-    %check if viewprefs has already been defined
-    ind = find(strcmp('viewprefs',varargin),1);
-    if ~isempty(ind)
-        viewprefs = varargin{ind+1}; 
-    else
-        viewprefs = [];
-    end
+%somersault through varargin inputs to check for era_prefs and era_data
+[era_prefs, era_data] = era_findprefsdata(varargin);
 
-    %check if inputs is defined
-    ind = find(strcmp('inputs',varargin),1);
-    if ~isempty(ind)
-        inputs = varargin{ind+1}; 
-    else
-        inputs = [];
-    end
-
-elseif isempty(varargin) %just in case none of the optional inputs are used
-    
-    viewprefs = [];
-    inputs = [];
-
-end %if ~isempty(varargin)
-
-%define default inputs
-if isempty(inputs)
-    %value to be used for dependability cutoff
-    inputs.depvalue = .80;
-
-    %for the inputs below a value of 1 (default) indicates that the
-    %figure/table should be viewed; a value of 0 indicates the figure/table
-    %should not be viewed
-
-    %figure that displays the dependability as the number of
-    %trials included in a subject's average increases
-    inputs.plotdep = 1;
-
-    %figure that shows the intraclass correlation coefficients
-    inputs.ploticc = 1;
-
-    %table displaying information about cutoffs based on dependability
-    inputs.inctrltable = 1;
-
-    %table displaying information about overall dependability with data
-    %including all trials
-    inputs.overalltable = 1;
-
-    %table displaying information about between- and within-person standard
-    %deviations
-    inputs.showstddevt = 1;
-
-    %figure depicting between-person standard deviations
-    inputs.showstddevf = 1;
-end
-
-if isempty(viewprefs)
-    %define default preferences
-    viewprefs = struct;
-    
-    %which line to plot on dependability figure
-    %1 - lower limit
-    %2 - point estimate
-    %3 - upper limit
-    viewprefs.plotdepline = 2;
-    
-    %how many trials to plot on dependability figure
-    viewprefs.ntrials = 50;
-    
-    %which cutoff to use to estimate dependability
-    %1 - lower limit
-    %2 - point estimate
-    %3 - upper limit
-    viewprefs.meascutoff = 2;
-    
-    %which central tendency measure to use to estimate overall
-    %dependability
-    %1 - mean
-    %2 - median
-    viewprefs.depcentmeas = 1;
-    
+%check if era_gui is open.
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    close(era_gui);
 end
 
 %define parameters for figure position
 figwidth = 550;
 figheight = 550;
-fsize = get(0,'DefaultTextFontSize');
 
 %define space between rows and first row location
 rowspace = 35;
@@ -234,9 +146,9 @@ era_gui= figure('unit','pix',...
   'resize','off');
 
 %Print the name of the loaded dataset
-uicontrol(era_gui,'Style','text','fontsize',fsize,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
-    'String',['Dataset:  ' filepart],...
+    'String',['Dataset:  ' era_data.rel.filename],...
     'Position',[0 row figwidth 25]);          
 
 %next row
@@ -244,20 +156,20 @@ row = row - (rowspace*1.5);
 
 %Print the text for dependability cutoff with a box for the user to specify
 %the input
-uicontrol(era_gui,'Style','text','fontsize',fsize,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String','Dependability Cutoff:',...
     'Position', [lcol row figwidth/4 25]);  
 
-inputs.h(1) = uicontrol(era_gui,'Style','edit','fontsize',fsize,...
-    'String',inputs.depvalue,...
+inputs.h(1) = uicontrol(era_gui,'Style','edit','fontsize',era_prefs.guis.fsize,...
+    'String',era_prefs.view.depvalue,...
     'Position', [rcol+5 row+6 figwidth/4 25]);  
 
 %next row
 row = row - rowspace-10;
 
 %indicate that a checked box means yes
-uicontrol(era_gui,'Style','text','fontsize',fsize,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String','Checked = YES',...
     'Position', [rcol+5 row figwidth/4 25]);  
@@ -271,55 +183,55 @@ rowspace = 50;
 rcol = (figwidth/4)*3;
 
 %dependability with increasing trials
-uicontrol(era_gui,'Style','text','fontsize',fsize,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String','Would you like to plot Number of Trials v Dependability?',...
     'Position', [lcol row figwidth/2 40]);  
 
 inputs.h(2) = uicontrol(era_gui,'Style','checkbox',...
-    'Value',inputs.plotdep,...
+    'Value',era_prefs.view.plotdep,...
     'Position', [rcol row+20 figwidth/2 25]); 
 
 %next row
 row = row - rowspace;
 
 %plot ICCs
-uicontrol(era_gui,'Style','text','fontsize',fsize,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String',...
     'Would you like to plot intraclass correlation coefficients?',...
     'Position', [lcol row figwidth/2 40]);  
 
 inputs.h(3) = uicontrol(era_gui,'Style','checkbox',...
-    'Value',inputs.ploticc,...
+    'Value',era_prefs.view.ploticc,...
     'Position', [rcol row+20 figwidth/2 25]); 
 
 %next row
 row = row - rowspace;
 
 %dependability cutoff table
-uicontrol(era_gui,'Style','text','fontsize',fsize,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String',...
     'Would you like a table of event specific dependability information?',...
     'Position', [lcol row figwidth/2 40]);  
 
 inputs.h(4) = uicontrol(era_gui,'Style','checkbox',...
-    'Value',inputs.inctrltable,...
+    'Value',era_prefs.view.inctrltable,...
     'Position', [rcol row+20 figwidth/2 25]); 
 
 %next row
 row = row - rowspace;
 
 %overall dependability table
-uicontrol(era_gui,'Style','text','fontsize',fsize,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String',...
     'Would you like a table of overall dependability information?',...
     'Position', [lcol row figwidth/2 40]);  
 
 inputs.h(5) = uicontrol(era_gui,'Style','checkbox',...
-    'Value',inputs.overalltable,...
+    'Value',era_prefs.view.overalltable,...
     'Position', [rcol row+20 figwidth/2 25]); 
 
 %next row
@@ -328,14 +240,14 @@ row = row - rowspace;
 %between- and within-person standard deviation tables
 str = ['Would you like a table of the overall relative '...
     'sizes of sources of variance and ICCs?'];
-uicontrol(era_gui,'Style','text','fontsize',fsize,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String',...
     str,...
     'Position', [lcol row figwidth/2 40]);  
 
 inputs.h(6) = uicontrol(era_gui,'Style','checkbox',...
-    'Value',inputs.showstddevt,...
+    'Value',era_prefs.view.showstddevt,...
     'Position', [rcol row+20 figwidth/2 25]);
 
 %next row
@@ -344,39 +256,41 @@ row = row - rowspace;
 %plot between-person standard deviations
 str = ['Would you like a figure showing the between-person standard '...
     'deviations?'];
-uicontrol(era_gui,'Style','text','fontsize',fsize,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String',...
     str,...
     'Position', [lcol row figwidth/2 40]);  
 
 inputs.h(7) = uicontrol(era_gui,'Style','checkbox',...
-    'Value',inputs.showstddevf,...
+    'Value',era_prefs.view.showstddevf,...
     'Position', [rcol row+20 figwidth/2 25]);
 
 %next row for buttons
 row = row - rowspace*1.5;
 
 %Create a back button that will take the user back to era_start
-uicontrol(era_gui,'Style','push','fontsize',fsize,...
+uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String','Back',...
     'Position', [figwidth/8 row figwidth/5 50],...
     'Callback',{@era_svb,era_gui}); 
 
 %Create button that will check the inputs and begin processing the data
-uicontrol(era_gui,'Style','push','fontsize',fsize,...
+uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String','Analyze',...
     'Position', [3*figwidth/8 row figwidth/5 50],...
-    'Callback',{@era_svh,filepart,pathpart,inputs,viewprefs}); 
+    'Callback',{@era_svh,'era_prefs',era_prefs,'era_data',era_data,...
+    'inputs',inputs}); 
 
 %Create button that will display preferences
-uicontrol(era_gui,'Style','push','fontsize',fsize,...
+uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String','Preferences',...
     'Position', [5*figwidth/8 row figwidth/5 50],...
-    'Callback',{@era_viewprefs,filepart,pathpart,inputs,viewprefs}); 
+    'Callback',{@era_viewprefs,'era_prefs',era_prefs,'era_data',era_data,...
+    'inputs',inputs}); 
 
 %tag gui
 era_gui.Tag = 'era_gui';
@@ -397,17 +311,17 @@ end
 function era_svh(varargin)
 %parses inputs to era_relfigures for displaying figures
 %
-%Inputs
-% varargin
-%  3 - filename
-%  4 - path to file
-%  5 - inputs from gui
-%  6 - preferences for viewing
+%Input
+% era_data - ERA Toolbox data structure array
+% era_prefs - ERA Toolbox preferences structure array
+%
 
-%pull the inputs out of varargin
-inputs = varargin{5};
+%somersault through varargin inputs to check for era_prefs and era_data
+[era_prefs, era_data] = era_findprefsdata(varargin);
 
-viewprefs = varargin{6};
+%find inputs
+ind = find(strcmp('inputs',varargin),1);
+inputs = varargin{ind+1};
 
 %check whether the dependability estimate provided is numeric and between 0
 %and 1
@@ -417,25 +331,21 @@ depeval = depcheck(str2double(inputs.h(1).String));
 %user an error and take the user back.
 if depeval ~= 0 
     
-    %create a structure to store the inputs to era_relfig
-    h_view_gui = struct;
-
-    h_view_gui.filename = varargin{3};
-    h_view_gui.pathname = varargin{4};
-    h_view_gui.inputs = [];
-    h_view_gui.inputs.depvalue = str2double(varargin{5}.h(1).String);
-    h_view_gui.inputs.plotdep = varargin{5}.h(2).Value;
-    h_view_gui.inputs.ploticc = varargin{5}.h(3).Value;
-    h_view_gui.inputs.inctrltable = varargin{5}.h(4).Value;
-    h_view_gui.inputs.overalltable = varargin{5}.h(5).Value;
-    h_view_gui.inputs.showstddevt = varargin{5}.h(6).Value;
-    h_view_gui.inputs.showstddevf = varargin{5}.h(7).Value;
+    era_prefs.view.depvalue = str2double(inputs.h(1).String);
+    era_prefs.view.plotdep = inputs.h(2).Value;
+    era_prefs.view.ploticc = inputs.h(3).Value;
+    era_prefs.view.inctrltable = inputs.h(4).Value;
+    era_prefs.view.overalltable = inputs.h(5).Value;
+    era_prefs.view.showstddevt = inputs.h(6).Value;
+    era_prefs.view.showstddevf = inputs.h(7).Value;
     
     %check if era_gui is open.
     era_gui = findobj('Tag','era_gui');
     if ~isempty(era_gui)
         pos = era_gui.Position;
         close(era_gui);
+    else
+        pos=[400 400 550 550];
     end
     
     %create error text
@@ -447,26 +357,24 @@ if depeval ~= 0
     errordlg(errorstr);
     
     %execute era_startview_fig with the new preferences
-    era_startview_fig(h_view_gui.filename,h_view_gui.pathname,'inputs',...
-        h_view_gui.inputs,'viewprefs',viewprefs);
+    era_startview_fig('era_prefs',era_prefs,'era_data',era_data);
     
     return;
 end
 
-%need to take extension off file
-filename = strsplit(varargin{3},'.');
-
-%load the data to be viewed
-REL = load(fullfile(varargin{4},[filename{1} '.erat']),'-mat');
-REL = REL.RELout;
-
 %pass inputs from gui to era_relfigures
-era_relfigures('data',REL,'depcutoff',str2double(inputs.h(1).String),...
-    'plotdep',inputs.h(2).Value,'ploticc',inputs.h(3).Value,...
-    'showinct',inputs.h(4).Value,'showoverallt',inputs.h(5).Value,...
-    'showstddevt',inputs.h(6).Value,'plotbetstddev',inputs.h(7).Value,...
-    'plotdepline',viewprefs.plotdepline,'plotntrials',viewprefs.ntrials,...
-    'meascutoff',viewprefs.meascutoff,'depcentmeas',viewprefs.depcentmeas);
+era_relfigures('data',era_data.rel,...
+    'depcutoff',era_prefs.view.depvalue,...
+    'plotdep',era_prefs.view.plotdep,...
+    'ploticc',era_prefs.view.ploticc,...
+    'showinct',era_prefs.view.inctrltable,...
+    'showoverallt',era_prefs.view.overalltable,...
+    'showstddevt',era_prefs.view.showstddevt,...
+    'plotbetstddev',era_prefs.view.showstddevf,...
+    'plotdepline',era_prefs.view.plotdepline,...
+    'plotntrials',era_prefs.view.ntrials,...
+    'meascutoff',era_prefs.view.meascutoff,...
+    'depcentmeas',era_prefs.view.depcentmeas);
 
 end
 
@@ -474,40 +382,20 @@ end
 function era_viewprefs(varargin)
 %displays various preferences for plotting or summarizing data
 %
-%Inputs (varargin #)
-%  3 - filename
-%  4 - path to file
-%  5 - inputs from gui
-%  6 - preferences for viewing
+%Input
+% era_data - ERA Toolbox data structure array
+% era_prefs - ERA Toolbox preferences structure array
 
-%create a structure to store the inputs to era_relfig
-h_view_gui = struct;
+%somersault through varargin inputs to check for era_prefs and era_data
+[era_prefs, era_data] = era_findprefsdata(varargin);
 
-h_view_gui.filename = varargin{3};
-h_view_gui.pathname = varargin{4};
-h_view_gui.inputs = [];
-h_view_gui.inputs.depvalue = str2double(varargin{5}.h(1).String);
-h_view_gui.inputs.plotdep = varargin{5}.h(2).Value;
-h_view_gui.inputs.ploticc = varargin{5}.h(3).Value;
-h_view_gui.inputs.inctrltable = varargin{5}.h(4).Value;
-h_view_gui.inputs.overalltable = varargin{5}.h(5).Value;
-h_view_gui.inputs.showstddevt = varargin{5}.h(6).Value;
-h_view_gui.inputs.showstddevf = varargin{5}.h(7).Value;
-
-initialprefs = varargin{6};
-
-%check if era_gui is open.
-era_gui = findobj('Tag','era_gui');
-if ~isempty(era_gui)
-    pos = era_gui.Position;
-    close(era_gui);
-else
-    pos=[400 400 550 550];
-end
+%find inputs
+ind = find(strcmp('inputs',varargin),1);
+inputs = varargin{ind+1};
 
 %check whether the dependability estimate provided is numeric and between 0
 %and 1
-depeval = depcheck(h_view_gui.inputs.depvalue);
+depeval = depcheck(str2double(inputs.h(1).String));
 
 %if the dependability estimate was not numeric or between 0 and 1, give the
 %user an error and take the user back.
@@ -527,13 +415,28 @@ if depeval ~= 0
     return;
 end
 
+era_prefs.view.depvalue = str2double(inputs.h(1).String);
+era_prefs.view.plotdep = inputs.h(2).Value;
+era_prefs.view.ploticc = inputs.h(3).Value;
+era_prefs.view.inctrltable = inputs.h(4).Value;
+era_prefs.view.overalltable = inputs.h(5).Value;
+era_prefs.view.showstddevt = inputs.h(6).Value;
+era_prefs.view.showstddevf = inputs.h(7).Value;
+
+%check if era_gui is open.
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    pos = era_gui.Position;
+    close(era_gui);
+else
+    pos=[400 400 550 550];
+end
+
 %define list for plotting dependability against number of trials
 deplist = {'Lower Limit' 'Point Estimate' 'Upper Limit'};
 
 %define list for central tendency measures
 centlist = {'Mean' 'Median'};
-
-fsize = get(0,'DefaultTextFontSize');
 
 %define space between rows and first row location
 rowspace = 35;
@@ -544,7 +447,7 @@ lcol = 30;
 rcol = (pos(3)/2+20);
 
 %create the basic era_prefs
-era_prefs= figure('unit','pix',...
+era_gui = figure('unit','pix',...
   'position',pos,...
   'menub','no',...
   'name','Specify Processing Preferences',...
@@ -552,12 +455,12 @@ era_prefs= figure('unit','pix',...
   'resize','off');    
 
 %print the gui headers
-uicontrol(era_prefs,'Style','text','fontsize',fsize+2,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize+2,...
     'HorizontalAlignment','center',...
     'String','Preferences',...
     'Position', [pos(4)/8 row pos(4)/3 25]);  
 
-uicontrol(era_prefs,'Style','text','fontsize',fsize+2,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize+2,...
     'HorizontalAlignment','center',...
     'String','Input',...
     'Position',[4.4*pos(4)/8 row pos(4)/3 25]);
@@ -566,116 +469,126 @@ uicontrol(era_prefs,'Style','text','fontsize',fsize+2,...
 row = row - rowspace*2;
 
 %which lines should be plotted on depplot
-uicontrol(era_prefs,'Style','text','fontsize',fsize,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String','Lines to plot for dependability',...
     'Position', [lcol row pos(4)/2 35]);  
 
-newprefs.plotdepline = uicontrol(era_prefs,'Style','listbox',...
-    'fontsize',fsize,...
-    'String',deplist,'Min',1,'Max',1,'Value',initialprefs.plotdepline,...
+newprefs.plotdepline = uicontrol(era_gui,'Style','listbox',...
+    'fontsize',era_prefs.guis.fsize,...
+    'String',deplist,'Min',1,'Max',1,'Value',era_prefs.view.plotdepline,...
     'Position', [rcol row pos(4)/3 50]);  
 
 %next row
 row = row - rowspace*2;
 
 %number of trials to plot
-uicontrol(era_prefs,'Style','text','fontsize',fsize,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String','Number of trials to plot for dependability estimates',...
     'Position', [lcol row+5 pos(4)/2 35]);  
 
-newprefs.ntrials = uicontrol(era_prefs,...
-    'Style','edit','fontsize',fsize,...
-    'String',initialprefs.ntrials,... 
+newprefs.ntrials = uicontrol(era_gui,...
+    'Style','edit','fontsize',era_prefs.guis.fsize,...
+    'String',era_prefs.view.ntrials,... 
     'Position', [rcol row+21 pos(4)/3 25]);  
 
 %next row
 row = row - rowspace*2.2;
 
 %how to determine cutoff
-uicontrol(era_prefs,'Style','text','fontsize',fsize,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String','Estimate to use for trial cutoffs',...
     'Position', [lcol row pos(4)/2 35]);  
 
-newprefs.meascutoff = uicontrol(era_prefs,...
-    'Style','listbox','fontsize',fsize,...
+newprefs.meascutoff = uicontrol(era_gui,...
+    'Style','listbox','fontsize',era_prefs.guis.fsize,...
     'String',deplist,'Min',1,'Max',1,...
-    'Value',initialprefs.meascutoff,...
+    'Value',era_prefs.view.meascutoff,...
     'Position', [rcol row pos(4)/3 50]);  
 
 %next row
 row = row - rowspace*2.2;
 
 %measure of central tendendcy for overall dependability
-uicontrol(era_prefs,'Style','text','fontsize',fsize,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String',...
     'Measure of central tendency for overall dependability calculations',...
     'Position', [lcol row pos(4)/2 35]);  
 
-newprefs.depcentmeas = uicontrol(era_prefs,'Style','listbox',...
-    'fontsize',fsize,...
+newprefs.depcentmeas = uicontrol(era_gui,'Style','listbox',...
+    'fontsize',era_prefs.guis.fsize,...
     'String',centlist,'Min',1,'Max',1,...
-    'Value',initialprefs.depcentmeas,...
+    'Value',era_prefs.view.depcentmeas,...
     'Position', [rcol row pos(4)/3 40]);  
 
 %next row with extra space
 row = row - rowspace*2.5;
 
 %Create a back button that will save inputs for preferences
-uicontrol(era_prefs,'Style','push','fontsize',fsize,...
+uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String','Save',...
     'Position', [pos(4)/8 row pos(4)/3 40],...
-    'Callback',{@era_prefs_save,era_prefs,newprefs,h_view_gui}); 
+    'Callback',{@era_prefs_save,'era_prefs',era_prefs,'era_data',...
+    era_data,'newprefs',newprefs}); 
 
 %Create button that will go back to era_gui without saving
-uicontrol(era_prefs,'Style','push','fontsize',fsize,...
+uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String','Back',...
     'Position', [4.4*pos(4)/8 row pos(4)/3 40],...
-    'Callback',{@era_prefs_back,era_prefs,initialprefs,h_view_gui}); 
+    'Callback',{@era_prefs_back,'era_prefs',era_prefs,'era_data',...
+    era_data});
+
+%tag gui
+era_gui.Tag = 'era_gui';
 
 end
 
 function era_prefs_back(varargin)
 %if the back button was pressed the inputs will not be saved
 
-%pull old preferences
-viewprefs = varargin{4};
+%somersault through varargin inputs to check for era_prefs and era_data
+[era_prefs, era_data] = era_findprefsdata(varargin);
 
-%grab data needed to restart era_starview
-h_view_gui = varargin{5};
-
-%close prefs gui
-close(varargin{3});
+%check if era_gui is open.
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    close(era_gui);
+end
 
 %execute era_startview_fig with the old preferences
-era_startview_fig(h_view_gui.filename,h_view_gui.pathname,'inputs',...
-    h_view_gui.inputs,'viewprefs',viewprefs);
+era_startview_fig('era_prefs',era_prefs,'era_data',era_data);
 
 end
 
 function era_prefs_save(varargin)
 %if the save button was pressed use new inputs
 
+%somersault through varargin inputs to check for era_prefs and era_data
+[era_prefs, era_data] = era_findprefsdata(varargin);
+
+%find newprefs
+ind = find(strcmp('newprefs',varargin),1);
+newprefs = varargin{ind+1};
+
 %pull new preferences
-viewprefs.plotdepline = varargin{4}.plotdepline.Value;
-viewprefs.ntrials = str2double(varargin{4}.ntrials.String);
-viewprefs.meascutoff = varargin{4}.meascutoff.Value;
-viewprefs.depcentmeas = varargin{4}.depcentmeas.Value;
+era_prefs.view.plotdepline = newprefs.plotdepline.Value;
+era_prefs.view.ntrials = str2double(newprefs.ntrials.String);
+era_prefs.view.meascutoff = newprefs.meascutoff.Value;
+era_prefs.view.depcentmeas = newprefs.depcentmeas.Value;
 
-%grab data needed to restart era_starview
-h_view_gui = varargin{5};
-
-%close prefs gui
-close(varargin{3});
+%check if era_gui is open
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    close(era_gui);
+end
 
 %execute era_startview_fig with the new preferences
-era_startview_fig(h_view_gui.filename,h_view_gui.pathname,'inputs',...
-    h_view_gui.inputs,'viewprefs',viewprefs);
+era_startview_fig('era_prefs',era_prefs,'era_data',era_data);
 
 end
 
