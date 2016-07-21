@@ -4,7 +4,7 @@ function era_startview(varargin)
 %
 %era_startview('file','/Users/REL/SomeERAData.mat')
 %
-%Last Updated 7/20/16
+%Last Updated 7/21/16
 %
 %Required Inputs:
 % No inputs are required.
@@ -49,6 +49,9 @@ function era_startview(varargin)
 %
 %7/20/16 PC
 % consolidate option for requesting tables for ICCs and stddevs
+%
+%7/21/16 PC
+% changes associated with adding era_prefs and era_data
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
