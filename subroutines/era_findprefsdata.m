@@ -42,12 +42,16 @@ function [era_prefs,era_data] = era_findprefsdata(varin)
 ind = find(strcmp('era_prefs',varin),1);
 if ~isempty(ind)
     era_prefs = varin{ind+1}; 
+else
+    era_prefs = '';
 end
 
 %check if era_data has been defined
 ind = find(strcmp('era_data',varin),1);
 if ~isempty(ind)
     era_data = varin{ind+1}; 
+else
+    era_data = '';
 end
 
 end

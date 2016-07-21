@@ -6,6 +6,9 @@ function dataout = era_loadfile(varargin)
 %Last Modified 4/18/16
 %
 %Required Inputs:
+% era_prefs - preferences from ERA Toolbox
+% era_data - data from ERA Toolbox
+%       OR
 % file - location of file to be loaded and prepared for dependability
 %  analyses
 %
@@ -48,10 +51,27 @@ function dataout = era_loadfile(varargin)
 %History 
 % by Peter Clayson (4/17/16)
 % peter.clayson@gmail.com
+%
+%7/21/16 PC
+% Changes associated with new era_prefs and era_data structure arrays
+
+%try to load era_prefs and era_data
+[era_prefs, era_data] = era_findprefsdata(varargin);
+
+%if era_prefs and era_data were defined, pull inputs
+if ~isempty(era_prefs) && ~isempty(era_data)
+    file = era_data.raw.filename;
+    idcolname = era_data.proc.idheader;
+    groupcolname = era_data.proc.groupheader;
+    meascolname = era_data.proc.measheader;
+    eventcolname = era_data.proc.eventheader;
+    dataraw = era_data.raw.data;
+end
+    
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
-if ~isempty(varargin)
+if ~isempty(varargin) && (isempty(era_prefs) || isempty(era_data))
     
     %the optional inputs check assumes that there was an even number of 
     %optional inputs entered. If not, an error will displayed and the
@@ -119,7 +139,7 @@ if ~isempty(varargin)
         dataraw = '';
     end
     
-elseif ~isempty(varargin)
+elseif isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
     strcat('WARNING: Optional inputs are incomplete \n\n',... 
