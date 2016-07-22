@@ -330,17 +330,17 @@ inputs = varargin{ind+1};
 %and 1
 depeval = depcheck(str2double(inputs.h(1).String));
 
+era_prefs.view.depvalue = str2double(inputs.h(1).String);
+era_prefs.view.plotdep = inputs.h(2).Value;
+era_prefs.view.ploticc = inputs.h(3).Value;
+era_prefs.view.inctrltable = inputs.h(4).Value;
+era_prefs.view.overalltable = inputs.h(5).Value;
+era_prefs.view.showstddevt = inputs.h(6).Value;
+era_prefs.view.showstddevf = inputs.h(7).Value;
+
 %if the dependability estimate was not numeric or between 0 and 1, give the
 %user an error and take the user back.
 if depeval ~= 0 
-    
-    era_prefs.view.depvalue = str2double(inputs.h(1).String);
-    era_prefs.view.plotdep = inputs.h(2).Value;
-    era_prefs.view.ploticc = inputs.h(3).Value;
-    era_prefs.view.inctrltable = inputs.h(4).Value;
-    era_prefs.view.overalltable = inputs.h(5).Value;
-    era_prefs.view.showstddevt = inputs.h(6).Value;
-    era_prefs.view.showstddevf = inputs.h(7).Value;
     
     %check if era_gui is open.
     era_gui = findobj('Tag','era_gui');
