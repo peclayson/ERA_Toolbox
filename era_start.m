@@ -2,7 +2,7 @@ function era_start
 %
 %Initiate Matlab gui to use the ERP Reliability Analysis (ERA) toolbox
 %
-%version 0.3.2 - Last Updated 4/27/16
+%version 0.4.0 - Last Updated 7/21/16
 %
 
 %The ERA toolbox uses generalizability theory as a method for evaluating 
@@ -16,6 +16,10 @@ function era_start
 %
 %A description of how to apply generalizability theory to ERP data can be
 % found in
+%
+% Clayson, P. E., & Miller, G. A. (under review). ERP Reliability Analysis
+% (ERA) Toolbox: An Open-Source Toolbox for Analyzing the Reliability of
+% Event-Related Potentials
 %
 % Baldwin, S. A., Larson, M. J., & Clayson, P. E. (2015). The dependability 
 % of electrophysiological measurements of performance monitoring in a 
@@ -40,7 +44,7 @@ function era_start
 %  the user chooses, various files (data, tables, plots) could be saved
 %  from the guis initiated by this script.
 %
-%Matlab files contained in ERA toolbox
+%High-level matlab files contained in ERA toolbox
 %
 % Gui-related files
 %  era_startproc - gui to specify inputs for the analysis of data using 
@@ -55,6 +59,8 @@ function era_start
 %   analyses
 %  era_relfigures - function to display information about dependability
 %   (figures and tables)
+%  era_defaults - function to define default settings for processing and
+%   viewing data
 %
 %Required dependents not contained in download of ERA toolbox
 % MatlabStan and its dependents: CmdStan and MatlabProcessManager
@@ -92,9 +98,13 @@ function era_start
 %
 %4/20/16 PC
 % added subroutine to check whether there is a new release posted on github
+%
+%7/21/16 PC
+% changes associated with adding a new data structure
+% change with setting version number
 
-%set version number of ERA Toolbox
-eraver = '0.3.2';
+%pull version for the ERA Toolbox
+eraver = era_defineversion;
 
 %Output info about ERA Toolbox
 fprintf('\n\n\nERP Reliability Analysis Toolbox Version %s\n\n',eraver);
@@ -110,11 +120,12 @@ if exist('era_startproc.m','file') ~= 2 || ...
         exist('era_checkconv.m','file') ~= 2 || ...
         exist('era_readtable.m','file') ~= 2 || ...
         exist('era_reruncheck.m','file') ~= 2 || ...
-        exist('era_updatecheck.m','file') ~= 2
+        exist('era_updatecheck.m','file') ~= 2 || ...
+        exist('era_defaults.m','file') ~= 2
 
-    dlg = {'Warning: Dependencies for the ERA toolbox are not located';...
+    dlg = {'Warning: Scripts for using the ERA toolbox are not located';...
         'in the Matlab path. Please include the folder containing the';...
-        'scripts for the RA toolbox in your Matlab path.';...
+        'scripts for the ERA toolbox in your Matlab path.';...
         'Please see UserManual.pdf for more information'};
     
     for i = 1:length(dlg)
@@ -160,13 +171,19 @@ era_updatecheck(eraver);
 
 fprintf('\n\n');
 
-%set the gui for indicating whether the user wants to process data or view
+%load default preferences for processing and viewing data
+era_prefs = era_defaults;
+
+%attach the current version number to era_prefs
+era_prefs.ver = eraver;
+
+%create the gui for indicating whether the user wants to process data or view
 %previously processed data
 
 %define parameters for figure position
 figwidth = 400;
 figheight = 200;
-fsize = get(0,'DefaultTextFontSize');
+era_prefs.guis.fsize = get(0,'DefaultTextFontSize');
 
 %define space between rows and first row location
 rowspace = 25;
@@ -182,26 +199,26 @@ era_gui= figure('unit','pix','Visible','off',...
 movegui(era_gui,'center');
 
 %Write text
-uicontrol(era_gui,'Style','text','fontsize',fsize+2,...
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize+2,...
     'HorizontalAlignment','center',...
     'String','What would you like to do?',...
     'Position',[0 row figwidth 25]);          
 
 %Create a button that will take the user to the gui for setting the inputs
 %to process data
-uicontrol(era_gui,'Style','push','fontsize',fsize,...
+uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String','<html><center>Process <br>New Data',...
     'Position', [figwidth/8 25 figwidth/3 75],...
-    'Callback',{@era_startproc,era_gui}); 
+    'Callback',{@era_startproc,era_gui,'era_prefs',era_prefs}); 
 
 %Create button that will take the user to the gui for setting the inputs
 %for viewing the data
-uicontrol(era_gui,'Style','push','fontsize',fsize,...
+uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String','View Results',...
     'Position', [5*figwidth/8 25 figwidth/3 75],...
-    'Callback',{@era_startview,era_gui}); 
+    'Callback',{@era_startview,era_gui,'era_prefs',era_prefs}); 
 
 %tag gui
 era_gui.Tag = 'era_gui';
