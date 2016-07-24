@@ -3,7 +3,7 @@ function inctrltable = era_depcutofft(varargin)
 %Display a table with the information for the cutoffs stratified by group
 % and condition
 %
-%era_depcutofft('era_data',era_data);
+%era_depcutofft('era_data',era_data,'gui',1);
 %
 %Last Modified 7/24/16
 %
