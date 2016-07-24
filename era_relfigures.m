@@ -4,7 +4,7 @@ function era_relfigures(varargin)
 %
 %era_relfigures('data',ERAData)
 %
-%Last Modified 7/23/16
+%Last Modified 7/24/16
 %
 %Required Inputs:
 % data - structure array containing results of dependability analyses using
@@ -93,8 +93,10 @@ function era_relfigures(varargin)
 %
 %7/23/16 PC
 % updated commments (statistics and wavelet toolbox no longer required)
-% pulled out the reliability calculations and put into theit own function:
+% pulled out the reliability calculations and put into their own function:
 %  
+%7/24/16 PC
+% finished incoporating new dependability function (era_dep)
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -393,9 +395,6 @@ x = 1:ntrials;
 
 %create an empty array for storing information into
 plotrel = zeros(ntrials,0);
-mrel = zeros(ntrials,0);
-llrel = zeros(ntrials,0);
-ulrel = zeros(ntrials,0);
 
 %see how many subplots are needed
 if nevents > 2
@@ -418,40 +417,32 @@ fsize = 16;
 %extract the data and create the subplots for depplot
 for eloc=1:nevents
     for gloc=1:ngroups
-        for trial=1:ntrials
-            switch plotdepline 
-                case 1 %lower limit
-                    plotrel(trial,gloc) = ...
-                        quantile(era_dep(data.g(gloc).e(eloc).sig_u.raw,...
-                        data.g(gloc).e(eloc).sig_e.raw,trial),.025);
-                    plottitle = 'Lower Limit of 95% Credible Interval';
-                case 2 %point estimate
-                    plotrel(trial,gloc) = ...
-                        mean(era_dep(data.g(gloc).e(eloc).sig_u.raw,...
-                        data.g(gloc).e(eloc).sig_e.raw,trial));
-                    plottitle = 'Point Estimate';
-                case 3 %upper limit
-                    plotrel(trial,gloc) = ...
-                        quantile(era_dep(data.g(gloc).e(eloc).sig_u.raw,...
-                        data.g(gloc).e(eloc).sig_e.raw,trial),.975);
-                    plottitle = 'Upper Limit of 95% Credible Interval';
-            end
+        switch plotdepline
+            case 1 %lower limit
+                [plotrel(x,gloc),~,~] = era_dep(...
+                    'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                    'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                    'obs',[1 ntrials],'CI',.95);
+                plottitle = 'Lower Limit of 95% Credible Interval';
+            case 2 %point estimate
+                [~,plotrel(x,gloc),~] = era_dep(...
+                    'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                    'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                    'obs',[1 ntrials],'CI',.95);
+                plottitle = 'Point Estimate';
+            case 3 %upper limit
+                [~,~,plotrel(x,gloc)] = era_dep(...
+                    'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                    'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                    'obs',[1 ntrials],'CI',.95);
+                plottitle = 'Upper Limit of 95% Credible Interval';
         end
     end
+    
     pref = 'Dependability v Number of Trials: ';
     set(gcf,'Name',[pref plottitle]);
     subplot(yplots,xplots,eloc); 
     h = plot(x,plotrel);
-    
-%Need to grab color from the subplot
-%     clines = get(h,'Color');
-% 
-%     hold on
-%     for i = 1:length(clines)
-%         plot(x,llrel(:,i),'--','Color',clines{i});
-%         plot(x,ulrel(:,i),'--','Color',clines{i});
-%     end
-%     hold off
     
     axis([0 ntrials 0 1]);
     set(gca,'fontsize',16);
@@ -494,24 +485,12 @@ switch analysis
             trltable = varfun(@length,REL.data,'GroupingVariables',{'id'});
         end
         
-        %define the place holders for storing dependability information
+        %compute dependabiltiy
         ntrials = max(trltable.GroupCount(:)) + 100;
-        mrel = zeros(0,ntrials);
-        llrel = zeros(0,ntrials);
-        ulrel = zeros(0,ntrials);
-        
-        %compute dependability information
-        for trial=1:ntrials
-            mrel(trial) = ...
-                mean(era_dep(data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,trial)); 
-            llrel(trial) = quantile(era_dep(...
-                data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,trial),.025);
-            ulrel(trial) = quantile(era_dep(...
-                data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,trial),.975);
-        end
+        [llrel,mrel,ulrel] = era_dep(...
+                    'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                    'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                    'obs',[1 ntrials],'CI',.95);
 
         %find the number of trials to reach cutoff 
         switch meascutoff
@@ -587,15 +566,11 @@ switch analysis
                     depcent = trlmed;
             end
             
-            mdep = ...
-                mean(era_dep(data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,depcent)); 
-            lldep = quantile(era_dep(...
-                data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,depcent),.025);
-            uldep = quantile(era_dep(...
-                data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,depcent),.975);
+            
+            [lldep,mdep,uldep] = era_dep(...
+                    'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                    'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                    'obs',depcent,'CI',.95);
 
             relsummary.group(gloc).event(eloc).dep.m = mdep;
             relsummary.group(gloc).event(eloc).dep.ll = lldep;
@@ -653,15 +628,10 @@ switch analysis
                     depcent = trlmed;
             end
 
-            mdep = ...
-                mean(era_dep(data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,depcent)); 
-            lldep = quantile(era_dep(...
-                data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,depcent),.025);
-            uldep = quantile(era_dep(...
-                data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,depcent),.975);
+            [lldep,mdep,uldep] = era_dep(...
+                    'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                    'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                    'obs',depcent,'CI',.95);
 
             relsummary.group(gloc).event(eloc).dep.m = mdep;
             relsummary.group(gloc).event(eloc).dep.ll = lldep;
@@ -743,24 +713,12 @@ switch analysis
             end
         
 
-            %define the place holders for storing dependability information
+            %compute dependability
             ntrials = max(trltable.GroupCount(:)) + 100;
-            mrel = zeros(0,ntrials);
-            llrel = zeros(0,ntrials);
-            ulrel = zeros(0,ntrials);
-            
-            %calculate dependability information
-            for trial=1:ntrials
-                mrel(trial) = ...
-                    mean(era_dep(data.g(gloc).e(eloc).sig_u.raw,...
-                    data.g(gloc).e(eloc).sig_e.raw,trial)); 
-                llrel(trial) = quantile(era_dep(...
-                    data.g(gloc).e(eloc).sig_u.raw,...
-                    data.g(gloc).e(eloc).sig_e.raw,trial),.025);
-                ulrel(trial) = quantile(era_dep(...
-                    data.g(gloc).e(eloc).sig_u.raw,...
-                    data.g(gloc).e(eloc).sig_e.raw,trial),.975);
-            end
+            [llrel,mrel,ulrel] = era_dep(...
+                    'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                    'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                    'obs',[1 ntrials],'CI',.95);
 
             %find the number of trials to reach cutoff
             switch meascutoff
@@ -881,16 +839,11 @@ switch analysis
                 case 2
                     depcent = trlmed;
             end
-
-            mdep = ...
-                mean(era_dep(data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,depcent)); 
-            lldep = quantile(era_dep(...
-                data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,depcent),.025);
-            uldep = quantile(era_dep(...
-                data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,depcent),.975);
+            
+            [lldep,mdep,uldep] = era_dep(...
+                    'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                    'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                    'obs',depcent,'CI',.95);
 
             relsummary.group(gloc).event(eloc).dep.m = mdep;
             relsummary.group(gloc).event(eloc).dep.ll = lldep;
@@ -972,24 +925,12 @@ switch analysis
             trltable = varfun(@length,REL.data{1},...
                 'GroupingVariables',{'id'});
             
-            %define the place holders for storing dependability information
+            %compute dependability
             ntrials = max(trltable.GroupCount(:)) + 100;
-            mrel = zeros(0,ntrials);
-            llrel = zeros(0,ntrials);
-            ulrel = zeros(0,ntrials);
-
-            %compute dependability estimates to be used for the cutoffs
-            for trial=1:ntrials
-                mrel(trial) = ...
-                    mean(era_dep(data.g(gloc).e(eloc).sig_u.raw,...
-                    data.g(gloc).e(eloc).sig_e.raw,trial)); 
-                llrel(trial) = quantile(era_dep(...
-                    data.g(gloc).e(eloc).sig_u.raw,...
-                    data.g(gloc).e(eloc).sig_e.raw,trial),.025);
-                ulrel(trial) = quantile(era_dep(...
-                    data.g(gloc).e(eloc).sig_u.raw,...
-                    data.g(gloc).e(eloc).sig_e.raw,trial),.975);
-            end
+            [llrel,mrel,ulrel] = era_dep(...
+                    'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                    'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                    'obs',[1 ntrials],'CI',.95);
 
             %find the number of trials to reach cutoffl
             switch meascutoff
@@ -1111,16 +1052,11 @@ switch analysis
                     depcent = trlmed;
             end
 
-            mdep = ...
-                mean(era_dep(data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,depcent)); 
-            lldep = quantile(era_dep(...
-                data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,depcent),.025);
-            uldep = quantile(era_dep(...
-                data.g(gloc).e(eloc).sig_u.raw,...
-                data.g(gloc).e(eloc).sig_e.raw,depcent),.975);
-
+            [lldep,mdep,uldep] = era_dep(...
+                    'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                    'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                    'obs',depcent,'CI',.95);
+                
             relsummary.group(gloc).event(eloc).dep.m = mdep;
             relsummary.group(gloc).event(eloc).dep.ll = lldep;
             relsummary.group(gloc).event(eloc).dep.ul = uldep;
@@ -1197,24 +1133,12 @@ switch analysis
                 trltable = varfun(@length,REL.data{1},...
                     'GroupingVariables',{'id'});
 
-                %define the place holders for storing dependability information
+                %compute dependability
                 ntrials = max(trltable.GroupCount(:)) + 100;
-                mrel = zeros(0,ntrials);
-                llrel = zeros(0,ntrials);
-                ulrel = zeros(0,ntrials);
-                
-                %calculate dependability estimates
-                for trial=1:ntrials
-                    mrel(trial) = ...
-                        mean(era_dep(data.g(gloc).e(eloc).sig_u.raw,...
-                        data.g(gloc).e(eloc).sig_e.raw,trial)); 
-                    llrel(trial) = quantile(era_dep(...
-                        data.g(gloc).e(eloc).sig_u.raw,...
-                        data.g(gloc).e(eloc).sig_e.raw,trial),.025);
-                    ulrel(trial) = quantile(era_dep(...
-                        data.g(gloc).e(eloc).sig_u.raw,...
-                        data.g(gloc).e(eloc).sig_e.raw,trial),.975);
-                end
+                [llrel,mrel,ulrel] = era_dep(...
+                    'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                    'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                    'obs',[1 ntrials],'CI',.95);
                 
                 %find the number of trials to reach cutoff
                 switch meascutoff
@@ -1350,16 +1274,11 @@ switch analysis
                         depcent = trlmed;
                 end
 
-                mdep = ...
-                    mean(era_dep(data.g(gloc).e(eloc).sig_u.raw,...
-                    data.g(gloc).e(eloc).sig_e.raw,depcent)); 
-                lldep = quantile(era_dep(...
-                    data.g(gloc).e(eloc).sig_u.raw,...
-                    data.g(gloc).e(eloc).sig_e.raw,depcent),.025);
-                uldep = quantile(era_dep(...
-                    data.g(gloc).e(eloc).sig_u.raw,...
-                    data.g(gloc).e(eloc).sig_e.raw,depcent),.975);
-
+                [lldep,mdep,uldep] = era_dep(...
+                    'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                    'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                    'obs',depcent,'CI',.95);
+                
                 relsummary.group(gloc).event(eloc).dep.m = mdep;
                 relsummary.group(gloc).event(eloc).dep.ll = lldep;
                 relsummary.group(gloc).event(eloc).dep.ul = uldep;
@@ -2236,9 +2155,9 @@ end
 % 
 % end
 % 
-% function iccout = era_icc(var_u,var_e)
-% %calculate iccs from a Stanfit object
-% 
-% iccout = var_u.^2 ./ (var_u.^2 + var_e.^2);
-% 
-% end
+function iccout = era_icc(var_u,var_e)
+%calculate iccs from a Stanfit object
+
+iccout = var_u.^2 ./ (var_u.^2 + var_e.^2);
+
+end
