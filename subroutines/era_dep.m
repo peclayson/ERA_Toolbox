@@ -91,7 +91,7 @@ if ~isempty(varargin)
         'Please input obs. See help era_dep for more information \n'));
     end
     
-    %check if wp was specified. 
+    %check if CI was specified. 
     %If it is not found, set display error.
     ind = find(strcmpi('CI',varargin),1);
     if ~isempty(ind)
