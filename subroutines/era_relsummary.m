@@ -1,4 +1,4 @@
-function era_data = era_relsummary(varargin)
+function [era_data,relerr] = era_relsummary(varargin)
 %
 %Summarize reliabilty of era_data
 %
@@ -24,6 +24,10 @@ function era_data = era_relsummary(varargin)
 %Outputs
 % era_data - rel field will be added to era_data that includes a summary of
 %  reliability information for the data
+% relerr - structure array with information about reliabitliy analyses.
+%  Warnings will be provided to the user if they apply to the analyzed
+%  dataset
+%
 
 % Copyright (C) 2016 Peter E. Clayson
 % 
@@ -140,9 +144,9 @@ data = struct;
 
 %create variable to specify whether there are bad/unreliable data
 %default state: 0, will be changed to 1 if there is a problem
-poorrel = struct();
-poorrel.trlcutoff = 0;
-poorrel.trlmax = 0;
+relerr = struct();
+relerr.trlcutoff = 0;
+relerr.trlmax = 0;
 
 %check whether any groups exist
 if strcmpi(REL.groups,'none')
@@ -308,7 +312,7 @@ switch analysis
         %cutoffs.
         if isempty(trlcutoff)
             
-            poorrel.trlcutoff = 1;
+            relerr.trlcutoff = 1;
             trlcutoff = -1;
             relsummary.group(gloc).event(eloc).trlcutoff = -1;
             relsummary.group(gloc).event(eloc).rel.m = -1;
@@ -448,7 +452,7 @@ switch analysis
             if  relsummary.group(gloc).event(eloc).trlcutoff >...
                     relsummary.group(gloc).event(eloc).trlinfo.max
                 
-                poorrel.trlmax = 1;
+                relerr.trlmax = 1;
                 relsummary.group(gloc).event(eloc).rel.m = -1;
                 relsummary.group(gloc).event(eloc).rel.ll = -1;
                 relsummary.group(gloc).event(eloc).rel.ul = -1;
@@ -531,7 +535,7 @@ switch analysis
             
             if isempty(trlcutoff)
 
-                poorrel.trlcutoff = 1;
+                relerr.trlcutoff = 1;
                 trlcutoff = -1;
                 relsummary.group(gloc).event(eloc).trlcutoff = -1;
                 relsummary.group(gloc).event(eloc).rel.m = -1;
@@ -653,7 +657,7 @@ switch analysis
             if  relsummary.group(gloc).event(eloc).trlcutoff >...
                     relsummary.group(gloc).event(eloc).trlinfo.max
                 
-                poorrel.trlmax = 1;
+                relerr.trlmax = 1;
                 relsummary.group(gloc).event(eloc).rel.m = -1;
                 relsummary.group(gloc).event(eloc).rel.ll = -1;
                 relsummary.group(gloc).event(eloc).rel.ul = -1;
@@ -734,7 +738,7 @@ switch analysis
             
             if isempty(trlcutoff) %if a cutoff wasn't found
 
-                poorrel.trlcutoff = 1;
+                relerr.trlcutoff = 1;
                 trlcutoff = -1;
                 relsummary.group(gloc).event(eloc).trlcutoff = -1;
                 relsummary.group(gloc).event(eloc).rel.m = -1;
@@ -860,7 +864,7 @@ switch analysis
             if  relsummary.group(gloc).event(eloc).trlcutoff >...
                     relsummary.group(gloc).event(eloc).trlinfo.max
 
-                poorrel.trlmax = 1;
+                relerr.trlmax = 1;
                 relsummary.group(gloc).event(eloc).rel.m = -1;
                 relsummary.group(gloc).event(eloc).rel.ll = -1;
                 relsummary.group(gloc).event(eloc).rel.ul = -1;
@@ -938,7 +942,7 @@ switch analysis
                 if isempty(trlcutoff) 
                 
                     %store all the participant ids as having bad data
-                    poorrel.trlcutoff = 1;
+                    relerr.trlcutoff = 1;
                     trlcutoff = -1;
                     relsummary.group(gloc).event(eloc).trlcutoff = -1;
                     relsummary.group(gloc).event(eloc).rel.m = -1;
@@ -1076,7 +1080,7 @@ switch analysis
                 if  relsummary.group(gloc).event(eloc).trlcutoff >...
                         relsummary.group(gloc).event(eloc).trlinfo.max
                     
-                    poorrel.trlmax = 1;
+                    relerr.trlmax = 1;
                     relsummary.group(gloc).event(eloc).rel.m = -1;
                     relsummary.group(gloc).event(eloc).rel.ll = -1;
                     relsummary.group(gloc).event(eloc).rel.ul = -1;
