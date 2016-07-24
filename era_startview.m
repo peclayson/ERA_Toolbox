@@ -4,7 +4,7 @@ function era_startview(varargin)
 %
 %era_startview('file','/Users/REL/SomeERAData.mat')
 %
-%Last Updated 7/21/16
+%Last Updated 7/24/16
 %
 %Required Inputs:
 % No inputs are required.
@@ -52,6 +52,9 @@ function era_startview(varargin)
 %
 %7/21/16 PC
 % changes associated with adding era_prefs and era_data
+%
+%7/24/16 PC
+% use era_data as input into era_relfigures
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -366,7 +369,7 @@ if depeval ~= 0
 end
 
 %pass inputs from gui to era_relfigures
-era_relfigures('data',era_data.rel,...
+era_relfigures('era_data',era_data,...
     'depcutoff',era_prefs.view.depvalue,...
     'plotdep',era_prefs.view.plotdep,...
     'ploticc',era_prefs.view.ploticc,...
