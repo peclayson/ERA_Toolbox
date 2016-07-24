@@ -204,7 +204,7 @@ elseif nevents == 1
 end
 
 %create the figure
-depplot = figure('Visible','Off');
+depplot = figure;
 set(gcf,'NumberTitle','Off');
 depplot.Position = [125 630 900 450];
 fsize = 16;
