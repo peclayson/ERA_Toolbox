@@ -3,7 +3,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 7/22/16
+%Last Updated 4/18/16
 %
 %
 %Input
@@ -42,9 +42,6 @@ function era_startproc(varargin)
 %4/20/16 PC
 % Add line to print that model converged successfully
 % Added ERA Toolbox specific format for saving data (extension: .erat)
-%
-%7/22/16 PC 
-% Pulling out subroutines
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -113,15 +110,21 @@ era_data.raw.colnames = collist;
 era_data.proc.collist = vcollist;
 
 %use the loaded dateset in the gui for setting up the data to be run
-era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+era_startproc_fig('era_prefs',era_prefs,'era_data',era_data);
 
 end
 
-function era_startproc_gui(varargin)
+function era_startproc_fig(varargin)
 %
 %Inputs
 % era_prefs - preferences for era toolbox
 % era_data - era toolbox data structure
+%      OR
+% collist - a list of the headers of the loaded dataset
+% filepart - the name of the dataset
+% pathpart - the path where the dataset is located
+% dataraw - the loaded dataset
+% procprefs - processing preferences to be passed to Stan
 %
 %Optional Inputs:
 % procprefs - prefences for processing in stan
@@ -474,7 +477,7 @@ close(era_gui);
 
 if era_prefs.proc.nchains >= 3 && era_prefs.proc.niter > 0
     %execute era_startproc_fic with the new preferences
-    era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+    era_startproc_fig('era_prefs',era_prefs,'era_data',era_data);
 end
 
 %make sure the user has defined at least 3 chains and more than 0
@@ -511,19 +514,17 @@ era_gui = findobj('Tag','era_gui');
 %close era_gui
 close(era_gui);
 
-%execute era_startproc_gui with the old preferences
-era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+%execute era_startproc_fig with the old preferences
+era_startproc_fig('era_prefs',era_prefs,'era_data',era_data);
 
 end
 
-
 function era_exec(varargin)
-%if execute button is pushed, parse input to run in era_relwrap
+%if execute button is pushed, analyze the loaded data
 %
 %Input
 % era_prefs - toolbox preferences
 % era_data - toolbox data
-% inplists - list of input choices from era_startproc_gui
 %
 %Output
 % No variables outputted to the Matlab workspace
@@ -548,6 +549,12 @@ era_prefs.proc.inp.meas = choices(2);
 era_prefs.proc.inp.group = choices(3);
 era_prefs.proc.inp.event = choices(4);
 
+%find era_gui
+era_gui = findobj('Tag','era_gui');
+
+%close era_gui
+close(era_gui);
+
 %check if there are duplicates (other than 'none') (e.g., group and event
 %do not refer to the same column in the data)
 [n, bin] = histc(choices, unique(choices));
@@ -566,8 +573,8 @@ if ~isempty(ind)
             'When selecting column headers, please select unique names'};
         errordlg(dlg, 'Unique variable names not provided');
         
-        %take the user back to era_startproc_gui
-        era_startproc_gui(collist,filepart,pathpart,dataraw);
+        %take the user back to era_startproc_fig
+        era_startproc_fig(collist,filepart,pathpart,dataraw);
     end
 end
 
@@ -586,12 +593,6 @@ if choices(4) ~= length(era_data.proc.collist)
 elseif choices(4) == length(era_data.proc.collist)
     era_data.proc.eventheader = '';
 end
-
-%find era_gui
-era_gui = findobj('Tag','era_gui');
-
-%close era_gui
-close(era_gui);
 
 %cmdstan cannot handle paths with white space. User will be required to
 %provide a path to working directory that does not include a space.
@@ -620,10 +621,10 @@ while space == 1
     end
     
     %if the user does not select a file, then take the user back to 
-    %era_startproc_gui    
+    %era_startproc_fig    
     if era_data.proc.savename == 0 
         errordlg('No file selected','File Error');
-        era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+        era_startproc_fig('era_prefs',era_prefs,'era_data',era_data);
     end
     
 end %while space == 1
@@ -631,8 +632,8 @@ end %while space == 1
 %in the event that the user cancels and does not specify and path and
 %filename
 if isempty(era_data.proc.savename) || isempty(era_data.proc.savepath)
-    %take the user back to era_startproc_gui
-        era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+    %take the user back to era_startproc_fig
+        era_startproc_fig('era_prefs',era_prefs,'era_data',era_data);
 end
 
 %now that the headers have been specified, set up a data table to be passed
@@ -640,10 +641,100 @@ end
 era_data.proc.data = era_loadfile('era_prefs',era_prefs,...
     'era_data',era_data);
 
-%pass the data to be setup for processing
-era_data = era_computerelwrap('era_prefs',era_prefs,'era_data',era_data);
+%Change working dir for temporary Stan files
+if ~exist(fullfile(era_data.proc.savepath,'Temp_StanFiles'), 'dir')
+  mkdir(era_data.proc.savepath,'Temp_StanFiles');
+end
+origdir = cd(fullfile(era_data.proc.savepath,'Temp_StanFiles'));
+
+%set initial state of rerun to 1
+%this will run era_computerel
+%if chains properly converged then rerun will be changed to 0 and the while
+%loop will be exited
+rerun = 1;
+
+%whether chains converged will be checked each time era_computerel is run
+while rerun ~= 0
+
+    %pass the data to era_computerel for analysis
+    REL = era_computerel('data',era_data.proc.data,...
+        'chains',era_prefs.proc.nchains,...
+        'iter',era_prefs.proc.niter,...
+        'verbose',era_prefs.proc.verbose);
+    
+    %check convergence of chains
+    RELout = era_checkconv(REL);
+    
+    if RELout.out.conv.converged == 0
+       
+        era_reruncheck;
+        era_gui = findobj('Tag','era_gui');
+        rerun = guidata(era_gui);
+        close(era_gui);
+        delete(era_gui);
+        
+    else 
+        %if chains converged, do no rerun.
+        rerun = 0;
+        fprintf('\nModel converged\n');
+    end
+    
+    %if convergence was not met and the user would like to rerun the model,
+    %double the number of iterations (if the doubled number is less than
+    %1000, then run 1000 iterations)
+    if rerun == 1
+        era_prefs.proc.niter = era_prefs.proc.niter * 2;
+        if era_prefs.proc.niter < 1000
+            era_prefs.proc.niter = 1000;
+        end
+        fprintf('\nIncreasing number of iterations to %d\n',...
+            era_prefs.proc.niter);
+    end
+end
+
+%sometimes the era_gui doesn't close
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    close(era_gui);
+end
+    
+%change the working directory back to the original directory 
+cd(origdir);
+
+%attempt to remove the temporary directory and its files
+try
+    
+    rmdir(fullfile(era_data.proc.savepath,'Temp_StanFiles'),'s');
+
+catch
+    
+    fprintf('\n\nTemporary directory could not be removed.');
+    fprintf('\nPath: %s\n',era_data.proc.savepath);
+end
+
+%if the chains did not converge send the user back to era_startproc_fig
+if RELout.out.conv.converged == 0
+
+    era_startproc_fig('era_path',era_path,'era_data',era_data);
+    return
+    
+else
+    
+    %chains converged. Let the user know.
+    %str = 'Models successfully converged with %d chains and %d iterations';
+    %fprintf(strcat('\n',str,'\n'),procpref.nchains,procprefs.niter);
+    
+end
+
+fprintf('\nSaving Processed Data...\n\n');
+
+era_data.rel = RELout;
+
+save(fullfile(era_data.proc.savepath,era_data.proc.savename),'era_data');
 
 %take the user to era_startview for viewing the processed data
 era_startview('era_prefs',era_prefs,'era_data',era_data);
 
 end
+
+
