@@ -38,6 +38,9 @@ function era_data = era_computerelwrap(varargin)
 %History 
 % by Peter Clayson (7/22/16)
 % peter.clayson@gmail.com
+%
+%7/26/16 PC
+% bug fix: not able to execute era_startproc_gui directly
 
 %pull era_prefs and era_data from varargin
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -203,7 +206,7 @@ end
 %if the chains did not converge send the user back to era_startproc_gui
 if RELout.out.conv.converged == 0
 
-    era_startproc_gui('era_path',era_path,'era_data',era_data);
+    era_startproc('era_path',era_path,'era_data',era_data);
     return
     
 else
