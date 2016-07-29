@@ -206,7 +206,7 @@ end
 %if the chains did not converge send the user back to era_startproc_gui
 if RELout.out.conv.converged == 0
 
-    era_startproc('era_path',era_path,'era_data',era_data);
+    era_startproc('era_prefs',era_prefs,'era_data',era_data);
     return
     
 else
