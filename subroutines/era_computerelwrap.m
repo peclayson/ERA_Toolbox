@@ -41,6 +41,9 @@ function era_data = era_computerelwrap(varargin)
 %
 %7/26/16 PC
 % bug fix: not able to execute era_startproc_gui directly
+%
+%7/28/16 PC
+% fixed typo causing era_start not to execute after failing to converge
 
 %pull era_prefs and era_data from varargin
 [era_prefs, era_data] = era_findprefsdata(varargin);
