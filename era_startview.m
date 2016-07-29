@@ -4,7 +4,7 @@ function era_startview(varargin)
 %
 %era_startview('file','/Users/REL/SomeERAData.mat')
 %
-%Last Updated 7/26/16
+%Last Updated 7/27/16
 %
 %Required Inputs:
 % No inputs are required.
@@ -59,6 +59,9 @@ function era_startview(varargin)
 %7/26/16 PC
 % added check to make sure that at least 2 trials were requested for the
 %  number of trials and dependability plot
+%
+%7/27/16 PC
+% got rid of some code that was no longer used
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -352,10 +355,7 @@ if depeval ~= 0
     %check if era_gui is open.
     era_gui = findobj('Tag','era_gui');
     if ~isempty(era_gui)
-        pos = era_gui.Position;
         close(era_gui);
-    else
-        pos=[400 400 550 550];
     end
     
     %create error text
