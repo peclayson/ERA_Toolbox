@@ -77,6 +77,9 @@ function RELout = era_computerel(varargin)
 %7/19/16 PC
 % Changes associate with updating to cmdstan-2.10.0
 %  changed <- to = (<- is not deprecated)
+%
+%7/28/16 PC
+% Added defineversion function
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -141,7 +144,7 @@ elseif isempty(varargin)
     
 end %if ~isempty(varargin)
 
-eraver = '0.3.2';
+eraver = era_defineversion;
 
 %store raw data to pass to era_checkconvergence in the event that the user
 %chooses to run with more iterations

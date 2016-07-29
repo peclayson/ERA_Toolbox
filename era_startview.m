@@ -4,7 +4,7 @@ function era_startview(varargin)
 %
 %era_startview('file','/Users/REL/SomeERAData.mat')
 %
-%Last Updated 7/24/16
+%Last Updated 7/27/16
 %
 %Required Inputs:
 % No inputs are required.
@@ -55,6 +55,13 @@ function era_startview(varargin)
 %
 %7/24/16 PC
 % use era_data as input into era_relfigures
+%
+%7/26/16 PC
+% added check to make sure that at least 2 trials were requested for the
+%  number of trials and dependability plot
+%
+%7/27/16 PC
+% got rid of some code that was no longer used
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -348,10 +355,7 @@ if depeval ~= 0
     %check if era_gui is open.
     era_gui = findobj('Tag','era_gui');
     if ~isempty(era_gui)
-        pos = era_gui.Position;
         close(era_gui);
-    else
-        pos=[400 400 550 550];
     end
     
     %create error text
@@ -397,37 +401,40 @@ function era_viewprefs(varargin)
 
 %find inputs
 ind = find(strcmp('inputs',varargin),1);
-inputs = varargin{ind+1};
 
-%check whether the dependability estimate provided is numeric and between 0
-%and 1
-depeval = depcheck(str2double(inputs.h(1).String));
+if ~isempty(ind)
+    inputs = varargin{ind+1};
 
-%if the dependability estimate was not numeric or between 0 and 1, give the
-%user an error and take the user back.
-if depeval ~= 0 
-    %create error text
-    errorstr = {};
-    errorstr{end+1} = 'The dependability estimate must be numeric';
-    errorstr{end+1} = 'and between 0 and 1 (inclusive)';
-    
-    %display error prompt
-    errordlg(errorstr);
-    
-    %execute era_startview_fig with the new preferences
-    era_startview_fig(h_view_gui.filename,h_view_gui.pathname,'inputs',...
-        h_view_gui.inputs,'viewprefs',initialprefs);
-    
-    return;
+    %check whether the dependability estimate provided is numeric and between 0
+    %and 1
+    depeval = depcheck(str2double(inputs.h(1).String));
+
+    %if the dependability estimate was not numeric or between 0 and 1, give the
+    %user an error and take the user back.
+    if depeval ~= 0 
+        %create error text
+        errorstr = {};
+        errorstr{end+1} = 'The dependability estimate must be numeric';
+        errorstr{end+1} = 'and between 0 and 1 (inclusive)';
+
+        %display error prompt
+        errordlg(errorstr);
+
+        %execute era_startview_fig with the new preferences
+        era_startview_fig(h_view_gui.filename,h_view_gui.pathname,'inputs',...
+            h_view_gui.inputs,'viewprefs',initialprefs);
+
+        return;
+    end
+
+    era_prefs.view.depvalue = str2double(inputs.h(1).String);
+    era_prefs.view.plotdep = inputs.h(2).Value;
+    era_prefs.view.ploticc = inputs.h(3).Value;
+    era_prefs.view.inctrltable = inputs.h(4).Value;
+    era_prefs.view.overalltable = inputs.h(5).Value;
+    era_prefs.view.showstddevt = inputs.h(6).Value;
+    era_prefs.view.showstddevf = inputs.h(7).Value;
 end
-
-era_prefs.view.depvalue = str2double(inputs.h(1).String);
-era_prefs.view.plotdep = inputs.h(2).Value;
-era_prefs.view.ploticc = inputs.h(3).Value;
-era_prefs.view.inctrltable = inputs.h(4).Value;
-era_prefs.view.overalltable = inputs.h(5).Value;
-era_prefs.view.showstddevt = inputs.h(6).Value;
-era_prefs.view.showstddevf = inputs.h(7).Value;
 
 %check if era_gui is open.
 era_gui = findobj('Tag','era_gui');
@@ -593,8 +600,20 @@ if ~isempty(era_gui)
     close(era_gui);
 end
 
-%execute era_startview_fig with the new preferences
-era_startview_fig('era_prefs',era_prefs,'era_data',era_data);
+if era_prefs.view.ntrials > 1
+    %execute era_startview_fig with the new preferences
+    era_startview_fig('era_prefs',era_prefs,'era_data',era_data);
+end
+
+%make sure the user has defined at least 2 trials to plot for the figure
+if era_prefs.view.ntrials <= 1 
+    errordlg(['Please specify at least two trials to plot ', ...
+        'for dependability estimates']);
+    era_prefs.view.ntrials = 50;
+
+    era_viewprefs('era_prefs',era_prefs,'era_data',era_data);
+    
+end
 
 end
 

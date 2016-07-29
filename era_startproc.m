@@ -45,6 +45,9 @@ function era_startproc(varargin)
 %
 %7/22/16 PC 
 % Pulling out subroutines
+%
+%7/28/16 PC
+% Missed a change related to era_data structure
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -556,8 +559,8 @@ ind = find(ismember(bin, multiple));
 if ~isempty(ind)
     probcol = {};
     for i = 1:length(ind)
-        if choices(ind(i)) ~= length(collist)
-            probcol(end+1) = collist(ind(i));
+        if choices(ind(i)) ~= length(era_data.proc.collist)
+            probcol(end+1) = era_data.proc.collist(ind(i));
         end
     end
     if ~isempty(probcol)
