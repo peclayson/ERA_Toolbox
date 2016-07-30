@@ -50,6 +50,9 @@ function [era_data,relerr] = era_relsummary(varargin)
 % by Peter Clayson (7/24/16)
 % peter.clayson@gmail.com
 %
+%7/30/16 PC
+% bug fix: crashing when running analysis 1. Data were not being properly
+%  indexed.
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -333,7 +336,7 @@ switch analysis
         if isempty(trlcutoff) %if the cutoff was not found in the data
             
             %Get information for the participants
-            datatrls = REL.data;
+            datatrls = REL.data{1};
 
             trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
             
@@ -348,7 +351,7 @@ switch analysis
                 relsummary.group(gloc).event(eloc).eventbadids;
             
             %calculate the dependability estimates for the overall data
-            datatable = REL.data;
+            datatable = REL.data{1};
 
             badids = table(relsummary.group(gloc).badids);
 
@@ -390,7 +393,7 @@ switch analysis
         elseif ~isempty(trlcutoff)
             
             %Get trial information for those that meet cutoff
-            datatrls = REL.data;
+            datatrls = REL.data{1};
 
             trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
 
@@ -409,7 +412,7 @@ switch analysis
             relsummary.group(gloc).badids = ...
                 relsummary.group(gloc).event(eloc).eventbadids;
 
-            datatable = REL.data;
+            datatable = REL.data{1};
             
             goodids = table(relsummary.group(gloc).goodids);
 
