@@ -54,6 +54,10 @@ function dataout = era_loadfile(varargin)
 %
 %7/21/16 PC
 % Changes associated with new era_prefs and era_data structure arrays
+%
+%7/30/16 PC
+% Added error catch to verify that the data in the measurement column is
+%  numeric
 
 %try to load era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -216,6 +220,16 @@ if exist('headerror','var')
     strcat('WARNING: Column headers not properly specified \n\n',... 
     'Please specify the headers for\n',char(strjoin(headerror,', ')),'\n',...
     'See help era_loadfile \n'));
+end
+
+%verify that the data in the measurement column is numeric
+if ~isnumeric(dataout.meas(:))
+    error('meas:notnumeric',... %Error code and associated error
+    strcat('WARNING: The data in the measurement column is not numeric\n',...
+    'Was the wrong column specified as mesurement?\n\n',...
+    'The column specified was',[' ' meascolname],'\n',...
+    'Please specify a column with numeric data (ERP measurements)\n',...
+    'See help era_loadfile for more information\n'));
 end
 
 %turn all of the ids, groups, and events into strings. ERA toolbox will 
