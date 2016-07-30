@@ -14,7 +14,9 @@ function RELout = era_computerel(varargin)
 % iter - number of iterations to run in stan 
 %
 %Optional Inputs:
-% verbose - 1: Do not print iterations, 2: Print iterations
+% verbose - 1: Do not print iterations, 2: Print iterations (default: 1)
+% showgui - 1: Do not show a gui while computations are running, 2: show a 
+%  gui while the computations are running (default: 1)
 %
 %Outputs:
 % RELout - structure array with the following fields.
@@ -80,6 +82,10 @@ function RELout = era_computerel(varargin)
 %
 %7/28/16 PC
 % Added defineversion function
+%
+%7/30/16 PC
+% Removed some old code that is no longer used
+% Add the option to pop-up a gui while code is running
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -135,6 +141,14 @@ if ~isempty(varargin)
         verbose = 1;
     end
     
+    %check whether showgui is specified
+    ind = find(strcmp('showgui',varargin),1);
+    if ~isempty(ind)
+        showgui = varargin{ind+1}; 
+    else 
+        showgui = 1;
+    end
+    
 elseif isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
@@ -145,10 +159,6 @@ elseif isempty(varargin)
 end %if ~isempty(varargin)
 
 eraver = era_defineversion;
-
-%store raw data to pass to era_checkconvergence in the event that the user
-%chooses to run with more iterations
-dataraw = datatable;
 
 %ensure the necessary columns are present in the table (at least the
 %headers for id and meas)
@@ -222,6 +232,42 @@ elseif ~exist('ngroup','var') && exist('nevent','var')
     analysis = 3;
 elseif exist('ngroup','var') && exist('nevent','var')
     analysis = 4;
+end
+
+%show a gui that indicates data are processing in cmdstan if the user
+%specified to do so
+if showgui == 2
+    %define parameters for figure position
+    figwidth = 400;
+    figheight = 150;
+    fsize = get(0,'DefaultTextFontSize');
+
+    %define space between rows and first row location
+    rowspace = 30;
+    row = figheight - rowspace*2;
+
+    %initialize gui
+    era_relgui= figure('unit','pix','Visible','off',...
+      'position',[400 400 figwidth figheight],...
+      'menub','no','numbertitle','off','resize','off');
+
+    movegui(era_relgui,'center');
+
+    %Write text
+    uicontrol(era_relgui,'Style','text','fontsize',fsize+6,...
+        'HorizontalAlignment','center',...
+        'String','Data are processing in CmdStan',...
+        'Position',[0 row figwidth 25]);          
+
+    %display gui
+    set(era_relgui,'Visible','on');
+    
+    %tag gui
+    era_relgui.Tag = 'era_relgui';
+    
+    %pause a moment so the gui will be displayed
+    pause(.02)
+
 end
 
 switch analysis
@@ -882,6 +928,31 @@ switch analysis
         %create syntax for cmdstan
         for j=1:nevent
             
+            %create string to be printed and potentially viewed in gui
+            str = ['Working on event ' num2str(j) ' of ' num2str(nevent)];
+
+            %print to screen to notify user of progress
+            fprintf(strcat('\n\n',str,'\n\n'));
+            
+            if showgui == 2
+                
+                %find whether gui exists (the user may have closed it)
+                era_relgui = findobj('Tag','era_relgui');
+
+                if ~isempty(era_relgui)
+
+                    %Write text
+                    uicontrol(era_relgui,'Style','text',...
+                        'fontsize',fsize+6,...
+                        'HorizontalAlignment','center',...
+                        'String',str,...
+                        'Position',[0 row-rowspace*1.5 figwidth 25]);
+                    
+                    %pause a moment so the gui will be displayed
+                    pause(.02)
+                end
+            end
+                     
             clear stan_in
             stan_in{1,1} = 'data {';
 
@@ -1059,6 +1130,14 @@ switch analysis
 
 end %switch analysis
 
+%close the gui if one was shown
+if showgui == 2
+    era_relgui = findobj('Tag','era_relgui');
+    if ~isempty(era_relgui)
+        close(era_relgui);
+    end
+end
+
 REL.eraver = eraver;
 RELout = REL;
 
@@ -1098,4 +1177,3 @@ for j = 1:length(inp2check)
 end
 
 end
-
