@@ -39,6 +39,8 @@ function era_installdependents
 %8/6/16 PC
 % for some reason the untar doesn't properly unpack cmdstan on OS X 
 %  Yosemite. Add check to install the .zip if using OS X Yosemite. 
+% added gui for user to input when XCode installation is complete
+% added more cw updates
 
 %determine the version of OS that is being used
 if ismac
@@ -86,6 +88,9 @@ end
 end
 
 function era_macdepsinstall(wrkdir,OSver)
+
+%get the current directory so it can be reverted to after installation
+startdir = cd;
 
 %create a structure array that will store which dependents are not properly
 %installed
@@ -171,6 +176,45 @@ end
 if depcheck.CLT == 0
     %user will need to interacte with gui for installation of CLT
     status = system('xcode-select --install');
+    
+    fsize = get(0,'DefaultTextFontSize') + 3;
+    figwidth = 400; figheight = 200;
+    %initialize gui
+    f = figure('unit','pix','Visible','off',...
+      'position',[400 400 figwidth figheight],...
+      'menub','no',...
+      'numbertitle','off',...
+      'resize','off');
+
+    movegui(f,'center');
+
+    %Write text
+    uicontrol(f,'Style','text','fontsize',fsize+2,...
+        'HorizontalAlignment','center',...
+        'String','Please indicate when the XCode installation is complete',...
+        'Position',[0 100 figwidth figheight/3]);          
+
+    %Create a button that will take the user to the gui for setting the inputs
+    %to process data
+    uicontrol(f,'Style','push','fontsize',fsize,...
+        'HorizontalAlignment','center',...
+        'String','<html><center>Installation <br>Complete',...
+        'Position', [(figwidth/5)/2 25 (figwidth/5)*4 75],...
+        'Callback','uiresume(gcbf)'); 
+    
+    %display gui
+    set(f,'Visible','on');
+    %tag gui
+    f.Tag = 'f';
+    
+    uiwait(f);
+    
+    %check if era_gui is open.
+    f = findobj('Tag','f');
+    if ~isempty(f)
+        close(f);
+    end
+    
     if status == 0 
         depcheck.CLT = 1;
         fprintf('XCode Command Line Tools succesfully installed\n');
@@ -209,6 +253,7 @@ if depcheck.cmdstan == 0 && OSver ~= 10
     
     %update depcheck and display status
     depcheck.cmdstan = 1;
+    fprintf('CmdStan succesfully installed\n');
     era_guistatus(depcheck);
     
 elseif depcheck.cmdstan == 0 && OSver == 10
@@ -234,6 +279,7 @@ elseif depcheck.cmdstan == 0 && OSver == 10
     
     %update depcheck and display status
     depcheck.cmdstan = 1;
+    fprintf('CmdStan succesfully installed\n');
     era_guistatus(depcheck);
 end
 
@@ -285,6 +331,7 @@ if depcheck.mpm == 0
     
     %change status of depcheck and display gui
     depcheck.mpm = 1;
+    fprintf('Matlab Process manager successfully installed\n');
     era_guistatus(depcheck);
 end
 
@@ -340,21 +387,26 @@ if depcheck.mstan == 0
     
     %update depcheck and display gui
     depcheck.mstan = 1;
+    fprintf('MatlabStan succesfully installed\n');
     era_guistatus(depcheck);
 end
 
 %add files to the Matlab path and save it
 addpath(genpath(wrkdir));
 savepath;
+fprintf('Directories added to Matlab path\n');
 
 %close gui
 era_instgui = findobj('Tag','era_instgui');
 
 if ~isempty(era_instgui)
-
+    
     close(era_instgui);
     
 end
+
+%go back to the starting directory
+cd(startdir);
 
 %rerun ERA Toolbox
 era_start;
