@@ -2,7 +2,7 @@ function era_start
 %
 %Initiate Matlab gui to use the ERP Reliability Analysis (ERA) toolbox
 %
-%version 0.4.0 - Last Updated 7/21/16
+%version 0.4.0 - Last Updated 8/6/16
 %
 
 %The ERA toolbox uses generalizability theory as a method for evaluating 
@@ -102,12 +102,11 @@ function era_start
 %7/21/16 PC
 % changes associated with adding a new data structure
 % change with setting version number
-
-%pull version for the ERA Toolbox
-eraver = era_defineversion;
-
-%Output info about ERA Toolbox
-fprintf('\n\n\nERP Reliability Analysis Toolbox Version %s\n\n',eraver);
+%
+%8/6/16 PC
+% ERA Toolbox directories automatically added to path
+% automatic installation function added
+% added gui to ask whether the dependents should be automatically installed
 
 %check whether dependencies are contained in the Matlab path
 %first look for ERA toolbox files
@@ -122,20 +121,18 @@ if exist('era_startproc.m','file') ~= 2 || ...
         exist('era_reruncheck.m','file') ~= 2 || ...
         exist('era_updatecheck.m','file') ~= 2 || ...
         exist('era_defaults.m','file') ~= 2
-
-    dlg = {'Warning: Scripts for using the ERA toolbox are not located';...
-        'in the Matlab path. Please include the folder containing the';...
-        'scripts for the ERA toolbox in your Matlab path.';...
-        'Please see UserManual.pdf for more information'};
     
-    for i = 1:length(dlg)
-        fprintf('%s\n',dlg{i});
-    end
-    fprintf('\n\n');
-    return;
+    %find where the era files are located and add the directory and
+    %sub-directories
+    eras_path = which('era_start');
+    udir = fileparts(eras_path);
+    %add files to the Matlab path and save it
+    addpath(genpath(udir));
+    savepath;
+    fprintf('Directories for ERA Toolbox files added to Matlab path\n');
     
 else
-    fprintf('\nERA Toolbox files found');
+    fprintf('ERA Toolbox files found\n');
 end
 
 %look for Stan dependents (the important files, assuming the rest are in
@@ -161,15 +158,21 @@ if exist('mcmc.m','file') ~= 2 || ...
         fprintf('%s\n',dlg{i});
     end
     fprintf('\n\n');
-    return;
+    era_ask2install;
 else
-    fprintf('\nCmdStan, MatlabProcessManager, and MatlabStan files found');
+    fprintf('CmdStan, MatlabProcessManager, and MatlabStan files found\n');
 end
+
+%pull version for the ERA Toolbox
+eraver = era_defineversion;
+
+%Output info about ERA Toolbox
+fprintf('\n\n\nERP Reliability Analysis Toolbox Version %s\n\n',eraver);
 
 %check whether running the newest release of the toolbox
 era_updatecheck(eraver);
 
-fprintf('\n\n');
+fprintf('\n');
 
 %load default preferences for processing and viewing data
 era_prefs = era_defaults;
@@ -226,4 +229,67 @@ era_gui.Tag = 'era_gui';
 %display gui
 set(era_gui,'Visible','on');
 
+end
+
+function era_ask2install
+%gui to ask the user whether the ERA Toolbox dependents should be installed
+
+%define parameters for figure position
+figwidth = 400;
+figheight = 200;
+fsize = get(0,'DefaultTextFontSize');
+
+%define space between rows and first row location
+rowspace = 25;
+row = figheight - rowspace*2;
+
+%initialize gui
+era_gui= figure('unit','pix','Visible','off',...
+  'position',[400 400 figwidth figheight],...
+  'menub','no',...
+  'numbertitle','off',...
+  'resize','off');
+
+movegui(era_gui,'center');
+
+str = ['ERA Toolbox dependents were not located. Would you like'...
+    ' to install the dependents?'];
+
+%Write text
+uicontrol(era_gui,'Style','text','fontsize',fsize+2,...
+    'HorizontalAlignment','center',...
+    'String',str,...
+    'Position',[0 row figwidth 40]);          
+
+%Create a button that will take install the dependents
+uicontrol(era_gui,'Style','push','fontsize',fsize,...
+    'HorizontalAlignment','center',...
+    'String','<html><center>Install <br>Dependents',...
+    'Position', [figwidth/8 25 figwidth/3 75],...
+    'Callback',{@installdeps}); 
+
+%Create button that quit
+uicontrol(era_gui,'Style','push','fontsize',fsize,...
+    'HorizontalAlignment','center',...
+    'String','Exit',...
+    'Position', [5*figwidth/8 25 figwidth/3 75],...
+    'Callback',{@giveup}); 
+
+%tag gui
+era_gui.Tag = 'era_gui';
+
+%display gui
+set(era_gui,'Visible','on');
+
+end
+
+function giveup(varargin)
+%if the user does not want the dependents installed, then close everything
+close all;
+end
+
+function installdeps(varargin)
+%if the user wants the dependents installed, begin the installation
+close all;
+era_installdependents;
 end

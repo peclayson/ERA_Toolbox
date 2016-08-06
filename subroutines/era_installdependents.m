@@ -194,8 +194,7 @@ if depcheck.CLT == 0
         'String','Please indicate when the XCode installation is complete',...
         'Position',[0 100 figwidth figheight/3]);          
 
-    %Create a button that will take the user to the gui for setting the inputs
-    %to process data
+    %Create a button that will resume installations
     uicontrol(f,'Style','push','fontsize',fsize,...
         'HorizontalAlignment','center',...
         'String','<html><center>Installation <br>Complete',...
@@ -394,7 +393,7 @@ end
 %add files to the Matlab path and save it
 addpath(genpath(wrkdir));
 savepath;
-fprintf('Directories added to Matlab path\n');
+fprintf('Directories for dependents added to Matlab path\n');
 
 %close gui
 era_instgui = findobj('Tag','era_instgui');
