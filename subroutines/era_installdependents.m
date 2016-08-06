@@ -7,6 +7,9 @@ function era_installdependents
 %
 %Required Inputs:
 % No inputs are required.
+% Some features only work for certain versions of Mac or Windows. When
+%  necessary, the user will be given instructions re: installation of
+%  various pieces by being directed to the User Manual.
 %
 %Output:
 % No data are outputted to the Matlab command window. However, software
@@ -50,7 +53,7 @@ if sys == 1 %mac
     parseout = strsplit(cmdout);
     parseOS = strsplit(parseout{6},'.');
     if str2double(parseOS{1}) == 10
-        if str2double(parseOS{2}) == 11
+        if str2double(parseOS{2}) >= 9
             [~, savepath] = uiputfile('ERADependents',...
             'Where would you like to save the directory for the dependents?');
         
@@ -67,7 +70,7 @@ if sys == 1 %mac
             
         else
             error('mac:oldver',... %Error code and associated error
-            strcat('WARNING: Automatic installation only works for Mac OS El Capitan \n\n',...
+            strcat('WARNING: Automatic installation only works for OSX 10.9 and newer \n\n',...
             'For installation instructions, see Appendix A of the User Manual'));
         end
     else
