@@ -41,6 +41,7 @@ function era_installdependents
 %  Yosemite. Add check to install the .zip if using OS X Yosemite. 
 % added gui for user to input when XCode installation is complete
 % added more cw updates
+% added capability to install dependents on Windows 7
 
 %determine the version of OS that is being used
 if ismac
@@ -81,9 +82,24 @@ if sys == 1 %mac
     else
         error('mac:oldver',... %Error code and associated error
         strcat('WARNING: Automatic installation only works for Mac OS 10.9 or newer \n\n',...
-        'For installation instructions, see Appendix A of the User Manual'));
+        'For installation instructions, see Appendix A of the User Manual\n'));
     end
-end 
+elseif sys == 2 %windows
+    fprintf('Warning: automatic installation has only been tested using Windows 7\n');
+    [~, savepath] = uiputfile('ERADependents',...
+    'Where would you like to save the directory for the dependents?');
+
+    %if the user does not select a file, then take the user back to era_start    
+    if savepath == 0 
+        errordlg('Location not selected','File Error');
+        era_start;
+        return;
+    end
+
+    wrkdir = fullfile(savepath,'ERADependents');
+    
+    era_windepsinstall(wrkdir);
+end
         
 end
 
@@ -116,7 +132,7 @@ if exist('makefile','file') ~= 2 || ...
     
     %CmdStan has not been built
     depcheck.cmdbuild = 0;
-    fprintf('CmdStan needs to be install and built\n');
+    fprintf('CmdStan needs to be installed and built\n');
 else
     
     %CmdStan has been installed
@@ -286,6 +302,10 @@ end
 if depcheck.cmdbuild == 0
     %in case cmdstan wasn't installed in this run, find the location of the
     %cmdstan dir
+    if ~exist('cmdstandir','var')
+        p = which('runCmdStanTests.py');
+        cmdstandir = fileparts(p);
+    end
     if isempty(cmdstandir)
         p = which('runCmdStanTests.py');
         cmdstandir = fileparts(p);
@@ -344,6 +364,264 @@ if depcheck.mstan == 0
     
     %unpack tarball
     untar(fileout,wrkdir);
+    
+    %get dir of MatlabStan so stan_home can be edited
+    ls = dir(wrkdir);
+    ind = find(strncmp({ls.name}, 'MatlabStan', 10)==1);
+    msdir = fullfile(wrkdir,ls(ind).name);
+    
+    %delete the odd file that can be created some times
+    if exist(fullfile(wrkdir,'pax_global_header'),'file') ~= 0
+        delete(fullfile(wrkdir,'pax_global_header'));
+    end
+    
+    %in case cmdstan wasn't installed in this run, find the location of the
+    %cmdstan dir
+    if isempty(cmdstandir)
+        p = which('runCmdStanTests.py');
+        cmdstandir = fileparts(p);
+    end
+    cd(cmdstandir);
+
+    %open the stan_home.m file and change the path to cmdstan
+    fid=fopen(fullfile(msdir,'+mstan','stan_home.m'));
+    storefile = {};
+    while 1
+        tline = fgetl(fid);
+        storefile{end+1} = tline;
+        if ~ischar(tline), break, end
+    end
+    fclose(fid);
+
+    storefile{8} = ['d = ''' cmdstandir ''';'];
+
+    %overwrite the existing stan_home.m file with the new information
+    fid = fopen(fullfile(msdir,'+mstan','stan_home.m'),'w');
+    for i=1:(length(storefile)-1)
+        storefile{i} = strrep(storefile{i},'%','%%');
+        storefile{i} = strrep(storefile{i},'\','\\');
+        fprintf(fid,[storefile{i} '\n']);
+    end
+    fclose(fid);
+    
+    %update depcheck and display gui
+    depcheck.mstan = 1;
+    fprintf('MatlabStan succesfully installed\n');
+    era_guistatus(depcheck);
+end
+
+%add files to the Matlab path and save it
+addpath(genpath(wrkdir));
+savepath;
+fprintf('Directories for dependents added to Matlab path\n');
+
+%close gui
+era_instgui = findobj('Tag','era_instgui');
+
+if ~isempty(era_instgui)
+    
+    close(era_instgui);
+    
+end
+
+%go back to the starting directory
+cd(startdir);
+
+%rerun ERA Toolbox
+era_start;
+
+end
+
+
+function era_windepsinstall(wrkdir)
+%install dependents on Windows Operating System
+
+%get the current directory so it can be reverted to after installation
+startdir = cd;
+
+%create a structure array that will store which dependents are not properly
+%installed
+%0 - not installed, 1 - installed
+depcheck = struct;
+
+%first check whether g++ and make compilers exist
+[~,cmdout] = system('make -v');
+makematch = strncmp(cmdout,'GNU Make version',16);
+
+if makematch == 1
+    depcheck.CLT = 1;
+    fprintf('Command line tools installed\n');
+else
+    error('Rtools:notinstaled',... %Error code and associated error
+        strcat('WARNING: Command line tools not installed\n\n',...
+        'Automatic installation of command line tools not supported for Windows\n',...
+        'See User Manual for instructions on how the Rtools package\n',...
+        'Rtools contains the necessary command line tools needed for CmdStan\n',...
+        'Sorry\n\n')); 
+end
+
+%check for cmdstan
+if exist('makefile','file') ~= 2 || ...
+    exist('test-all.sh','file') ~= 2 || ...
+    exist('runCmdStanTests.py','file') ~= 2 
+   
+    %CmdStan has not been installed
+    depcheck.cmdstan = 0;
+    
+    %CmdStan has not been built
+    depcheck.cmdbuild = 0;
+    fprintf('CmdStan needs to be installed and built\n');
+else
+    
+    %CmdStan has been installed
+    depcheck.cmdstan = 1;
+    fprintf('CmdStan is installed\n');
+    
+    %check whether CmdStan has been properly built
+    if exist('stansummary.exe','file') ~= 2 || ...
+        exist('stanc.exe','file') ~= 2
+   
+        %CmdStan has not been built
+        depcheck.cmdbuild = 0;
+        fprintf('CmdStan has not been properly built\n');
+    else
+        %CmdStan has been built
+        depcheck.cmdbuild = 1;
+        fprintf('CmdStan has been properly built\n');
+    end
+end
+
+%check for MatlabProcessManager (MPM)
+if exist('processManager.m','file') ~= 2 || ...
+    exist('processState.m','file') ~= 2 
+    
+    %MPM not installed
+    depcheck.mpm = 0;
+    fprintf('MatlabProcessManager is not installed\n');
+else
+    %MPM is installed
+    depcheck.mpm = 1;
+    fprintf('MatlabProcessManager is installed\n');
+end
+
+%check for MatlabStan
+if exist('StanFit.m','file') ~= 2 || ...
+    exist('StanModel.m','file') ~= 2 
+    
+    %mstan not installed
+    depcheck.mstan = 0;
+    fprintf('MatlabStan is not installed\n');
+else
+    %mstan is installed
+    depcheck.mstan = 1;
+    fprintf('MatlabStan is installed\n');
+end
+
+%pullup a gui to display the stauts of the ERA toolbox dependents
+era_guistatus(depcheck);
+
+%check whether the directory to save the files exists, if not create it
+if exist(wrkdir,'file') ~=7
+    %make the directory where the files will be saved
+    mkdir(wrkdir);
+end
+
+%check whether cmdstan needs to be installed
+if depcheck.cmdstan == 0 
+
+    %url for cmdstan tarball
+    loc = 'https://github.com/stan-dev/cmdstan/releases/download/v2.11.0/cmdstan-2.11.0.zip';
+
+    %change the working directory to where the files will be installed
+    cd(wrkdir);
+
+    %download the cmdstan tarball
+    fileout = websave('cmdstan.zip',loc);
+
+    %unpack the tarball
+    unzip(fileout,wrkdir);
+
+    %delete the tarball after it's been unpacked
+    delete(fullfile(wrkdir,'cmdstan.zip'));
+
+    %now find the path to the new cmdstan directory
+    ls = dir(wrkdir);
+    ind = find(strncmp({ls.name}, 'cmdstan', 7)==1);
+    cmdstandir = fullfile(wrkdir,ls(ind).name);
+    
+    %update depcheck and display status
+    depcheck.cmdstan = 1;
+    fprintf('CmdStan succesfully installed\n');
+    era_guistatus(depcheck);
+    
+end
+
+%check whether CmdStan needs to be built
+if depcheck.cmdbuild == 0
+    %in case cmdstan wasn't installed in this run, find the location of the
+    %cmdstan dir
+    if ~exist('cmdstandir','var')
+        p = which('runCmdStanTests.py');
+        cmdstandir = fileparts(p);
+    end
+    if isempty(cmdstandir)
+        p = which('runCmdStanTests.py');
+        cmdstandir = fileparts(p);
+    end
+    
+    %change the cd to where cmdstan is installed so it can be built
+    cd(cmdstandir);
+    
+    %find out how many cores are available for building stan
+    ncores = feature('numCores');
+    if ncores > 2
+        ncores = ncores - 1;
+    end
+
+    %execute command to build stan
+    buildcmdstan = strcat('make build -j',num2str(ncores));
+    status = system(buildcmdstan);
+
+    %update depcheck and display status
+    if status == 0
+        depcheck.cmdbuild = 1;
+        fprintf('CmdStan successfully built\n');
+        era_guistatus(depcheck);
+    else
+        error('CmdStan:notbuilt',... %Error code and associated error
+            strcat('WARNING: Automatic build of CmdStan failed \n\n',...
+            'Please install CmdStan manually\n',...
+            'For installation instructions, see Appendix A of the User Manual'));
+    end
+end
+
+%check whether the Matlab Process Manager needs to be installed
+if depcheck.mpm == 0
+    %url for Matlab Process Manager
+    loc = 'https://github.com/brian-lau/MatlabProcessManager/archive/v0.4.2.zip';
+    
+    %download tarball
+    fileout = websave('mpm.zip',loc);
+    
+    %unpack tarball
+    unzip(fileout,wrkdir);
+    
+    %change status of depcheck and display gui
+    depcheck.mpm = 1;
+    fprintf('Matlab Process manager successfully installed\n');
+    era_guistatus(depcheck);
+end
+
+%check whether MatlabStan is installed
+if depcheck.mstan == 0
+    %url for MatlabStan
+    loc = 'https://github.com/brian-lau/MatlabStan/archive/v2.7.0.0.zip';
+    
+    %download tarball
+    fileout = websave('ms.tar.gz',loc);
+    
+    %unpack tarball
+    unzip(fileout,wrkdir);
     
     %get dir of MatlabStan so stan_home can be edited
     ls = dir(wrkdir);
