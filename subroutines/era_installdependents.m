@@ -35,6 +35,10 @@ function era_installdependents
 %History 
 % by Peter Clayson (7/31/16)
 % peter.clayson@gmail.com
+%
+%8/6/16 PC
+% for some reason the untar doesn't properly unpack on OS X Yosemite. Add
+%  check to install the .zip if using OS X Yosemite. 
 
 %determine the version of OS that is being used
 if ismac
@@ -65,8 +69,8 @@ if sys == 1 %mac
             end
             
             wrkdir = fullfile(savepath,'ERADependents');
-            
-            era_macdepsinstall(wrkdir);
+            OSver = parseOS{2};
+            era_macdepsinstall(wrkdir,OSver);
             
         else
             error('mac:oldver',... %Error code and associated error
@@ -75,7 +79,7 @@ if sys == 1 %mac
         end
     else
         error('mac:oldver',... %Error code and associated error
-        strcat('WARNING: Automatic installation only works for Mac OS El Capitan \n\n',...
+        strcat('WARNING: Automatic installation only works for Mac OS 10.9 or newer \n\n',...
         'For installation instructions, see Appendix A of the User Manual'));
     end
 end 
@@ -182,7 +186,7 @@ if depcheck.CLT == 0
 end
 
 %check whether cmdstan needs to be installed
-if depcheck.cmdstan == 0
+if depcheck.cmdstan == 0 && OSver ~= 9
 
     %url for cmdstan tarball
     loc = 'https://github.com/stan-dev/cmdstan/releases/download/v2.11.0/cmdstan-2.11.0.tar.gz';
@@ -198,6 +202,31 @@ if depcheck.cmdstan == 0
 
     %delete the tarball after it's been unpacked
     delete(fullfile(wrkdir,'cmdstan.tar.gz'));
+
+    %now find the path to the new cmdstan directory
+    ls = dir(wrkdir);
+    ind = find(strncmp({ls.name}, 'cmdstan', 7)==1);
+    cmdstandir = fullfile(wrkdir,ls(ind).name);
+    
+    %update depcheck and display status
+    depcheck.cmdstan = 1;
+    era_guistatus(depcheck);
+    
+elseif depcheck.cmdstan == 0 && OSver == 9
+    %url for cmdstan tarball
+    loc = 'https://github.com/stan-dev/cmdstan/releases/download/v2.11.0/cmdstan-2.11.0.zip';
+
+    %change the working directory to where the files will be installed
+    cd(wrkdir);
+
+    %download the cmdstan tarball
+    fileout = websave('cmdstan.zip',loc);
+
+    %unpack the tarball
+    unzip(fileout,wrkdir);
+
+    %delete the tarball after it's been unpacked
+    delete(fullfile(wrkdir,'cmdstan.zip'));
 
     %now find the path to the new cmdstan directory
     ls = dir(wrkdir);
