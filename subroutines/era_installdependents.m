@@ -3,7 +3,7 @@ function era_installdependents
 %
 %era_installdependents
 %
-%Last Updated 7/31/16
+%Last Updated 8/6/16
 %
 %Required Inputs:
 % No inputs are required.
@@ -37,8 +37,8 @@ function era_installdependents
 % peter.clayson@gmail.com
 %
 %8/6/16 PC
-% for some reason the untar doesn't properly unpack on OS X Yosemite. Add
-%  check to install the .zip if using OS X Yosemite. 
+% for some reason the untar doesn't properly unpack cmdstan on OS X 
+%  Yosemite. Add check to install the .zip if using OS X Yosemite. 
 
 %determine the version of OS that is being used
 if ismac
@@ -69,8 +69,7 @@ if sys == 1 %mac
             end
             
             wrkdir = fullfile(savepath,'ERADependents');
-            OSver = parseOS{2};
-            era_macdepsinstall(wrkdir,OSver);
+            era_macdepsinstall(wrkdir,str2double(parseOS{2}));
             
         else
             error('mac:oldver',... %Error code and associated error
@@ -86,7 +85,7 @@ end
         
 end
 
-function era_macdepsinstall(wrkdir)
+function era_macdepsinstall(wrkdir,OSver)
 
 %create a structure array that will store which dependents are not properly
 %installed
@@ -186,7 +185,7 @@ if depcheck.CLT == 0
 end
 
 %check whether cmdstan needs to be installed
-if depcheck.cmdstan == 0 && OSver ~= 9
+if depcheck.cmdstan == 0 && OSver ~= 10
 
     %url for cmdstan tarball
     loc = 'https://github.com/stan-dev/cmdstan/releases/download/v2.11.0/cmdstan-2.11.0.tar.gz';
@@ -212,7 +211,7 @@ if depcheck.cmdstan == 0 && OSver ~= 9
     depcheck.cmdstan = 1;
     era_guistatus(depcheck);
     
-elseif depcheck.cmdstan == 0 && OSver == 9
+elseif depcheck.cmdstan == 0 && OSver == 10
     %url for cmdstan tarball
     loc = 'https://github.com/stan-dev/cmdstan/releases/download/v2.11.0/cmdstan-2.11.0.zip';
 
