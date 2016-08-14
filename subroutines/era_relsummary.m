@@ -5,7 +5,7 @@ function [era_data,relerr] = era_relsummary(varargin)
 %era_relsummary('era_data',era_data,'depcutoff',depcutoff,...
 %   'meascutoff',meascutoff,'depcentmeas',depcentmeas)
 %
-%Last Modified 7/24/16
+%Last Modified 8/14/16
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -53,6 +53,10 @@ function [era_data,relerr] = era_relsummary(varargin)
 %7/30/16 PC
 % bug fix: crashing when running analysis 1. Data were not being properly
 %  indexed.
+%
+%8/14/16 PC
+% bug fix: data table not being properly indexed when only analyzing one
+%  event. 
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -559,7 +563,7 @@ switch analysis
             if trlcutoff == -1
                 
                 %store all the ids as bad
-                datatrls = REL.data;
+                datatrls = REL.data{1};
                 ind = strcmp(datatrls.group,gnames{gloc});
                 datatrls = datatrls(ind,:);
 
@@ -574,7 +578,7 @@ switch analysis
                 
                 %store the ids for participants with enough trials as good,
                 %and the ids for participants with too few trials as bad
-                datatrls = REL.data;
+                datatrls = REL.data{1};
                 ind = strcmp(datatrls.group,gnames{gloc});
                 datatrls = datatrls(ind,:);
 
@@ -611,7 +615,7 @@ switch analysis
         %calculate the dependability for the overall data for each group
         for gloc=1:ngroups
 
-            datatable = REL.data;
+            datatable = REL.data{1};
             ind = strcmp(datatable.group,gnames{gloc});
             datasubset = datatable(ind,:);
             
