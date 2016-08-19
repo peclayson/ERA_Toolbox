@@ -5,7 +5,7 @@ function [era_data,relerr] = era_relsummary(varargin)
 %era_relsummary('era_data',era_data,'depcutoff',depcutoff,...
 %   'meascutoff',meascutoff,'depcentmeas',depcentmeas)
 %
-%Last Modified 8/14/16
+%Last Modified 8/18/16
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -56,7 +56,8 @@ function [era_data,relerr] = era_relsummary(varargin)
 %
 %8/14/16 PC
 % bug fix: data table not being properly indexed when only analyzing one
-%  event. 
+%  event 
+
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -397,7 +398,7 @@ switch analysis
         elseif ~isempty(trlcutoff)
             
             %Get trial information for those that meet cutoff
-            datatrls = REL.data{1};
+            datatrls = REL.data;
 
             trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
 
@@ -416,7 +417,7 @@ switch analysis
             relsummary.group(gloc).badids = ...
                 relsummary.group(gloc).event(eloc).eventbadids;
 
-            datatable = REL.data{1};
+            datatable = REL.data;
             
             goodids = table(relsummary.group(gloc).goodids);
 
