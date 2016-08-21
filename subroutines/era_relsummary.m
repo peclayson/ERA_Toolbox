@@ -57,7 +57,9 @@ function [era_data,relerr] = era_relsummary(varargin)
 %8/14/16 PC
 % bug fix: data table not being properly indexed when only analyzing one
 %  event 
-
+%8/21/16 PC
+% increased trial estimation for cutoffs drom max number of trials +100 to
+%  4+1000
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -299,7 +301,7 @@ switch analysis
         end
         
         %compute dependabiltiy
-        ntrials = max(trltable.GroupCount(:)) + 100;
+        ntrials = max(trltable.GroupCount(:)) + 1000;
         [llrel,mrel,ulrel] = era_dep(...
                     'bp',data.g(gloc).e(eloc).sig_u.raw,...
                     'wp',data.g(gloc).e(eloc).sig_e.raw,...
@@ -521,7 +523,7 @@ switch analysis
         
 
             %compute dependability
-            ntrials = max(trltable.GroupCount(:)) + 100;
+            ntrials = max(trltable.GroupCount(:)) + 1000;
             [llrel,mrel,ulrel] = era_dep(...
                     'bp',data.g(gloc).e(eloc).sig_u.raw,...
                     'wp',data.g(gloc).e(eloc).sig_e.raw,...
@@ -727,7 +729,7 @@ switch analysis
                 'GroupingVariables',{'id'});
             
             %compute dependability
-            ntrials = max(trltable.GroupCount(:)) + 100;
+            ntrials = max(trltable.GroupCount(:)) + 1000;
             [llrel,mrel,ulrel] = era_dep(...
                     'bp',data.g(gloc).e(eloc).sig_u.raw,...
                     'wp',data.g(gloc).e(eloc).sig_e.raw,...
@@ -930,7 +932,7 @@ switch analysis
                     'GroupingVariables',{'id'});
 
                 %compute dependability
-                ntrials = max(trltable.GroupCount(:)) + 100;
+                ntrials = max(trltable.GroupCount(:)) + 1000;
                 [llrel,mrel,ulrel] = era_dep(...
                     'bp',data.g(gloc).e(eloc).sig_u.raw,...
                     'wp',data.g(gloc).e(eloc).sig_e.raw,...
