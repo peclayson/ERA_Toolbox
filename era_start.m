@@ -107,6 +107,9 @@ function era_start
 % ERA Toolbox directories automatically added to path
 % automatic installation function added
 % added gui to ask whether the dependents should be automatically installed
+%
+%8/21/16 PC
+% added check to make sure subroutines/plotting is on path
 
 %check whether dependencies are contained in the Matlab path
 %first look for ERA toolbox files
@@ -120,7 +123,9 @@ if exist('era_startproc.m','file') ~= 2 || ...
         exist('era_readtable.m','file') ~= 2 || ...
         exist('era_reruncheck.m','file') ~= 2 || ...
         exist('era_updatecheck.m','file') ~= 2 || ...
-        exist('era_defaults.m','file') ~= 2
+        exist('era_defaults.m','file') ~= 2 || ...
+        exist('era_depvtrialsplot.m','file') ~= 2 || ...
+        exist('era_ptintervalplot.m','file') ~= 2
     
     %find where the era files are located and add the directory and
     %sub-directories
