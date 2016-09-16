@@ -6,7 +6,7 @@ function depplot = era_depvtrialsplot(varargin)
 %depplot = era_depvtrialsplot('era_data',era_data,'trials',[1 50],...
 %   'depline',plotdepline,'depcutoff',depcutoff);
 %
-%Last Modified 7/24/16
+%Last Modified 9/16/16
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -50,7 +50,9 @@ function depplot = era_depvtrialsplot(varargin)
 % by Peter Clayson (7/24/16)
 % peter.clayson@gmail.com
 %
-
+%
+%9/16/16 PC
+% remove box around legend
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -255,6 +257,8 @@ for eloc=1:nevents
         set(leg,'FontSize',fsize);
     end
 
+    legend('boxoff');
+    
 end
 
 

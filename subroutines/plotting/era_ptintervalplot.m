@@ -4,7 +4,7 @@ function ptintplot = era_ptintervalplot(varargin)
 %
 
 %
-%Last Modified 7/24/16
+%Last Modified 9/16/16
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -42,6 +42,8 @@ function ptintplot = era_ptintervalplot(varargin)
 % by Peter Clayson (7/24/16)
 % peter.clayson@gmail.com
 %
+%9/16/16 PC
+% removed box around legend
 
 
 %somersault through inputs
@@ -253,11 +255,15 @@ ptintplot(1).Parent.XTick = 1:nevents;
 ptintplot(1).Parent.XTickLabel = enames;
 ptintplot(1).Parent.FontSize = fsize;
 
+
+
 %add names to legend
 if ~(g > 1 && e == 1)
     pl = legend(ptintplot);
     pl.String = gnames;
 end
+
+legend('boxoff');
 
 %change axis location and rotate plot
 ptintplot(1).Parent.YAxisLocation = 'right';
