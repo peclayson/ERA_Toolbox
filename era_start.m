@@ -2,7 +2,7 @@ function era_start
 %
 %Initiate Matlab gui to use the ERP Reliability Analysis (ERA) toolbox
 %
-%version 0.4.0 - Last Updated 8/6/16
+%version 0.4.1 - Last Updated 9/18/16
 %
 
 %The ERA toolbox uses generalizability theory as a method for evaluating 
@@ -29,9 +29,10 @@ function era_start
 %The notion of reporting estimates of reliability in all ERP studies and 
 % this toolbox are specifically discussed in 
 %
-% Clayson, P. E., & Miller, G. A. (under review). Psycometric
+% Clayson, P. E., & Miller, G. A. (in press). Psycometric
 % considerations in the measurement of event-related brain potentials:
-% Guidelines for measurement and reporting
+% Guidelines for measurement and reporting. International Journal of
+% Psychophysiology.
 %
 %
 %Input
@@ -110,6 +111,9 @@ function era_start
 %
 %8/21/16 PC
 % added check to make sure subroutines/plotting is on path
+%
+%9/18/16 PC
+% added return when checking for installation so function does not continue
 
 %check whether dependencies are contained in the Matlab path
 %first look for ERA toolbox files
@@ -164,6 +168,7 @@ if exist('mcmc.m','file') ~= 2 || ...
     end
     fprintf('\n\n');
     era_ask2install;
+    return;
 else
     fprintf('CmdStan, MatlabProcessManager, and MatlabStan files found\n');
 end
