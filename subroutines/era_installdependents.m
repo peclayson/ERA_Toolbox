@@ -533,7 +533,7 @@ end
 if depcheck.cmdstan == 0 
 
     %url for cmdstan tarball
-    loc = 'https://github.com/stan-dev/cmdstan/releases/download/v2.11.0/cmdstan-2.11.0.zip';
+    loc = 'https://github.com/stan-dev/cmdstan/releases/download/v2.12.0/cmdstan-2.12.0.zip';
 
     %change the working directory to where the files will be installed
     cd(wrkdir);
