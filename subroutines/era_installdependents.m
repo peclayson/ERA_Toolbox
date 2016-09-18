@@ -3,7 +3,7 @@ function era_installdependents
 %
 %era_installdependents
 %
-%Last Updated 8/6/16
+%Last Updated 9/18/16
 %
 %Required Inputs:
 % No inputs are required.
@@ -42,6 +42,9 @@ function era_installdependents
 % added gui for user to input when XCode installation is complete
 % added more cw updates
 % added capability to install dependents on Windows 7
+%
+%9/18/16 Pc
+% added paths to updated cmdstan
 
 %determine the version of OS that is being used
 if ismac
@@ -247,7 +250,7 @@ end
 if depcheck.cmdstan == 0 && OSver ~= 10
 
     %url for cmdstan tarball
-    loc = 'https://github.com/stan-dev/cmdstan/releases/download/v2.11.0/cmdstan-2.11.0.tar.gz';
+    loc = 'https://github.com/stan-dev/cmdstan/releases/download/v2.12.0/cmdstan-2.12.0.tar.gz';
 
     %change the working directory to where the files will be installed
     cd(wrkdir);
@@ -273,7 +276,7 @@ if depcheck.cmdstan == 0 && OSver ~= 10
     
 elseif depcheck.cmdstan == 0 && OSver == 10
     %url for cmdstan tarball
-    loc = 'https://github.com/stan-dev/cmdstan/releases/download/v2.11.0/cmdstan-2.11.0.zip';
+    loc = 'https://github.com/stan-dev/cmdstan/releases/download/v2.12.0/cmdstan-2.12.0.zip';
 
     %change the working directory to where the files will be installed
     cd(wrkdir);
