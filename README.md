@@ -10,9 +10,9 @@ See the [User Manual](documentation/UserManual.pdf) or [wiki](https://github.com
 
 &nbsp; 
 
-Clayson, P. E. (2016). ERP Reliability Analysis Toolbox [Computer software]. Retrieved from https://github.com/peclayson/ERA_Toolbox. doi: 10.5281/zenodo.50591
+Clayson, P. E., & Miller, G. A. (under review). ERP Reliability Analysis (ERA) Toolbox: An open-source toolbox for analyzing the reliability of event-related brain potentials.
 
-[![DOI](https://zenodo.org/badge/21655/peclayson/ERA_Toolbox.svg)](https://zenodo.org/badge/latestdoi/21655/peclayson/ERA_Toolbox)
+&nbsp;
 
 ***
 
