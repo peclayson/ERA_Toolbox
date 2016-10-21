@@ -10,7 +10,7 @@ See the [User Manual](documentation/UserManual.pdf) or [wiki](https://github.com
 
 &nbsp; 
 
-Clayson, P. E., & Miller, G. A. (in press). [ERP Reliability Analysis (ERA) Toolbox: An open-source toolbox for analyzing the reliability of event-related brain potentials](http://www.sciencedirect.com/science/article/pii/S016787601630736X). doi: 10.1016/j.ijpsycho.2016.10.012
+Clayson, P. E., & Miller, G. A. (in press). [ERP Reliability Analysis (ERA) Toolbox: An open-source toolbox for analyzing the reliability of event-related brain potentials](http://www.sciencedirect.com/science/article/pii/S016787601630736X). _International Journal of Psychophysiology_. doi: 10.1016/j.ijpsycho.2016.10.012
 
 &nbsp;
 
