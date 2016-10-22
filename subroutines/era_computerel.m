@@ -3,7 +3,7 @@ function RELout = era_computerel(varargin)
 %
 %era_computerel('data',era_datatable,'chains',3,'iter',1000)
 %
-%Lasted Updated 4/27/16
+%Lasted Updated 10/22/16
 %
 %Required Inputs:
 % data - data table outputted from the era_loadfile script (see era_loadfile
@@ -86,6 +86,9 @@ function RELout = era_computerel(varargin)
 %7/30/16 PC
 % Removed some old code that is no longer used
 % Add the option to pop-up a gui while code is running
+%
+%10/22/16 PC
+% Vectorized code to improve speed
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -302,7 +305,8 @@ switch analysis
         REL.groups = 'none';
         REL.events = 'none';
         
-        %create cmdstand syntax
+
+        %create cmdstan syntax
         stan_in = {
           'data {' 
           '  int<lower=0> NOBS; //number of obs'
@@ -322,9 +326,7 @@ switch analysis
           '}'
           'model {'
           '  u_raw ~ normal(0,1);'
-          '  for (i in 1:NOBS) {'
-          '    meas[i] ~ normal(u[id[i]], sig_e);'
-          '  }'
+          '    meas ~ normal(u[id], sig_e);'
           '  '
           '  mu ~ normal(0,100);'
           '  sig_u ~ cauchy(0,40);'
@@ -483,11 +485,8 @@ switch analysis
             stan_in{end+1,1} = ...
                 sprintf('  u_raw_G%d ~ normal(0,1);',i);
             stan_in{end+1,1} = ...
-                sprintf('  for (i in 1:NG%d) {;',i);
-            stan_in{end+1,1} = ...
-                sprintf('    meas_G%d[i] ~ normal(u_G%d[id_G%d[i]], sig_e_G%d);',...
+                sprintf('    meas_G%d ~ normal(u_G%d[id_G%d], sig_e_G%d);',...
                 i,i,i,i);
-            stan_in{end+1,1} = '  }';
         end
 
         stan_in{end+1,1} = '  ';
@@ -722,11 +721,8 @@ switch analysis
             stan_in{end+1,1} = ...
                 sprintf('  u_raw_E%d ~ normal(0,1);',i);
             stan_in{end+1,1} = ...
-                sprintf('  for (i in 1:NE%d) {;',i);
-            stan_in{end+1,1} = ...
-                sprintf('    meas_E%d[i] ~ normal(u_E%d[id_E%d[i]], sig_e_E%d);',...
+                sprintf('    meas_E%d ~ normal(u_E%d[id_E%d], sig_e_E%d);',...
                 i,i,i,i);
-            stan_in{end+1,1} = '  }';
         end
 
         stan_in{end+1,1} = '  ';
@@ -1021,11 +1017,8 @@ switch analysis
                 stan_in{end+1,1} = ...
                     sprintf('  u_raw_G%d ~ normal(0,1);',i);
                 stan_in{end+1,1} = ...
-                    sprintf('  for (i in 1:NG%d) {;',i);
-                stan_in{end+1,1} = ...
-                    sprintf('    meas_G%d[i] ~ normal(u_G%d[id_G%d[i]], sig_e_G%d);',...
+                    sprintf('    meas_G%d ~ normal(u_G%d[id_G%d], sig_e_G%d);',...
                     i,i,i,i);
-                stan_in{end+1,1} = '  }';
             end
 
             stan_in{end+1,1} = '  ';
