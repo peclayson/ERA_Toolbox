@@ -3,7 +3,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 9/18/16
+%Last Updated 10/22/16
 %
 %
 %Input
@@ -51,6 +51,11 @@ function era_startproc(varargin)
 %
 %9/18/16 PC
 % Added some tooltips where helpful
+%
+%10/22/16 PC
+% Added an error catch when non-numeric data are specified in the
+%  Measurement column
+% Fixed error catch for specifying the same column in multiple variables
 %
 
 %check if era_gui is open. If the user executes era_startproc and skips
@@ -189,7 +194,7 @@ if ~isfield(era_prefs.proc,'inp')
         end
     end
 
-    %check for a group header
+    %check for a event type header
     poss = {'Event' 'Type'};
     for i = 1:length(era_data.proc.collist)
         ind = strcmpi(era_data.proc.collist(i),poss);
@@ -558,33 +563,10 @@ era_prefs.proc.inp.meas = choices(2);
 era_prefs.proc.inp.group = choices(3);
 era_prefs.proc.inp.event = choices(4);
 
-%check if there are duplicates (other than 'none') (e.g., group and event
-%do not refer to the same column in the data)
-[n, bin] = histc(choices, unique(choices));
-multiple = find(n > 1);
-ind = find(ismember(bin, multiple));
-if ~isempty(ind)
-    probcol = {};
-    for i = 1:length(ind)
-        if choices(ind(i)) ~= length(era_data.proc.collist)
-            probcol(end+1) = era_data.proc.collist(ind(i));
-        end
-    end
-    if ~isempty(probcol)
-        dlg = {'Duplicate variable names were not provided for ';...
-            probcol; ...
-            'When selecting column headers, please select unique names'};
-        errordlg(dlg, 'Unique variable names not provided');
-        
-        %take the user back to era_startproc_gui
-        era_startproc_gui(collist,filepart,pathpart,dataraw);
-    end
-end
-
 %parse inputs
 era_data.proc.idheader = char(era_data.proc.collist(choices(1)));
 era_data.proc.measheader = char(era_data.proc.collist(choices(2)));
-
+    
 if choices(3) ~= length(era_data.proc.collist)
     era_data.proc.groupheader = char(era_data.proc.collist(choices(3)));
 elseif choices(3) == length(era_data.proc.collist)
@@ -602,6 +584,47 @@ era_gui = findobj('Tag','era_gui');
 
 %close era_gui
 close(era_gui);
+
+%check if there are duplicates (other than 'none') (e.g., group and event
+%do not refer to the same column in the data)
+[n, bin] = histc(choices, unique(choices));
+multiple = find(n > 1);
+ind = find(ismember(bin, multiple));
+if ~isempty(ind)
+    probcol = {};
+    for i = 1:length(ind)
+        if choices(ind(i)) ~= length(era_data.proc.collist)
+            probcol(end+1) = era_data.proc.collist(ind(i));
+        end
+    end
+    if ~isempty(probcol)
+        dlg = {'Duplicate variable names were not provided for '};
+        for i = 1:length(probcol)
+            dlg{end+1} = probcol{i};
+        end
+        dlg{end+1} = 'When selecting column headers, please select unique names';
+        errordlg(dlg, 'Unique variable names not provided');
+        
+        %take the user back to era_startproc_gui
+        era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+        return;
+    end
+end
+
+%make sure the data in the column labeled measheader are actually numeric.
+%If the data are not numeric, give an error and take the user back to
+%era_startproc_gui
+if ~isnumeric(era_data.raw.data.(era_data.proc.measheader))
+    dlg = {'The data column specified by';...
+        era_data.proc.measheader; 'does not contain numeric data'; ...
+        'Only numeric data are allowed in the Measurement variable';...
+        'Please select a different column in the dataset for Measurement'};
+    errordlg(dlg, 'Measurement data not numeric');
+
+    %take the user back to era_startproc_gui
+    era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+    return;
+end
 
 %cmdstan cannot handle paths with white space. User will be required to
 %provide a path to working directory that does not include a space.
