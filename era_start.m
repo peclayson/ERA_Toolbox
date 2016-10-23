@@ -2,7 +2,7 @@ function era_start
 %
 %Initiate Matlab gui to use the ERP Reliability Analysis (ERA) toolbox
 %
-%version 0.4.2 - Last Updated 9/21/16
+%version 0.4.3 - Last Updated 10/23/16
 %
 
 %The ERA toolbox uses generalizability theory as a method for evaluating 
@@ -17,9 +17,9 @@ function era_start
 %A description of how to apply generalizability theory to ERP data can be
 % found in
 %
-% Clayson, P. E., & Miller, G. A. (under review). ERP Reliability Analysis
+% Clayson, P. E., & Miller, G. A. (in press). ERP Reliability Analysis
 % (ERA) Toolbox: An Open-Source Toolbox for Analyzing the Reliability of
-% Event-Related Potentials
+% Event-Related Potentials. International Journal of Psychophysiology.
 %
 % Baldwin, S. A., Larson, M. J., & Clayson, P. E. (2015). The dependability 
 % of electrophysiological measurements of performance monitoring in a 
