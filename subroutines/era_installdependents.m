@@ -3,7 +3,7 @@ function era_installdependents
 %
 %era_installdependents
 %
-%Last Updated 9/18/16
+%Last Updated 11/10/16
 %
 %Required Inputs:
 % No inputs are required.
@@ -43,8 +43,20 @@ function era_installdependents
 % added more cw updates
 % added capability to install dependents on Windows 7
 %
-%9/18/16 Pc
+%9/18/16 PC
 % added paths to updated cmdstan
+%
+%11/10/16 PC
+% added urls variable so I don't have to go through and manually update
+%  each url when there is an update
+
+urls = struct;
+urls.cmdstan_tar = 'https://github.com/stan-dev/cmdstan/releases/download/v2.12.0/cmdstan-2.12.0.tar.gz';
+urls.cmdstan_zip = 'https://github.com/stan-dev/cmdstan/releases/download/v2.12.0/cmdstan-2.12.0.zip';
+urls.ms_zip = 'https://github.com/brian-lau/MatlabStan/archive/v2.7.0.0.zip';
+urls.ms_tar = 'https://github.com/brian-lau/MatlabStan/archive/v2.7.0.0.tar.gz';
+urls.mpm_zip = 'https://github.com/brian-lau/MatlabProcessManager/archive/v0.4.2.zip';
+urls.mpm_tar = 'https://github.com/brian-lau/MatlabProcessManager/archive/v0.4.2.tar.gz';
 
 %determine the version of OS that is being used
 if ismac
@@ -75,7 +87,7 @@ if sys == 1 %mac
             end
             
             wrkdir = fullfile(savepath,'ERADependents');
-            era_macdepsinstall(wrkdir,str2double(parseOS{2}));
+            era_macdepsinstall(wrkdir,str2double(parseOS{2}),urls);
             
         else
             error('mac:oldver',... %Error code and associated error
@@ -101,12 +113,12 @@ elseif sys == 2 %windows
 
     wrkdir = fullfile(savepath,'ERADependents');
     
-    era_windepsinstall(wrkdir);
+    era_windepsinstall(wrkdir,urls);
 end
         
 end
 
-function era_macdepsinstall(wrkdir,OSver)
+function era_macdepsinstall(wrkdir,OSver,urls)
 
 %get the current directory so it can be reverted to after installation
 startdir = cd;
@@ -250,7 +262,7 @@ end
 if depcheck.cmdstan == 0 && OSver ~= 10
 
     %url for cmdstan tarball
-    loc = 'https://github.com/stan-dev/cmdstan/releases/download/v2.12.0/cmdstan-2.12.0.tar.gz';
+    loc = urls.cmdstan_tar;
 
     %change the working directory to where the files will be installed
     cd(wrkdir);
@@ -276,7 +288,7 @@ if depcheck.cmdstan == 0 && OSver ~= 10
     
 elseif depcheck.cmdstan == 0 && OSver == 10
     %url for cmdstan tarball
-    loc = 'https://github.com/stan-dev/cmdstan/releases/download/v2.12.0/cmdstan-2.12.0.zip';
+    loc = urls.cmdstan_zip;
 
     %change the working directory to where the files will be installed
     cd(wrkdir);
@@ -343,7 +355,7 @@ end
 %check whether the Matlab Process Manager needs to be installed
 if depcheck.mpm == 0
     %url for Matlab Process Manager
-    loc = 'https://github.com/brian-lau/MatlabProcessManager/archive/v0.4.2.tar.gz';
+    loc = urls.mpm_tar;
     
     %download tarball
     fileout = websave('mpm.tar.gz',loc);
@@ -360,7 +372,7 @@ end
 %check whether MatlabStan is installed
 if depcheck.mstan == 0
     %url for MatlabStan
-    loc = 'https://github.com/brian-lau/MatlabStan/archive/v2.7.0.0.tar.gz';
+    loc = urls.ms_tar;
     
     %download tarball
     fileout = websave('ms.tar.gz',loc);
@@ -436,7 +448,7 @@ era_start;
 end
 
 
-function era_windepsinstall(wrkdir)
+function era_windepsinstall(wrkdir,urls)
 %install dependents on Windows Operating System
 
 %get the current directory so it can be reverted to after installation
@@ -532,8 +544,8 @@ end
 %check whether cmdstan needs to be installed
 if depcheck.cmdstan == 0 
 
-    %url for cmdstan tarball
-    loc = 'https://github.com/stan-dev/cmdstan/releases/download/v2.12.0/cmdstan-2.12.0.zip';
+    %url for cmdstan zip
+    loc = urls.cmdstan_zip;
 
     %change the working directory to where the files will be installed
     cd(wrkdir);
@@ -601,7 +613,7 @@ end
 %check whether the Matlab Process Manager needs to be installed
 if depcheck.mpm == 0
     %url for Matlab Process Manager
-    loc = 'https://github.com/brian-lau/MatlabProcessManager/archive/v0.4.2.zip';
+    loc = urls.mpm_zip;
     
     %download tarball
     fileout = websave('mpm.zip',loc);
@@ -618,7 +630,7 @@ end
 %check whether MatlabStan is installed
 if depcheck.mstan == 0
     %url for MatlabStan
-    loc = 'https://github.com/brian-lau/MatlabStan/archive/v2.7.0.0.zip';
+    loc = urls.ms_zip;
     
     %download tarball
     fileout = websave('ms.tar.gz',loc);
