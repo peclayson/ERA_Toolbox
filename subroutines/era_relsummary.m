@@ -5,7 +5,7 @@ function [era_data,relerr] = era_relsummary(varargin)
 %era_relsummary('era_data',era_data,'depcutoff',depcutoff,...
 %   'meascutoff',meascutoff,'depcentmeas',depcentmeas)
 %
-%Last Modified 8/18/16
+%Last Modified 11/10/16
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -56,10 +56,19 @@ function [era_data,relerr] = era_relsummary(varargin)
 %
 %8/14/16 PC
 % bug fix: data table not being properly indexed when only analyzing one
-%  event 
+%  event
+%
 %8/21/16 PC
-% increased trial estimation for cutoffs drom max number of trials +100 to
-%  4+1000
+% increased trial estimation for cutoffs from max number of trials +100 to
+%  max+1000
+%
+%10/23/16 PC
+% error catch for when no goodids are left even after extrapolating +1000
+%  trials out
+%
+%11/10/16 pc
+% bug fix: depending on version of Matlab there was a problem indexing a
+%  table for the group analysis when there only two groups
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -157,6 +166,7 @@ data = struct;
 relerr = struct();
 relerr.trlcutoff = 0;
 relerr.trlmax = 0;
+relerr.nogooddata = 0;
 
 %check whether any groups exist
 if strcmpi(REL.groups,'none')
@@ -362,6 +372,16 @@ switch analysis
 
             badids = table(relsummary.group(gloc).badids);
 
+            %check whether there are not enough good data after applying
+            %reliability threshold and extrapolating
+            if isempty(badids)
+                dlg = {'Data do not reach reliability threshold after extrapolation';...
+                    'Set a lower reliability threshold'};
+                errordlg(dlg, 'Data do not meet reliability threshold');
+                relerr.nogooddata = 1;
+                return;
+            end
+            
             trlcdata = innerjoin(datatable, badids,...
                 'LeftKeys', 'id', 'RightKeys', 'Var1',...
                 'LeftVariables', {'id' 'meas'});
@@ -566,7 +586,11 @@ switch analysis
             if trlcutoff == -1
                 
                 %store all the ids as bad
-                datatrls = REL.data{1};
+                try
+                    datatrls = REL.data{1};
+                catch
+                    datatrls = REL.data;
+                end;
                 ind = strcmp(datatrls.group,gnames{gloc});
                 datatrls = datatrls(ind,:);
 
@@ -581,7 +605,12 @@ switch analysis
                 
                 %store the ids for participants with enough trials as good,
                 %and the ids for participants with too few trials as bad
-                datatrls = REL.data{1};
+                try
+                    datatrls = REL.data{1};
+                catch
+                    datatrls = REL.data;
+                end
+                
                 ind = strcmp(datatrls.group,gnames{gloc});
                 datatrls = datatrls(ind,:);
 
@@ -618,7 +647,11 @@ switch analysis
         %calculate the dependability for the overall data for each group
         for gloc=1:ngroups
 
-            datatable = REL.data{1};
+            try
+                datatable = REL.data{1};
+            catch
+                datatable = REL.data;
+            end
             ind = strcmp(datatable.group,gnames{gloc});
             datasubset = datatable(ind,:);
             
@@ -627,9 +660,19 @@ switch analysis
             if ~strcmp(relsummary.group(gloc).goodids,'none')
                 goodids = table(relsummary.group(gloc).goodids);
             elseif strcmp(relsummary.group(gloc).goodids,'none')
-                goodids = table(relsummary.group(gloc).goodids);
+                goodids = table(relsummary.group(gloc).badids);
             end
 
+            %check whether there are not enough good data after applying
+            %reliability threshold and extrapolating
+            if isempty(goodids)
+                dlg = {'Data do not reach reliability threshold after extrapolation';...
+                    'Set a lower reliability threshold'};
+                errordlg(dlg, 'Data do not meet reliability threshold');
+                relerr.nogooddata = 1;
+                return;
+            end
+            
             trlcdata = innerjoin(datasubset, goodids,...
                 'LeftKeys', 'id', 'RightKeys', 'Var1',...
                 'LeftVariables', {'id' 'meas'});
@@ -835,7 +878,17 @@ switch analysis
             else
                 goodids = table(relsummary.group(gloc).badids);
             end
-
+            
+            %check whether there are not enough good data after applying
+            %reliability threshold and extrapolating
+            if isempty(goodids)
+                dlg = {'Data do not reach reliability threshold after extrapolation';...
+                    'Set a lower reliability threshold'};
+                errordlg(dlg, 'Data do not meet reliability threshold');
+                relerr.nogooddata = 1;
+                return;
+            end
+            
             trlcdata = innerjoin(datatable, goodids,...
                 'LeftKeys', 'id', 'RightKeys', 'Var1',...
                 'LeftVariables', {'id' 'meas'});
@@ -1051,6 +1104,16 @@ switch analysis
                     goodids = table(relsummary.group(gloc).goodids);
                 else
                     goodids = table(relsummary.group(gloc).badids);
+                end
+                
+                %check whether there are not enough good data after applying
+                %reliability threshold and extrapolating
+                if isempty(goodids)
+                    dlg = {'Data do not reach reliability threshold after extrapolation';...
+                        'Set a lower reliability threshold'};
+                    errordlg(dlg, 'Data do not meet reliability threshold');
+                    relerr.nogooddata = 1;
+                    return;
                 end
                 
                 trlcdata = innerjoin(datasubset, goodids,...

@@ -282,6 +282,12 @@ end %if ~isempty(varargin)
 [era_data, relerr] = era_relsummary('era_data',era_data,'depcutoff',depcutoff,...
   'meascutoff',meascutoff,'depcentmeas',depcentmeas);
 
+%if no good data were found then abort so you user can specify a different
+%reliability threshold
+if relerr.nogooddata == 1;
+    return;
+end
+
 %check which figures and tables have been specified to be shown
 %prepare the figures and display them
 
