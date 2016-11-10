@@ -3,7 +3,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 10/22/16
+%Last Updated 11/10/16
 %
 %
 %Input
@@ -57,6 +57,9 @@ function era_startproc(varargin)
 %  Measurement column
 % Fixed error catch for specifying the same column in multiple variables
 %
+%11/10/16 PC
+% bug fix: when trying to rerun on new data when the chains did not
+%  converge, ended up with start_proc and start_view both running
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -82,6 +85,7 @@ if ~isempty(era_gui)
     end
     
     close(era_gui);
+    
 end
 
 %ask the user to identify the data file to be loaded
@@ -114,6 +118,12 @@ collist = dataraw.Properties.VariableNames;
 %selecting none from a drop-down menu)
 vcollist = collist;
 vcollist{end+1} = 'none';
+
+%era_prefs may have been defined in the function call not using the gui or
+%after the chains did not converge
+if ~exist('era_prefs','var')
+    [era_prefs,~] = era_findprefsdata(varargin);
+end
 
 %Insert the information into a data structure for holding the era data
 era_data = struct;
@@ -676,7 +686,12 @@ era_data.proc.data = era_loadfile('era_prefs',era_prefs,...
 %pass the data to be setup for processing
 era_data = era_computerelwrap('era_prefs',era_prefs,'era_data',era_data);
 
-%take the user to era_startview for viewing the processed data
-era_startview('era_prefs',era_prefs,'era_data',era_data);
+%only continue to view the data if the reliability data were put into the
+%era_data structure. If the chains did not converge there will be no rel
+%field
+if isfield(era_data,'rel')
+    %take the user to era_startview for viewing the processed data
+    era_startview('era_prefs',era_prefs,'era_data',era_data);
+end
 
 end
