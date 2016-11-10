@@ -467,12 +467,12 @@ if makematch == 1
     depcheck.CLT = 1;
     fprintf('Command line tools installed\n');
 else
-    error('Rtools:notinstaled',... %Error code and associated error
+    error('Rtools:notinstalled',... %Error code and associated error
         strcat('WARNING: Command line tools not installed\n\n',...
         'Automatic installation of command line tools not supported for Windows\n',...
         'See User Manual for instructions on how the Rtools package\n',...
         'Rtools contains the necessary command line tools needed for CmdStan\n',...
-        'Sorry\n\n')); 
+        'Sorry I was unable to automate this process for Windows users!\n\n')); 
 end
 
 %check for cmdstan
