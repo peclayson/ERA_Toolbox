@@ -4,7 +4,7 @@ function [era_prefs,era_data] = era_findprefsdata(varin)
 %
 %[era_prefs,era_data] = era_findprefsdata(varargin)
 %
-%Last Updated 7/21/16 
+%Last Updated 1/19/17 
 %
 %Input
 % varin - varargin from guis
@@ -14,7 +14,7 @@ function [era_prefs,era_data] = era_findprefsdata(varin)
 % era_data - ERA Toolbox structure array containing data
 %
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -34,6 +34,9 @@ function [era_prefs,era_data] = era_findprefsdata(varin)
 %History 
 % by Peter Clayson (7/21/16)
 % peter.clayson@gmail.com
+%
+%1/19/17 PC
+% updated copyright
 %
 
 %Somersault through varargin inputs to check for which inputs were

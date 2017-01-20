@@ -2,7 +2,7 @@ function eraver = era_defineversion
 %
 %Set version for the ERA Toolbox
 %
-%Last Updated 10/23/16
+%Last Updated 1/19/17
 %
 
 %This function just sets the version number for loading by various scripts
@@ -14,7 +14,7 @@ function eraver = era_defineversion
 % eraver - ERA Toobox version
 %
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -35,8 +35,11 @@ function eraver = era_defineversion
 % by Peter Clayson (7/21/16)
 % peter.clayson@gmail.com
 %
+%1/19/17 PC
+% updated copyright
+%
 
-eraver = '0.4.3';
+eraver = '0.4.4';
 
 
 end

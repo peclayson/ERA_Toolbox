@@ -3,7 +3,7 @@ function RELout = era_computerel(varargin)
 %
 %era_computerel('data',era_datatable,'chains',3,'iter',1000)
 %
-%Lasted Updated 10/22/16
+%Lasted Updated 1/19/17
 %
 %Required Inputs:
 % data - data table outputted from the era_loadfile script (see era_loadfile
@@ -44,6 +44,11 @@ function RELout = era_computerel(varargin)
 %For more information about how variance components were estimated please
 % see
 %
+% Clayson, P. E., & Miller, G. A. (2017). ERP Reliability Analysis
+% (ERA) Toolbox: An open-source toolbox for analyzing the reliability of
+% event-related potentials. International Journal of Psychophysiology, 111,
+% 68-79. doi: 10.1016/j.ijpsycho.2016.10.012
+%
 % Baldwin, S. A., Larson, M. J., & Clayson, P. E. (2015). The dependability 
 % of electrophysiological measurements of performance monitoring in a 
 % clinical sample: A generalizability and decision analysis of the ERN and 
@@ -55,7 +60,7 @@ function RELout = era_computerel(varargin)
 %graciously provided me with all of his code. This Matlab code is based
 %off of his R code. 
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -89,6 +94,10 @@ function RELout = era_computerel(varargin)
 %
 %10/22/16 PC
 % Vectorized code to improve speed
+%
+%1/19/17 PC
+% updated copyright
+%
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 

@@ -3,7 +3,7 @@ function era_installdependents
 %
 %era_installdependents
 %
-%Last Updated 11/10/16
+%Last Updated 1/19/17
 %
 %Required Inputs:
 % No inputs are required.
@@ -15,7 +15,7 @@ function era_installdependents
 % No data are outputted to the Matlab command window. However, software
 %  will be installed and a new Matlab path will be saved.
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -49,14 +49,18 @@ function era_installdependents
 %11/10/16 PC
 % added urls variable so I don't have to go through and manually update
 %  each url when there is an update
+%
+%1/19/17 PC
+% updated copyright
+% updated cmdstan and matlab process manager versions
 
 urls = struct;
-urls.cmdstan_tar = 'https://github.com/stan-dev/cmdstan/releases/download/v2.12.0/cmdstan-2.12.0.tar.gz';
-urls.cmdstan_zip = 'https://github.com/stan-dev/cmdstan/releases/download/v2.12.0/cmdstan-2.12.0.zip';
+urls.cmdstan_tar = 'https://github.com/stan-dev/cmdstan/releases/download/v2.14.0/cmdstan-2.14.0.tar.gz';
+urls.cmdstan_zip = 'https://github.com/stan-dev/cmdstan/releases/download/v2.14.0/cmdstan-2.14.0.zip';
 urls.ms_zip = 'https://github.com/brian-lau/MatlabStan/archive/v2.7.0.0.zip';
 urls.ms_tar = 'https://github.com/brian-lau/MatlabStan/archive/v2.7.0.0.tar.gz';
-urls.mpm_zip = 'https://github.com/brian-lau/MatlabProcessManager/archive/v0.4.2.zip';
-urls.mpm_tar = 'https://github.com/brian-lau/MatlabProcessManager/archive/v0.4.2.tar.gz';
+urls.mpm_zip = 'https://github.com/brian-lau/MatlabProcessManager/archive/v0.5.1.zip';
+urls.mpm_tar = 'https://github.com/brian-lau/MatlabProcessManager/archive/v0.5.1.tar.gz';
 
 %determine the version of OS that is being used
 if ismac

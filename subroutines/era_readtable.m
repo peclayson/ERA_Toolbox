@@ -4,7 +4,7 @@ function dataout = era_readtable(varargin)
 %
 %era_readtable('file','J:\Data\MyData.xlsx')
 %
-%Last Updated 4/18/16
+%Last Updated 1/19/17
 %
 %
 %Input
@@ -19,7 +19,7 @@ function dataout = era_readtable(varargin)
 % dataout - data in table format
 %
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -40,6 +40,8 @@ function dataout = era_readtable(varargin)
 % by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 %
+%1/19/17 PC
+% updated copyright
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 

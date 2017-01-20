@@ -4,7 +4,7 @@ function era_relfigures(varargin)
 %
 %era_relfigures('era_data',era_data)
 %
-%Last Modified 7/24/16
+%Last Modified 1/19/17
 %
 %Required Inputs:
 % era_data - ERA Toolbox data structure array containing outputs from
@@ -44,7 +44,7 @@ function era_relfigures(varargin)
 %  for numbers of trials to achieve a given level of dependability will
 %  have a button to save the ids of participants to include and exclude.
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -100,6 +100,9 @@ function era_relfigures(varargin)
 % incorporated new functions for displaying all figures and tables
 % era_relfigures is not a wrapper for displaying (mostly meant to be used
 %  by the gui)
+%
+%1/19/17 PC
+% updated copyright
 
 %somersault through inputs
 if ~isempty(varargin)

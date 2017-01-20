@@ -6,7 +6,7 @@ function depplot = era_depvtrialsplot(varargin)
 %depplot = era_depvtrialsplot('era_data',era_data,'trials',[1 50],...
 %   'depline',plotdepline,'depcutoff',depcutoff);
 %
-%Last Modified 9/16/16
+%Last Modified 1/19/17
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -29,7 +29,7 @@ function depplot = era_depvtrialsplot(varargin)
 %  number of trials retained for averaging stratified by group and
 %  condition
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -53,6 +53,9 @@ function depplot = era_depvtrialsplot(varargin)
 %
 %9/16/16 PC
 % remove box around legend
+%
+%1/19/17 PC
+% updated copyright
 
 %somersault through inputs
 if ~isempty(varargin)

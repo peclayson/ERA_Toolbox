@@ -3,7 +3,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 11/10/16
+%Last Updated 1/19/17
 %
 %
 %Input
@@ -18,7 +18,7 @@ function era_startproc(varargin)
 %  the data
 %
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -60,6 +60,9 @@ function era_startproc(varargin)
 %11/10/16 PC
 % bug fix: when trying to rerun on new data when the chains did not
 %  converge, ended up with start_proc and start_view both running
+%
+%1/19/17 PC
+% updated copyright
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.

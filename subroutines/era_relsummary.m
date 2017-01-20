@@ -5,7 +5,7 @@ function [era_data,relerr] = era_relsummary(varargin)
 %era_relsummary('era_data',era_data,'depcutoff',depcutoff,...
 %   'meascutoff',meascutoff,'depcentmeas',depcentmeas)
 %
-%Last Modified 11/10/16
+%Last Modified 1/19/17
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -29,7 +29,7 @@ function [era_data,relerr] = era_relsummary(varargin)
 %  dataset
 %
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -69,6 +69,9 @@ function [era_data,relerr] = era_relsummary(varargin)
 %11/10/16 pc
 % bug fix: depending on version of Matlab there was a problem indexing a
 %  table for the group analysis when there only two groups
+%
+%1/19/17 PC
+% updated copyright
 
 %somersault through inputs
 if ~isempty(varargin)

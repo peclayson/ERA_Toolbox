@@ -3,7 +3,7 @@ function dataout = era_loadfile(varargin)
 %
 %era_loadfile('file',filename)
 %
-%Last Modified 4/18/16
+%Last Modified 1/19/17
 %
 %Required Inputs:
 % era_prefs - preferences from ERA Toolbox
@@ -31,7 +31,7 @@ function dataout = era_loadfile(varargin)
 %  group: Group (only when specified, string variable)
 %  event: Event Type (only when specified, string variable)
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -58,6 +58,9 @@ function dataout = era_loadfile(varargin)
 %7/30/16 PC
 % Added error catch to verify that the data in the measurement column is
 %  numeric
+%
+%1/19/17 PC
+% updated copyright
 
 %try to load era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);

@@ -4,7 +4,7 @@ function era_data = era_computerelwrap(varargin)
 %
 %era_dataout = era_relwrap('era_prefs',era_prefs,'era_data',era_data)
 %
-%Last Updated 7/22/16
+%Last Updated 1/19/17
 %
 %Input
 % era_prefs - toolbox preferences
@@ -18,7 +18,7 @@ function era_data = era_computerelwrap(varargin)
 %  model is done running (executed with era_computerel), the temporary
 %  directory and files will be removed.
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -44,6 +44,10 @@ function era_data = era_computerelwrap(varargin)
 %
 %7/28/16 PC
 % fixed typo causing era_start not to execute after failing to converge
+%
+%1/19/17 PC
+% updated copyright
+%
 
 %pull era_prefs and era_data from varargin
 [era_prefs, era_data] = era_findprefsdata(varargin);

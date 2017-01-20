@@ -4,7 +4,7 @@ function era_updatecheck(eraver)
 %
 %era_updatecheck
 %
-%Lasted Updated 4/27/16
+%Lasted Updated 1/19/17
 %
 %Required Input:
 % eraver - ERA Toolbox version
@@ -14,7 +14,7 @@ function era_updatecheck(eraver)
 % Information will be printed to the command window for the user
 %
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -38,6 +38,9 @@ function era_updatecheck(eraver)
 %7/19/16 PC
 % chaanged url to check 
 %  https://github.com/peclayson/ERA_Toolbox/releases/latest
+%
+%1/19/17 PC
+% updated copyright
 
 try
     %pull webpage from github

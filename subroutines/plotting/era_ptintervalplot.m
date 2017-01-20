@@ -4,7 +4,7 @@ function ptintplot = era_ptintervalplot(varargin)
 %
 
 %
-%Last Modified 9/16/16
+%Last Modified 1/19/17
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -21,7 +21,7 @@ function ptintplot = era_ptintervalplot(varargin)
 % ptintplot - figure handle for the plot
 % figure that displays a point estimate and its credible interval
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -44,6 +44,9 @@ function ptintplot = era_ptintervalplot(varargin)
 %
 %9/16/16 PC
 % removed box around legend
+%
+%1/19/17 PC
+% updated copyright
 
 
 %somersault through inputs

@@ -5,7 +5,7 @@ function inctrltable = era_depcutofft(varargin)
 %
 %era_depcutofft('era_data',era_data,'gui',1);
 %
-%Last Modified 7/24/16
+%Last Modified 1/19/17
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. 
@@ -15,7 +15,7 @@ function inctrltable = era_depcutofft(varargin)
 % inctrltable - table displaying the trial cutoff information
 % a gui will also be shown if desired
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -35,6 +35,9 @@ function inctrltable = era_depcutofft(varargin)
 %History 
 % by Peter Clayson (7/24/16)
 % peter.clayson@gmail.com
+%
+%1/19/17 PC
+% updated copyright
 %
 
 

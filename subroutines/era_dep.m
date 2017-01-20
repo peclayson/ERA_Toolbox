@@ -4,7 +4,7 @@ function [ll,pt,ul] = era_dep(varargin)
 %
 %[ll,pt,ul] = era_dep('bp',var_u,'wp',var_e,'obs',[1 50],'CI',.95)
 %
-%Last Modified 7/24/16
+%Last Modified 1/19/17
 %
 %Inputs
 % bp - between-person variance components from CmdStan (var_u)
@@ -22,7 +22,7 @@ function [ll,pt,ul] = era_dep(varargin)
 % ul - upper limit of the credible interval specified by CI for
 %  dependability
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -42,6 +42,9 @@ function [ll,pt,ul] = era_dep(varargin)
 %History 
 % by Peter Clayson (7/23/16)
 % peter.clayson@gmail.com
+%
+%1/19/17 PC
+% updated copyright
 %
 
 

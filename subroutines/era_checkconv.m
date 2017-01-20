@@ -5,7 +5,7 @@ function RELout = era_checkconv(REL)
 %
 %[REL, rerun] = era_checkconv(REL)
 %
-%Lasted Updated 4/18/16
+%Lasted Updated 1/19/17
 %
 %Required Input:
 % REL - structure array created by era_computerel
@@ -14,7 +14,7 @@ function RELout = era_checkconv(REL)
 % RELout - structure array with the following added fields
 %  out.conv.converged - 1 data converged, 0 data did not converge
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -34,6 +34,10 @@ function RELout = era_checkconv(REL)
 %History
 % by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
+%
+%1/19/17 PC
+% updated copyright
+%
 
 %make sure an input was provided
 if length(nargin) ~= 1

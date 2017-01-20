@@ -2,7 +2,7 @@ function era_prefs = era_defaults
 %
 %Default settings for the ERA Toolbox
 %
-%Last Updated 7/21/16
+%Last Updated 1/19/17
 %
 
 %This script will be read by the ERA Toolbox to define the default settings
@@ -21,7 +21,7 @@ function era_prefs = era_defaults
 % era_prefs - data structure containing 
 %
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -41,6 +41,9 @@ function era_prefs = era_defaults
 %History
 % by Peter Clayson (7/21/16)
 % peter.clayson@gmail.com
+%
+%1/19/17 PC
+% updated copyright
 %
 
 %define an empty structure array where preferences will be stored

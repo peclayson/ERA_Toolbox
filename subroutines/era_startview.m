@@ -4,7 +4,7 @@ function era_startview(varargin)
 %
 %era_startview('file','/Users/REL/SomeERAData.mat')
 %
-%Last Updated 7/27/16
+%Last Updated 1/19/17
 %
 %Required Inputs:
 % No inputs are required.
@@ -19,7 +19,7 @@ function era_startview(varargin)
 %  will have the option of saving various figures and plots that will be 
 %  created by era_relfigures, which is executed by this gui 
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -69,6 +69,9 @@ function era_startview(varargin)
 % changed the text that is displayed in the gui to be more concise, since
 %  additional explanation is provided in tooltip
 % added a button to close all open figures other than Specify Inputs gui
+%
+%1/19/17 PC
+% updated copyright
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);

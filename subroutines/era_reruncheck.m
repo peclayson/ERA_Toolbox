@@ -2,7 +2,7 @@ function era_reruncheck
 %
 %Execute gui to ask user whether to rerun model with more iterations
 %
-%Last Updated 4/18/16
+%Last Updated 1/19/17
 %
 %
 %Input
@@ -12,7 +12,7 @@ function era_reruncheck
 % No output generated. The user's choice will be check in era_startproc
 %
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -33,6 +33,8 @@ function era_reruncheck
 % by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 %
+%1/19/17 PC
+% updated copyright
 
 %define parameters for figure position
 figwidth = 500;

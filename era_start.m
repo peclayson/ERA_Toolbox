@@ -2,7 +2,7 @@ function era_start
 %
 %Initiate Matlab gui to use the ERP Reliability Analysis (ERA) toolbox
 %
-%version 0.4.3 - Last Updated 11/10/16
+%version 0.4.4 - Last Updated 1/19/17
 %
 
 %The ERA toolbox uses generalizability theory as a method for evaluating 
@@ -17,22 +17,23 @@ function era_start
 %A description of how to apply generalizability theory to ERP data can be
 % found in
 %
-% Clayson, P. E., & Miller, G. A. (in press). ERP Reliability Analysis
-% (ERA) Toolbox: An Open-Source Toolbox for Analyzing the Reliability of
-% Event-Related Potentials. International Journal of Psychophysiology.
+% Clayson, P. E., & Miller, G. A. (2017). ERP Reliability Analysis
+% (ERA) Toolbox: An open-source toolbox for analyzing the reliability of
+% event-related potentials. International Journal of Psychophysiology, 111,
+% 68-79. doi: 10.1016/j.ijpsycho.2016.10.012
 %
 % Baldwin, S. A., Larson, M. J., & Clayson, P. E. (2015). The dependability 
 % of electrophysiological measurements of performance monitoring in a 
 % clinical sample: A generalizability and decision analysis of the ERN and 
-% Pe. Psychophysiology, 52(6), 790-800. http://doi.org/10.1111/psyp.12401
+% Pe. Psychophysiology, 52, 790-800. doi: 10.1111/psyp.12401
 %
 %The notion of reporting estimates of reliability in all ERP studies and 
 % this toolbox are specifically discussed in 
 %
-% Clayson, P. E., & Miller, G. A. (in press). Psycometric
+% Clayson, P. E., & Miller, G. A. (2017). Psycometric
 % considerations in the measurement of event-related brain potentials:
 % Guidelines for measurement and reporting. International Journal of
-% Psychophysiology.
+% Psychophysiology, 111, 57-67. doi: 10.1016/j.ijpsycho.2016.09.005
 %
 %
 %Input
@@ -70,7 +71,7 @@ function era_start
 % These dependents are necessary for computing dependability data. 
 %
 
-% Copyright (C) 2016 Peter E. Clayson
+% Copyright (C) 2016-2017 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -114,6 +115,9 @@ function era_start
 %
 %9/18/16 PC
 % added return when checking for installation so function does not continue
+%
+%1/19/17 PC
+% updated citations, version number, and copyright
 
 %check whether dependencies are contained in the Matlab path
 %first look for ERA toolbox files
