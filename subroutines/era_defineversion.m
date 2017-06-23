@@ -2,7 +2,7 @@ function eraver = era_defineversion
 %
 %Set version for the ERA Toolbox
 %
-%Last Updated 1/19/17
+%Last Updated 6/23/17
 %
 
 %This function just sets the version number for loading by various scripts
@@ -39,7 +39,7 @@ function eraver = era_defineversion
 % updated copyright
 %
 
-eraver = '0.4.4';
+eraver = '0.4.5';
 
 
 end
