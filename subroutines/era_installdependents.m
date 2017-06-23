@@ -3,7 +3,7 @@ function era_installdependents
 %
 %era_installdependents
 %
-%Last Updated 1/19/17
+%Last Updated 6/22/17
 %
 %Required Inputs:
 % No inputs are required.
@@ -53,14 +53,22 @@ function era_installdependents
 %1/19/17 PC
 % updated copyright
 % updated cmdstan and matlab process manager versions
+%
+%6/22/17 PC
+% updated dependents version
+% minor changes
+
+url_cs = 'https://github.com/stan-dev/cmdstan/releases/download/v2.16.0/cmdstan-2.16.0';
+url_ms = 'https://github.com/brian-lau/MatlabStan/archive/v2.15.1.0';
+url_mp = 'https://github.com/brian-lau/MatlabProcessManager/archive/v0.5.1';
 
 urls = struct;
-urls.cmdstan_tar = 'https://github.com/stan-dev/cmdstan/releases/download/v2.14.0/cmdstan-2.14.0.tar.gz';
-urls.cmdstan_zip = 'https://github.com/stan-dev/cmdstan/releases/download/v2.14.0/cmdstan-2.14.0.zip';
-urls.ms_zip = 'https://github.com/brian-lau/MatlabStan/archive/v2.7.0.0.zip';
-urls.ms_tar = 'https://github.com/brian-lau/MatlabStan/archive/v2.7.0.0.tar.gz';
-urls.mpm_zip = 'https://github.com/brian-lau/MatlabProcessManager/archive/v0.5.1.zip';
-urls.mpm_tar = 'https://github.com/brian-lau/MatlabProcessManager/archive/v0.5.1.tar.gz';
+urls.cmdstan_zip = strcat(url_cs,'.zip');
+urls.cmdstan_tar = strcat(url_cs,'.tar.gz');
+urls.ms_zip = strcat(url_ms,'.zip');
+urls.ms_tar = strcat(url_ms,'.tar.gz');
+urls.mpm_zip = strcat(url_mp,'.zip');
+urls.mpm_tar = strcat(url_mp,'.tar.gz');
 
 %determine the version of OS that is being used
 if ismac

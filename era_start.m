@@ -2,7 +2,7 @@ function era_start
 %
 %Initiate Matlab gui to use the ERP Reliability Analysis (ERA) toolbox
 %
-%version 0.4.4 - Last Updated 1/19/17
+%version 0.4.5 - Last Updated 6/23/17
 %
 
 %The ERA toolbox uses generalizability theory as a method for evaluating 
@@ -118,6 +118,9 @@ function era_start
 %
 %1/19/17 PC
 % updated citations, version number, and copyright
+%
+%6/23/17 PC
+% updated and tested new versions of dependents
 
 %check whether dependencies are contained in the Matlab path
 %first look for ERA toolbox files
