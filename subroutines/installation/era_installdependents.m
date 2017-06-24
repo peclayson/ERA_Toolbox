@@ -3,7 +3,7 @@ function era_installdependents
 %
 %era_installdependents
 %
-%Last Updated 6/22/17
+%Last Updated 6/24/17
 %
 %Required Inputs:
 % No inputs are required.
@@ -57,10 +57,20 @@ function era_installdependents
 %6/22/17 PC
 % updated dependents version
 % minor changes
+%
+%6/24/17 PC
+% version numbers are now pulled from the era_dependentsversions file
+%
 
-url_cs = 'https://github.com/stan-dev/cmdstan/releases/download/v2.16.0/cmdstan-2.16.0';
-url_ms = 'https://github.com/brian-lau/MatlabStan/archive/v2.15.1.0';
-url_mp = 'https://github.com/brian-lau/MatlabProcessManager/archive/v0.5.1';
+%load the versions of the dependents used by the toolbox
+depvers = era_dependentsversions;
+
+url_cs = strcat('https://github.com/stan-dev/cmdstan/releases/download/v',...
+    depvers.cmdstan,'/cmdstan-',depvers.cmdstan);
+url_ms = strcat('https://github.com/brian-lau/MatlabStan/archive/v',...
+    depvers.matlabstan);
+url_mp = strcat('https://github.com/brian-lau/MatlabProcessManager/archive/v',...
+    depvers.matlabprocessmanager);
 
 urls = struct;
 urls.cmdstan_zip = strcat(url_cs,'.zip');
