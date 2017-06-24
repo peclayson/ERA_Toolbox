@@ -177,7 +177,14 @@ if exist('mcmc.m','file') ~= 2 || ...
     era_ask2install;
     return;
 else
+    
     fprintf('CmdStan, MatlabProcessManager, and MatlabStan files found\n');
+    
+    %check if the most up-to-date releases are being used for each of the
+    %dependents
+    
+    
+    
 end
 
 %pull version for the ERA Toolbox
