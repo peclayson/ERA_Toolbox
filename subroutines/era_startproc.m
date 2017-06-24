@@ -3,7 +3,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 1/19/17
+%Last Updated 6/24/17
 %
 %
 %Input
@@ -63,6 +63,10 @@ function era_startproc(varargin)
 %
 %1/19/17 PC
 % updated copyright
+%
+%6/24/17 PC
+% small change to clarify that a filename needs to be provided for the era
+%  output file
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -649,7 +653,7 @@ while space == 1
     %prompt the user to indicate where the output from stan should be saved
     [era_data.proc.savename, era_data.proc.savepath] = uiputfile(...
         fullfile(era_data.raw.filepath,'*.erat'),...
-        'Where would you like to save the output files?');
+        'Save output file as');
     
     if any(isspace(era_data.proc.savename)) ||...
             any(isspace(era_data.proc.savepath))
