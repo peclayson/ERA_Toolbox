@@ -121,6 +121,9 @@ function era_start
 %
 %6/23/17 PC
 % updated and tested new versions of dependents
+%
+%6/24/17 PC
+% added function to update version of ERA_Toolbox to current version
 
 %check whether dependencies are contained in the Matlab path
 %first look for ERA toolbox files
@@ -136,7 +139,9 @@ if exist('era_startproc.m','file') ~= 2 || ...
         exist('era_updatecheck.m','file') ~= 2 || ...
         exist('era_defaults.m','file') ~= 2 || ...
         exist('era_depvtrialsplot.m','file') ~= 2 || ...
-        exist('era_ptintervalplot.m','file') ~= 2
+        exist('era_ptintervalplot.m','file') ~= 2 || ...
+        exist('era_installdependents.m','file') ~= 2 || ...
+        exist('era_checkversionsofdeps.m','file') ~= 2
     
     %find where the era files are located and add the directory and
     %sub-directories
@@ -176,6 +181,7 @@ if exist('mcmc.m','file') ~= 2 || ...
     fprintf('\n\n');
     era_ask2install;
     return;
+    
 else
     
     fprintf('CmdStan, MatlabProcessManager, and MatlabStan files found\n');
@@ -183,7 +189,31 @@ else
     %check if the most up-to-date releases are being used for each of the
     %dependents
     
+    depvercheck = era_checkversionsofdeps;
     
+    switch depvercheck.cmdstan
+        case 0
+            fprintf('There is a new version of CmdStan available\n');
+        case 1
+            fprintf('CmdStan version is current\n');
+        case 2
+            warning(strcat('Installed CmdStan version is newer than the',...
+                ' version tested for the Toolbox.',...
+                ' Toolbox may not work properly as a result'));
+    end
+    
+    switch depvercheck.matlabprocessmanager
+        case 0
+            fprintf('There is a new version of MatlabProcessManager available\n');
+        case 1
+            fprintf('MatlabProcessManager version is current\n');
+        case 2
+            warning(strcat('Installed MatlabProcessManager version is newer than the',...
+                ' version tested for the Toolbox.',...
+                ' Toolbox may not work properly as a result'));
+    end
+    
+    fprintf('Checking the installed version of MatlabStan is not currently supported\n');
     
 end
 
@@ -194,7 +224,7 @@ eraver = era_defineversion;
 fprintf('\n\n\nERP Reliability Analysis Toolbox Version %s\n\n',eraver);
 
 %check whether running the newest release of the toolbox
-era_updatecheck(eraver);
+eravercheck = era_updatecheck(eraver);
 
 fprintf('\n');
 
@@ -253,6 +283,15 @@ era_gui.Tag = 'era_gui';
 %display gui
 set(era_gui,'Visible','on');
 
+%if applicable, ask the user whether ERA Toolbox should be updated
+if eravercheck == 0
+    era_ask2updatetoolbox;
+
+    %if applicable, ask the user whether dependents should be updated
+elseif depvercheck.cmdstan == 0 || depvercheck.matlabprocessmanager == 0   
+    era_ask2updatedeps;
+end
+
 end
 
 function era_ask2install
@@ -305,6 +344,78 @@ era_gui.Tag = 'era_gui';
 %display gui
 set(era_gui,'Visible','on');
 
+end
+
+function era_ask2updatetoolbox
+%gui to ask the user whether the ERA Toolbox dependents should be installed
+
+%define parameters for figure position
+figwidth = 400;
+figheight = 200;
+fsize = get(0,'DefaultTextFontSize');
+
+%define space between rows and first row location
+rowspace = 25;
+row = figheight - rowspace*2;
+
+%initialize gui
+era_gui_update = figure('unit','pix','Visible','off',...
+  'position',[400 400 figwidth figheight],...
+  'menub','no',...
+  'numbertitle','off',...
+  'resize','off');
+
+movegui(era_gui_update,'center');
+
+str = ['You are using an old version of the ERA Toolbox.'...
+    ' It is recommended that you update the toolbox.'...
+    ' Would you like to do so now?'];
+
+%Write text
+uicontrol(era_gui_update,'Style','text','fontsize',fsize+2,...
+    'HorizontalAlignment','center',...
+    'String',str,...
+    'Position',[0 row figwidth 40]);          
+
+%Create a button that will take install the dependents
+uicontrol(era_gui_update,'Style','push','fontsize',fsize,...
+    'HorizontalAlignment','center',...
+    'String','Yes',...
+    'Position', [figwidth/8 25 figwidth/3 75],...
+    'Callback',{@updateera}); 
+
+%Create button that quit
+uicontrol(era_gui_update,'Style','push','fontsize',fsize,...
+    'HorizontalAlignment','center',...
+    'String','No',...
+    'Position', [5*figwidth/8 25 figwidth/3 75],...
+    'Callback',{@donotupdateera}); 
+
+%tag gui
+era_gui_update.Tag = 'era_gui_update';
+
+%display gui
+set(era_gui_update,'Visible','on');
+
+end
+
+function donotupdateera(varargin)
+%if the user does not what the ERA toolbox updated, just continue on
+%check if era_gui_update is open.
+era_gui_update = findobj('Tag','era_gui_update');
+
+if ~isempty(era_gui_update)
+    close(era_gui_update);
+end
+
+fprintf('\nERP Relaibility Analysis Toolbox will not be updated\n\n'); 
+
+end
+
+function updateera(varargin)
+%if the user wants the dependents installed, begin the installation
+close all;
+era_updateera;
 end
 
 function giveup(varargin)
