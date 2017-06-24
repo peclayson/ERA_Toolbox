@@ -1,17 +1,17 @@
-function era_updatecheck(eraver)
+function erainstalledver = era_updatecheck(eraver)
 %
 %Check whether a new release has been posted on Github
 %
 %era_updatecheck
 %
-%Lasted Updated 1/19/17
+%Lasted Updated 6/24/17
 %
 %Required Input:
 % eraver - ERA Toolbox version
 %
 %Outputs:
-% No outputs. 
-% Information will be printed to the command window for the user
+% erainstalledver - contains information regarding whether the toolbox is
+%  up to date 0 - old, 1 - current, 2 - beta
 %
 
 % Copyright (C) 2016-2017 Peter E. Clayson
@@ -41,6 +41,9 @@ function era_updatecheck(eraver)
 %
 %1/19/17 PC
 % updated copyright
+%
+%6/24/17 PC
+% added output varible regarding whether toolbox is current
 
 try
     %pull webpage from github
@@ -56,19 +59,41 @@ try
     ver = strsplit(verraw{1},'Version ');
     ver = ver{2};
     
+    %format version of the currently installed toolbox
+    used_parts = sscanf(eraver,'%d.%d.%d')';
+
+    %format version of the toolbox found online
+    found_parts = sscanf(ver,'%d.%d.%d')';
+
+    %compare cmdstan versions
+    for ii = 1:3
+        if used_parts(ii) > found_parts(ii)
+            erainstalledver = 0;
+            break;
+        elseif used_parts(ii) < found_parts(ii)
+            erainstalledver = 2;
+            break;
+        elseif used_parts(ii) == found_parts(ii)
+            erainstalledver = 1;
+        end
+    end
+    
     %let user know what was found
-    if strcmp(ver,eraver)
-        str = 'You are running the most up-to-date version of the toolbox';
-        fprintf('\n%s\n',str);
-    else
-        str = 'There is a new version of the toolbox available on ';
-        str = [str... 
-            '<a href="matlab:web(''https://github.com/peclayson/ERA_Toolbox/releases/latest'',''-browser'')">Github</a>'];
-        fprintf('\n%s\n',str);
+    switch erainstalledver
+        case 1
+            str = 'You are running the most up-to-date version of the toolbox';
+            fprintf('\n%s\n',str);
+        case 0
+            str = 'There is a new version of the toolbox available on ';
+            str = [str... 
+                '<a href="matlab:web(''https://github.com/peclayson/ERA_Toolbox/releases/latest'',''-browser'')">Github</a>'];
+            fprintf('\n%s\n',str);
+        case 2
+            str = 'You are running a non-stable release of the toolbox';
+            fprintf('\n%s\n',str);
     end
 catch
     fprintf('\nUnable to connect to Github to check for new releases\n');
 end
-
 
 end
