@@ -47,7 +47,7 @@ function erainstalledver = era_updatecheck(eraver)
 %
 %6/25/17 PC
 % updated warning about using a non-stable release
-%
+% had the comparisons switch, so it thought old versions were newer
 
 try
     %pull webpage from github
@@ -71,10 +71,10 @@ try
 
     %compare cmdstan versions
     for ii = 1:3
-        if used_parts(ii) > found_parts(ii)
+        if used_parts(ii) < found_parts(ii)
             erainstalledver = 0;
             break;
-        elseif used_parts(ii) < found_parts(ii)
+        elseif used_parts(ii) > found_parts(ii)
             erainstalledver = 2;
             break;
         elseif used_parts(ii) == found_parts(ii)
