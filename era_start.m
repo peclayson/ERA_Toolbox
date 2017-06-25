@@ -291,11 +291,14 @@ set(era_gui,'Visible','on');
 
 %if applicable, ask the user whether ERA Toolbox should be updated
 if eravercheck == 0
+    
     era_ask2updatetoolbox;
 
-    %if applicable, ask the user whether dependents should be updated
+%if applicable, ask the user whether dependents should be updated
 elseif depvercheck.cmdstan == 0 || depvercheck.matlabprocessmanager == 0   
+    
     era_ask2updatedeps(depvercheck);
+    
 end
 
 end
