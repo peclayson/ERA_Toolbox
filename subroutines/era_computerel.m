@@ -3,7 +3,7 @@ function RELout = era_computerel(varargin)
 %
 %era_computerel('data',era_datatable,'chains',3,'iter',1000)
 %
-%Lasted Updated 1/19/17
+%Lasted Updated 6/25/17
 %
 %Required Inputs:
 % data - data table outputted from the era_loadfile script (see era_loadfile
@@ -98,6 +98,8 @@ function RELout = era_computerel(varargin)
 %1/19/17 PC
 % updated copyright
 %
+%6/25/17 PC
+% added error check for missing cells in dataset
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -201,6 +203,16 @@ if exist('headerror','var')
     'Please properly specify the headers for\n',...
     char(strjoin(headerror,', ')),'\n',...
     'See help era_loadfile for data table format \n'));
+end
+
+%check whether there are missing cells in the datatable. Stan cannot handle
+%missing cells (for our purposes)
+if any(any(ismissing(datatable)))
+    error('varargin:missingcells',... %Error code and associated error
+    strcat('WARNING: Inputted data have missing cells \n\n',... 
+    'There should not be any missing cells in the dataset\n',...
+    'Each row in the dataset should contain a measurement\n',...   
+    'See ''Preparing Data'' section of UserManual.pdf for more information'));
 end
 
 %change verbosity to match true or false
