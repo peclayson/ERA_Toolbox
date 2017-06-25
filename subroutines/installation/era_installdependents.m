@@ -3,7 +3,7 @@ function era_installdependents(varargin)
 %
 %era_installdependents
 %
-%Last Updated 6/24/17
+%Last Updated 6/25/17
 %
 %Required Inputs:
 % No inputs are required.
@@ -65,6 +65,11 @@ function era_installdependents(varargin)
 %6/24/17 PC
 % version numbers are now pulled from the era_dependentsversions file
 % software can now be updated with this script
+%
+%6/25/17 PC
+% fix depvercheck when no inputs provided
+% fixed some wording of the warnings
+% made installation gui a bit wider
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -87,6 +92,8 @@ if nargin > 0 && ~isempty(varargin)
     else 
         depvercheck = [];
     end
+elseif nargin ~= 2
+    depvercheck = [];
 end
 
 %load the versions of the dependents used by the toolbox
@@ -527,6 +534,17 @@ elseif depcheck.mstan == 1 && exist('cmdstannewbuild','var')
         cmdstandir = fileparts(p);
     end
     cd(cmdstandir);
+    
+    %get dir of MatlabStan so stan_home can be edited
+    ls = dir(wrkdir);
+    ind = find(strncmp({ls.name}, 'MatlabStan', 10)==1);
+    
+    if length(ind>1)
+        [~,newind] = max([ls(ind).datenum]);
+        ind = ind(newind);
+    end
+    
+    msdir = fullfile(wrkdir,ls(ind).name);
 
     %open the stan_home.m file and change the path to cmdstan
     fid=fopen(fullfile(msdir,'+mstan','stan_home.m'));
@@ -600,7 +618,7 @@ else
     error('Rtools:notinstalled',... %Error code and associated error
         strcat('WARNING: Command line tools not installed\n\n',...
         'Automatic installation of command line tools not supported for Windows\n',...
-        'See User Manual for instructions on how the Rtools package\n',...
+        'See User Manual for instructions on how to install the Rtools package\n',...
         'Rtools contains the necessary command line tools needed for CmdStan\n',...
         'Sorry I was unable to automate this process for Windows users!\n\n')); 
 end
@@ -836,6 +854,17 @@ elseif depcheck.mstan == 1 && exist('cmdstannewbuild','var')
         cmdstandir = fileparts(p);
     end
     cd(cmdstandir);
+    
+    %get dir of MatlabStan so stan_home can be edited
+    ls = dir(wrkdir);
+    ind = find(strncmp({ls.name}, 'MatlabStan', 10)==1);
+    
+    if length(ind>1)
+        [~,newind] = max([ls(ind).datenum]);
+        ind = ind(newind);
+    end
+    
+    msdir = fullfile(wrkdir,ls(ind).name);
 
     %open the stan_home.m file and change the path to cmdstan
     fid=fopen(fullfile(msdir,'+mstan','stan_home.m'));
@@ -890,7 +919,7 @@ end
 function era_guistatus(depcheck)
 
 %define parameters for figure position
-figwidth = 400;
+figwidth = 600;
 figheight = 450;
 fsize = get(0,'DefaultTextFontSize') + 3;
 
@@ -984,16 +1013,16 @@ row = row - rowspace;
 uicontrol(era_instgui,'Style','text','fontsize',fsize,...
     'HorizontalAlignment','left',...
     'String','Matlab Process Manager',...
-    'Position', [lcol row figwidth/3 30]);  
+    'Position', [lcol row figwidth/3 25]);  
 
 if depcheck.mpm == 0
     uicontrol(era_instgui,'Style','text','fontsize',fsize,...
         'String','Not Installed',...
-        'Position', [rcol row figwidth/4 30]);  
+        'Position', [rcol row figwidth/4 25]);  
 elseif depcheck.mpm == 1
     uicontrol(era_instgui,'Style','text','fontsize',fsize,...
         'String','Installed',...
-        'Position', [rcol row figwidth/4 30]);  
+        'Position', [rcol row figwidth/4 25]);  
 end
 
 row = row - rowspace;

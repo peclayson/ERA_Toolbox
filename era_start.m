@@ -2,7 +2,7 @@ function era_start
 %
 %Initiate Matlab gui to use the ERP Reliability Analysis (ERA) toolbox
 %
-%version 0.4.5 - Last Updated 6/23/17
+%version 0.4.5 - Last Updated 6/25/17
 %
 
 %The ERA toolbox uses generalizability theory as a method for evaluating 
@@ -126,6 +126,10 @@ function era_start
 % added functions to update version of ERA_Toolbox to current version
 % added functions to update old versions of dependents (except for
 %  MatlabStan)
+%
+%6/25/17 PC
+% change dimensions of gui that asks whether the dependents should be
+%  updated
 
 %check whether dependencies are contained in the Matlab path
 %first look for ERA toolbox files
@@ -405,8 +409,8 @@ function era_ask2updatedeps(depvercheck)
 %gui to ask the user whether the ERA Toolbox dependents should be installed
 
 %define parameters for figure position
-figwidth = 400;
-figheight = 200;
+figwidth = 500;
+figheight = 300;
 fsize = get(0,'DefaultTextFontSize');
 
 %define space between rows and first row location
@@ -441,7 +445,7 @@ str = ['You are using old version(s) of' deps2update...
 uicontrol(era_gui_update,'Style','text','fontsize',fsize+2,...
     'HorizontalAlignment','center',...
     'String',str,...
-    'Position',[0 row figwidth 50]);          
+    'Position',[0 row figwidth 75]);          
 
 %Create a button that will take install the dependents
 uicontrol(era_gui_update,'Style','push','fontsize',fsize,...
