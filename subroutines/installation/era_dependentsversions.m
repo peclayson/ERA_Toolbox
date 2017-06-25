@@ -1,17 +1,21 @@
-function eraver = era_defineversion
+function depvers = era_dependentsversions
 %
-%Set version for the ERA Toolbox
+%Specifies the versions used for the dependents of the ERA Toolbox
 %
-%Last Updated 6/25/17
+%Last Updated 6/24/17
 %
 
-%This function just sets the version number for loading by various scripts
+%This function just sets the version numbers for CmdStan, MatlabStan, and
+% MatlabProcessManager
 %
 %Input
 % No inputs required in the command line
 %
 %Output
-% eraver - ERA Toobox version
+% depvers - versions for each dependent
+%   cmdstan - version of CmdStan
+%   matlabstan - version of MatlabStan
+%   matlabprocessmanager - version of MatlabProcessManager
 %
 
 % Copyright (C) 2016-2017 Peter E. Clayson
@@ -32,15 +36,14 @@ function eraver = era_defineversion
 %
 
 %History
-% by Peter Clayson (7/21/16)
+% by Peter Clayson (6/24/17)
 % peter.clayson@gmail.com
 %
-%1/19/17 PC
-% updated copyright
-%
 
-eraver = '0.4.6';
-
+depvers = struct;
+depvers.cmdstan = '2.16.0';
+depvers.matlabstan = '2.15.1.0';
+depvers.matlabprocessmanager = '0.5.1';
 
 end
 

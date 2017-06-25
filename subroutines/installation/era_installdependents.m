@@ -1,15 +1,19 @@
-function era_installdependents
+function era_installdependents(varargin)
 %Install the Matlab dependents. User will be prompted when input necessary
 %
 %era_installdependents
 %
-%Last Updated 6/22/17
+%Last Updated 6/25/17
 %
 %Required Inputs:
 % No inputs are required.
 % Some features only work for certain versions of Mac or Windows. When
 %  necessary, the user will be given instructions re: installation of
 %  various pieces by being directed to the User Manual.
+%Optional Inputs:
+% depvercheck - structure array with three dependents. The script will
+%  update all of the dependents with a value of 0 (indicating that the
+%  particular dependnet is out of date).
 %
 %Output:
 % No data are outputted to the Matlab command window. However, software
@@ -57,10 +61,50 @@ function era_installdependents
 %6/22/17 PC
 % updated dependents version
 % minor changes
+%
+%6/24/17 PC
+% version numbers are now pulled from the era_dependentsversions file
+% software can now be updated with this script
+%
+%6/25/17 PC
+% fix depvercheck when no inputs provided
+% fixed some wording of the warnings
+% made installation gui a bit wider
 
-url_cs = 'https://github.com/stan-dev/cmdstan/releases/download/v2.16.0/cmdstan-2.16.0';
-url_ms = 'https://github.com/brian-lau/MatlabStan/archive/v2.15.1.0';
-url_mp = 'https://github.com/brian-lau/MatlabProcessManager/archive/v0.5.1';
+%somersault through varargin inputs to check for which inputs were
+%defined and store those values. 
+if nargin > 0 && ~isempty(varargin)
+    
+    %the optional inputs check assumes that there was an even number of 
+    %optional inputs entered. If not, an error will displayed and the
+    %script will terminate.
+    if mod(length(varargin),2)  
+        error('varargin:incomplete',... %Error code and associated error
+        strcat('WARNING: Inputs are incomplete \n\n',... 
+        'Make sure each variable input is paired with a value \n',...
+        'See help era_installdependents for more information on optional inputs'));
+    end
+    
+    %check if the dataset is present
+    ind = find(strcmp('depvercheck',varargin),1);
+    if ~isempty(ind)
+        depvercheck = varargin{ind+1}; 
+    else 
+        depvercheck = [];
+    end
+elseif nargin ~= 2
+    depvercheck = [];
+end
+
+%load the versions of the dependents used by the toolbox
+depvers = era_dependentsversions;
+
+url_cs = strcat('https://github.com/stan-dev/cmdstan/releases/download/v',...
+    depvers.cmdstan,'/cmdstan-',depvers.cmdstan);
+url_ms = strcat('https://github.com/brian-lau/MatlabStan/archive/v',...
+    depvers.matlabstan);
+url_mp = strcat('https://github.com/brian-lau/MatlabProcessManager/archive/v',...
+    depvers.matlabprocessmanager);
 
 urls = struct;
 urls.cmdstan_zip = strcat(url_cs,'.zip');
@@ -88,17 +132,29 @@ if sys == 1 %mac
     parseOS = strsplit(parseout{6},'.');
     if str2double(parseOS{1}) == 10
         if str2double(parseOS{2}) >= 9
-            [~, savepath] = uiputfile('ERADependents',...
-            'Where would you like to save the directory for the dependents?');
-        
-            %if the user does not select a file, then take the user back to era_start    
-            if savepath == 0 
-                errordlg('Location not selected','File Error');
-                era_start;
-                return;
+            
+            if isempty(depvercheck)
+            
+                [~, savepath] = uiputfile('ERADependents',...
+                'Where would you like to save the directory for the dependents?');
+
+                %if the user does not select a file, then take the user back to era_start    
+                if savepath == 0 
+                    errordlg('Location not selected','File Error');
+                    era_start;
+                    return;
+                end
+
+                wrkdir = fullfile(savepath,'ERADependents');
+                
+            elseif ~isempty(depvercheck)
+                
+                wrkdir = fileparts(fileparts(which('runCmdStanTests.py')));
+                
+                rmolddeps(depvercheck);
+                
             end
             
-            wrkdir = fullfile(savepath,'ERADependents');
             era_macdepsinstall(wrkdir,str2double(parseOS{2}),urls);
             
         else
@@ -112,18 +168,29 @@ if sys == 1 %mac
         'For installation instructions, see Appendix A of the User Manual\n'));
     end
 elseif sys == 2 %windows
-    fprintf('Warning: automatic installation has only been tested using Windows 7\n');
-    [~, savepath] = uiputfile('ERADependents',...
-    'Where would you like to save the directory for the dependents?');
+    
+    if isempty(depvercheck)
+    
+        fprintf('Warning: automatic installation has only been tested using Windows 7\n');
+        [~, savepath] = uiputfile('ERADependents',...
+        'Where would you like to save the directory for the dependents?');
 
-    %if the user does not select a file, then take the user back to era_start    
-    if savepath == 0 
-        errordlg('Location not selected','File Error');
-        era_start;
-        return;
+        %if the user does not select a file, then take the user back to era_start    
+        if savepath == 0 
+            errordlg('Location not selected','File Error');
+            era_start;
+            return;
+        end
+
+        wrkdir = fullfile(savepath,'ERADependents');
+     
+    elseif ~isempty(depvercheck)
+                
+        wrkdir = fileparts(fileparts(which('runCmdStanTests.py')));
+
+        rmolddeps(depvercheck);
+                
     end
-
-    wrkdir = fullfile(savepath,'ERADependents');
     
     era_windepsinstall(wrkdir,urls);
 end
@@ -291,6 +358,12 @@ if depcheck.cmdstan == 0 && OSver ~= 10
     %now find the path to the new cmdstan directory
     ls = dir(wrkdir);
     ind = find(strncmp({ls.name}, 'cmdstan', 7)==1);
+    
+    if length(ind>1) %#ok<*ISMT>
+        [~,newind] = max([ls(ind).datenum]);
+        ind = ind(newind);
+    end
+    
     cmdstandir = fullfile(wrkdir,ls(ind).name);
     
     %update depcheck and display status
@@ -317,6 +390,12 @@ elseif depcheck.cmdstan == 0 && OSver == 10
     %now find the path to the new cmdstan directory
     ls = dir(wrkdir);
     ind = find(strncmp({ls.name}, 'cmdstan', 7)==1);
+    
+    if length(ind>1)
+        [~,newind] = max([ls(ind).datenum]);
+        ind = ind(newind);
+    end
+    
     cmdstandir = fullfile(wrkdir,ls(ind).name);
     
     %update depcheck and display status
@@ -362,6 +441,9 @@ if depcheck.cmdbuild == 0
             'Please install CmdStan manually\n',...
             'For installation instructions, see Appendix A of the User Manual'));
     end
+    
+    newcmdstanbuild = 1;
+    
 end
 
 %check whether the Matlab Process Manager needs to be installed
@@ -395,6 +477,12 @@ if depcheck.mstan == 0
     %get dir of MatlabStan so stan_home can be edited
     ls = dir(wrkdir);
     ind = find(strncmp({ls.name}, 'MatlabStan', 10)==1);
+    
+    if length(ind>1)
+        [~,newind] = max([ls(ind).datenum]);
+        ind = ind(newind);
+    end
+    
     msdir = fullfile(wrkdir,ls(ind).name);
     
     %delete the odd file that can be created some times
@@ -409,6 +497,54 @@ if depcheck.mstan == 0
         cmdstandir = fileparts(p);
     end
     cd(cmdstandir);
+
+    %open the stan_home.m file and change the path to cmdstan
+    fid=fopen(fullfile(msdir,'+mstan','stan_home.m'));
+    storefile = {};
+    while 1
+        tline = fgetl(fid);
+        storefile{end+1} = tline;
+        if ~ischar(tline), break, end
+    end
+    fclose(fid);
+
+    storefile{8} = ['d = ''' cmdstandir ''';'];
+
+    %overwrite the existing stan_home.m file with the new information
+    fid = fopen(fullfile(msdir,'+mstan','stan_home.m'),'w');
+    for i=1:(length(storefile)-1)
+        storefile{i} = strrep(storefile{i},'%','%%');
+        storefile{i} = strrep(storefile{i},'\','\\');
+        fprintf(fid,[storefile{i} '\n']);
+    end
+    fclose(fid);
+    
+    %update depcheck and display gui
+    depcheck.mstan = 1;
+    fprintf('MatlabStan succesfully installed\n');
+    era_guistatus(depcheck);
+  
+%this is necessary in case cmdstan was updated, but a new version  
+%matlabstan was not installed. Matlabstan needs to be pointed to cmdstan.
+elseif depcheck.mstan == 1 && exist('cmdstannewbuild','var')
+    %in case cmdstan wasn't installed in this run, find the location of the
+    %cmdstan dir
+    if isempty(cmdstandir)
+        p = which('runCmdStanTests.py');
+        cmdstandir = fileparts(p);
+    end
+    cd(cmdstandir);
+    
+    %get dir of MatlabStan so stan_home can be edited
+    ls = dir(wrkdir);
+    ind = find(strncmp({ls.name}, 'MatlabStan', 10)==1);
+    
+    if length(ind>1)
+        [~,newind] = max([ls(ind).datenum]);
+        ind = ind(newind);
+    end
+    
+    msdir = fullfile(wrkdir,ls(ind).name);
 
     %open the stan_home.m file and change the path to cmdstan
     fid=fopen(fullfile(msdir,'+mstan','stan_home.m'));
@@ -482,7 +618,7 @@ else
     error('Rtools:notinstalled',... %Error code and associated error
         strcat('WARNING: Command line tools not installed\n\n',...
         'Automatic installation of command line tools not supported for Windows\n',...
-        'See User Manual for instructions on how the Rtools package\n',...
+        'See User Manual for instructions on how to install the Rtools package\n',...
         'Rtools contains the necessary command line tools needed for CmdStan\n',...
         'Sorry I was unable to automate this process for Windows users!\n\n')); 
 end
@@ -574,6 +710,12 @@ if depcheck.cmdstan == 0
     %now find the path to the new cmdstan directory
     ls = dir(wrkdir);
     ind = find(strncmp({ls.name}, 'cmdstan', 7)==1);
+    
+    if length(ind>1)
+        [~,newind] = max([ls(ind).datenum]);
+        ind = ind(newind);
+    end
+    
     cmdstandir = fullfile(wrkdir,ls(ind).name);
     
     %update depcheck and display status
@@ -620,6 +762,8 @@ if depcheck.cmdbuild == 0
             'Please install CmdStan manually\n',...
             'For installation instructions, see Appendix A of the User Manual'));
     end
+    
+    cmdstannewbuild = 1;
 end
 
 %check whether the Matlab Process Manager needs to be installed
@@ -653,6 +797,12 @@ if depcheck.mstan == 0
     %get dir of MatlabStan so stan_home can be edited
     ls = dir(wrkdir);
     ind = find(strncmp({ls.name}, 'MatlabStan', 10)==1);
+    
+    if length(ind>1)
+        [~,newind] = max([ls(ind).datenum]);
+        ind = ind(newind);
+    end
+    
     msdir = fullfile(wrkdir,ls(ind).name);
     
     %delete the odd file that can be created some times
@@ -667,6 +817,54 @@ if depcheck.mstan == 0
         cmdstandir = fileparts(p);
     end
     cd(cmdstandir);
+
+    %open the stan_home.m file and change the path to cmdstan
+    fid=fopen(fullfile(msdir,'+mstan','stan_home.m'));
+    storefile = {};
+    while 1
+        tline = fgetl(fid);
+        storefile{end+1} = tline;
+        if ~ischar(tline), break, end
+    end
+    fclose(fid);
+
+    storefile{8} = ['d = ''' cmdstandir ''';'];
+
+    %overwrite the existing stan_home.m file with the new information
+    fid = fopen(fullfile(msdir,'+mstan','stan_home.m'),'w');
+    for i=1:(length(storefile)-1)
+        storefile{i} = strrep(storefile{i},'%','%%');
+        storefile{i} = strrep(storefile{i},'\','\\');
+        fprintf(fid,[storefile{i} '\n']);
+    end
+    fclose(fid);
+    
+    %update depcheck and display gui
+    depcheck.mstan = 1;
+    fprintf('MatlabStan succesfully installed\n');
+    era_guistatus(depcheck);
+    
+%this is necessary if cmdstan is updated. Matlabstan needs to have the 
+%location of cmdstan updated.
+elseif depcheck.mstan == 1 && exist('cmdstannewbuild','var')
+    %in case cmdstan wasn't installed in this run, find the location of the
+    %cmdstan dir
+    if isempty(cmdstandir)
+        p = which('runCmdStanTests.py');
+        cmdstandir = fileparts(p);
+    end
+    cd(cmdstandir);
+    
+    %get dir of MatlabStan so stan_home can be edited
+    ls = dir(wrkdir);
+    ind = find(strncmp({ls.name}, 'MatlabStan', 10)==1);
+    
+    if length(ind>1)
+        [~,newind] = max([ls(ind).datenum]);
+        ind = ind(newind);
+    end
+    
+    msdir = fullfile(wrkdir,ls(ind).name);
 
     %open the stan_home.m file and change the path to cmdstan
     fid=fopen(fullfile(msdir,'+mstan','stan_home.m'));
@@ -721,7 +919,7 @@ end
 function era_guistatus(depcheck)
 
 %define parameters for figure position
-figwidth = 400;
+figwidth = 600;
 figheight = 450;
 fsize = get(0,'DefaultTextFontSize') + 3;
 
@@ -867,8 +1065,34 @@ pause(.02);
 
 end
 
+function rmolddeps(depvercheck)
 
+fprintf('Removing old versions of dependents\nThis may take a while\n\n');
 
+%temporarily turn off warnings that filepaths are being removed
+warning('off','MATLAB:rmpath:DirNotFound');
+warning('off','MATLAB:RMDIR:RemovedFromPath');
+
+if depvercheck.cmdstan == 0     
+    %delete old cmdstan files
+    rmdir(fileparts(which('runCmdStanTests.py')),'s'); 
+end
+
+if depvercheck.matlabstan == 0 
+    %delete old matlabstan files
+    rmdir(fileparts(which('mcmc.m')),'s');  
+end
+
+if depvercheck.matlabprocessmanager == 0 
+    %delete old matlabprocessmanager files
+    rmdir(fileparts(which('processManager.m')),'s');  
+end
+
+%turn warnings back on
+warning('on','MATLAB:rmpath:DirNotFound');
+warning('on','MATLAB:RMDIR:RemovedFromPath');
+
+end
 
 
 
