@@ -4,7 +4,7 @@ function erainstalledver = era_updatecheck(eraver)
 %
 %era_updatecheck
 %
-%Lasted Updated 6/25/17
+%Lasted Updated 8/13/17
 %
 %Required Input:
 % eraver - ERA Toolbox version
@@ -48,6 +48,10 @@ function erainstalledver = era_updatecheck(eraver)
 %6/25/17 PC
 % updated warning about using a non-stable release
 % had the comparisons switch, so it thought old versions were newer
+%
+%8/13/17 PC
+% fixed typo in error message
+%
 
 try
     %pull webpage from github
@@ -95,7 +99,7 @@ try
         case 2
             warning('You are running a non-stable release of the toolbox');
             fprintf(strcat(...
-                'You likely cloned github, rather than installed the latest stabl release\n',...
+                'You likely cloned github, rather than installed the latest stable release\n',...
                 'As a results, complete functionality cannot be guaranteed\n',...
                 'The lastest stable release can be downloaded at'));
             str = '<a href="matlab:web(''https://github.com/peclayson/ERA_Toolbox/releases/latest'',''-browser'')">Github</a>';

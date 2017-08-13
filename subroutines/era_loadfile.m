@@ -3,7 +3,7 @@ function dataout = era_loadfile(varargin)
 %
 %era_loadfile('file',filename)
 %
-%Last Modified 1/19/17
+%Last Modified 8/13/17
 %
 %Required Inputs:
 % era_prefs - preferences from ERA Toolbox
@@ -61,6 +61,10 @@ function dataout = era_loadfile(varargin)
 %
 %1/19/17 PC
 % updated copyright
+%
+%8/13/17 PC
+% added error check: verifies that each participant has a measurement for
+%  each event type
 
 %try to load era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -233,6 +237,27 @@ if ~isnumeric(dataout.meas(:))
     'The column specified was',[' ' meascolname],'\n',...
     'Please specify a column with numeric data (ERP measurements)\n',...
     'See help era_loadfile for more information\n'));
+end
+
+%verify that each participant has at least one measurement per event type
+%(this works because it's already been verified that there are no empty
+%cells)
+if ~isempty(eventcolname)
+    datacheck = varfun(@mean,dataout,'InputVariables','meas',...
+       'GroupingVariables',{'id','event'});
+    eventcount = varfun(@numel,datacheck,'InputVariables','event',...
+        'GroupingVariables','id');
+    if length(unique(eventcount.GroupCount)) > 1
+        eventcount.GroupCount = [];
+        eventcount.Properties.VariableNames{2} = 'Number_of_Events';
+        display(eventcount);
+        error('meas:mismatchedevents',... %Error code and associated error
+        strcat('WARNING: All participants do not have at least one\n',...
+        'measurement per event\n',...
+        'The ids and number of events found for each participant are printed',...
+        '\nabove to help in finding the problem\n',...
+        'See the ''Preparing Data'' section of the User Manual for more info\n'));
+    end
 end
 
 %turn all of the ids, groups, and events into strings. ERA toolbox will 
