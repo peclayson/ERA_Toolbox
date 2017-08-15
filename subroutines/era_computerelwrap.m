@@ -4,7 +4,7 @@ function era_data = era_computerelwrap(varargin)
 %
 %era_dataout = era_relwrap('era_prefs',era_prefs,'era_data',era_data)
 %
-%Last Updated 1/19/17
+%Last Updated 8/15/17
 %
 %Input
 % era_prefs - toolbox preferences
@@ -48,6 +48,8 @@ function era_data = era_computerelwrap(varargin)
 %1/19/17 PC
 % updated copyright
 %
+%8/15/17 PC
+% fixed typos in comments
 
 %pull era_prefs and era_data from varargin
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -86,7 +88,7 @@ if ~isfield(era_data.proc,'data')
     end
 end
 
-%check if the the name of the dataset to be saved
+%check if there is a name of the dataset to be saved
 if ~isfield(era_data.proc,'savename')
     error('era_data:savename',...
         strcat('ERROR: Inputs are incomplete\n\n',...
@@ -109,7 +111,7 @@ else
     end
 end
 
-%check if the the path for the new dataset exists
+%check if the path for the new dataset exists
 if ~isfield(era_data.proc,'savepath')
     error('era_data:savepath',...
         strcat('ERROR: Inputs are incomplete\n\n',...
