@@ -3,7 +3,7 @@ function era_installdependents(varargin)
 %
 %era_installdependents
 %
-%Last Updated 6/25/17
+%Last Updated 8/15/17
 %
 %Required Inputs:
 % No inputs are required.
@@ -70,6 +70,9 @@ function era_installdependents(varargin)
 % fix depvercheck when no inputs provided
 % fixed some wording of the warnings
 % made installation gui a bit wider
+%
+%8/15/17 PC
+% fixed problem checking whether linux is being used
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -119,7 +122,7 @@ if ismac
     sys = 1; %because Apple is number 1, obviously
 elseif ispc
     sys = 2; %because Windows OS is inferior
-elseif IsLinux
+elseif isunix && ~ismac
     error('os:linux',... %Error code and associated error
     strcat('WARNING: Automatic installation does not work for Linux \n\n',...
     'See help era_installdependents for more information'));
