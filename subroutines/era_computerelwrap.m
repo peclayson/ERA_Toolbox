@@ -4,7 +4,7 @@ function era_data = era_computerelwrap(varargin)
 %
 %era_dataout = era_relwrap('era_prefs',era_prefs,'era_data',era_data)
 %
-%Last Updated 8/15/17
+%Last Updated 8/16/17
 %
 %Input
 % era_prefs - toolbox preferences
@@ -50,6 +50,9 @@ function era_data = era_computerelwrap(varargin)
 %
 %8/15/17 PC
 % fixed typos in comments
+%
+%8/16/17 PC
+% added code to view traceplots prior to saving Stan outputs
 
 %pull era_prefs and era_data from varargin
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -174,10 +177,22 @@ while rerun ~= 0
         close(era_gui);
         delete(era_gui);
         
-    else 
-        %if chains converged, do no rerun.
+    else
+        
+        %if chains converged, do not rerun
         rerun = 0;
         fprintf('\nModel converged\n');
+        
+    end
+    
+    %check if the user wanted to see the traceplots
+    if era_prefs.proc.traceplots == 2
+        
+        era_checktraceplots;
+        rerun = guidata(era_gui);
+        close(era_gui);
+        delete(era_gui);
+        
     end
     
     %if convergence was not met and the user would like to rerun the model,
