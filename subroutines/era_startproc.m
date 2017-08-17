@@ -67,6 +67,10 @@ function era_startproc(varargin)
 %6/24/17 PC
 % small change to clarify that a filename needs to be provided for the era
 %  output file
+%
+%8/16/17 PC
+% fixed bug when trying to run era_startproc in cmd win without using
+%  era_start
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -75,7 +79,7 @@ if ~isempty(era_gui)
     %Grab preferences if they exist
     if ~isempty(varargin)
 
-        %check if for era_prefs
+        %check for era_prefs
         ind = find(strcmp('era_prefs',varargin),1);
         if ~isempty(ind)
             era_prefs = varargin{ind+1}; 
@@ -92,6 +96,17 @@ if ~isempty(era_gui)
     end
     
     close(era_gui);
+    
+elseif isempty(era_gui)
+    
+    %load default preferences for processing and viewing data
+    era_prefs = era_defaults;
+
+    %attach the current version number to era_prefs
+    era_prefs.ver = era_defineversion;
+
+    %define parameters for figure position
+    era_prefs.guis.fsize = get(0,'DefaultTextFontSize');
     
 end
 
