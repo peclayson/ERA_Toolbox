@@ -2,14 +2,14 @@ function era_reruncheck
 %
 %Execute gui to ask user whether to rerun model with more iterations
 %
-%Last Updated 1/19/17
+%Last Updated 8/16/17
 %
 %
 %Input
 % No inputs required
 %
 %Output
-% No output generated. The user's choice will be check in era_startproc
+% No output generated. The user's choice will be checked in era_startproc
 %
 
 % Copyright (C) 2016-2017 Peter E. Clayson
@@ -35,6 +35,9 @@ function era_reruncheck
 %
 %1/19/17 PC
 % updated copyright
+%
+%8/16/17 PC
+% fixed typo in comments
 
 %define parameters for figure position
 figwidth = 500;
@@ -89,7 +92,7 @@ uiwait(era_gui);
 end
 
 function era_setrerun(varargin)
-%to rerun or not to rerun the model
+%to rerun or not to rerun the model... that is the question :)
 uiresume;
 era_gui = findobj('Tag','era_gui');
 guidata(era_gui,varargin{3});
