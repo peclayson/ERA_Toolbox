@@ -2,7 +2,7 @@ function era_prefs = era_defaults
 %
 %Default settings for the ERA Toolbox
 %
-%Last Updated 1/19/17
+%Last Updated 8/16/17
 %
 
 %This script will be read by the ERA Toolbox to define the default settings
@@ -45,6 +45,8 @@ function era_prefs = era_defaults
 %1/19/17 PC
 % updated copyright
 %
+%8/16/17 PC
+% added preference for viewing traceplots
 
 %define an empty structure array where preferences will be stored
 era_prefs = struct;
@@ -59,10 +61,16 @@ era_prefs.proc.nchains = 3;
 %Number of iterations for processing data in CmdStan (default = 1000)
 era_prefs.proc.niter = 1000;
 
-%Verbose input while processing data in CmdStan (defaults = 1);
+%Verbose input while processing data in CmdStan (default = 1);
 % 1 = No
 % 2 = Yes
 era_prefs.proc.verbose = 1;
+
+%View the traceplots for parameters prior to saving the stan output 
+%(default= 1)
+% 1 = No
+% 2 = Yes
+era_prefs.proc.traceplots = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%Viewing Preferences%%%%%%%%%%%%%%%%%%%%%%%%%%%%
