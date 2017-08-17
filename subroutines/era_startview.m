@@ -4,7 +4,7 @@ function era_startview(varargin)
 %
 %era_startview('file','/Users/REL/SomeERAData.mat')
 %
-%Last Updated 1/19/17
+%Last Updated 8/16/17
 %
 %Required Inputs:
 % No inputs are required.
@@ -72,6 +72,10 @@ function era_startview(varargin)
 %
 %1/19/17 PC
 % updated copyright
+%
+%8/16/17 Pc
+% fixed bug with era_startview not working correctly unless 
+%  era_prefs.guis.fsize had already been defined
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -159,6 +163,11 @@ row = figheight - rowspace*2;
 %define locations of column 1 and 2
 lcol = 30;
 rcol = (figwidth/8)*5;
+
+%check that a default fsize has been defined
+if ~isfield(era_prefs,'fsize')
+    era_prefs.guis.fsize = get(0,'DefaultTextFontSize');
+end
 
 %create the gui
 era_gui= figure('unit','pix',...
