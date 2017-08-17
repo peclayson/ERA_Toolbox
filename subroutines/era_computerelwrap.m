@@ -188,7 +188,7 @@ while rerun ~= 0
     %check if the user wanted to see the traceplots
     if era_prefs.proc.traceplots == 2
         
-        era_checktraceplots;
+        era_checktraceplots(REL);
         rerun = guidata(era_gui);
         close(era_gui);
         delete(era_gui);
