@@ -1,17 +1,21 @@
-function era_checktraceplots(REL)
+function era_checktraceplots(REL,varargin)
 %
 %View traceplots of Stan parameters and ask the user whether Stan should
 % rerun or save the outputs
 %
-%Last Updated 8/17/17
+%Last Updated 8/22/17
 %
 %To identify whether the estimates are stable, the should look like "fat,
 %hairy caterpillars". See User Manual for more information.
 %
-%Input
+%Input:
 % REL - output from stan after running data through era_computerel
 %
-%Output
+%Optional Input:
+% askuser - displays a gui asking the user whether to rerun the model. 0 -
+%  no (default); 1 - yes
+%
+%Output:
 % No output generated. The user's choice will be checked in era_startproc
 %
 
@@ -36,6 +40,10 @@ function era_checktraceplots(REL)
 % by Peter Clayson (8/17/17)
 % peter.clayson@gmail.com
 %
+%8/22/17 PC
+% changes after running the checktraceplots function from the gui
+% new input to specify whether the user should be asked about rerunning the
+%  model
 
 %check for era_prefs
 if nargin == 0 || isempty(REL)
@@ -45,9 +53,25 @@ if nargin == 0 || isempty(REL)
         'See help for era_checktraceplots more information'));
 end
 
-%REL.niter = number of iterations
-%REL.nchains = number of chains
-
+if ~isempty(varargin)
+    %the optional inputs check assumes that there was an even number of 
+    %optional inputs entered. If not, an error will displayed and the
+    %script will terminate.
+    if mod(length(varargin),2)  
+        error('varargin:incomplete',... %Error code and associated error
+        strcat('WARNING: Optional inputs are incomplete \n\n',... 
+        'Make sure each variable input is paired with a value \n',...
+        'See help era_relfigures for more information on optional inputs'));
+    end
+    
+    %check whether askuser was provided
+    ind = find(strcmp('askuser',varargin),1);
+    if ~isempty(ind)
+        askuser = varargin{ind+1}; 
+    else 
+        askuser = 0;
+    end
+end
 
 %check whether any groups exist
 if strcmpi(REL.groups,'none')
@@ -94,19 +118,8 @@ for nplot=1:(yplots * 3)
     subplot(yplots,xplots,nplot); 
     axis([0 REL.niter/2 0 1]);
     
-    if nplot == 1
-        title('Mean','FontSize',fsize);
-    elseif nplot == 2
-        title('Between-Person Variance','FontSize',fsize);
-    elseif nplot == 3
-        title('Within-Person Variance','FontSize',fsize);
-    end
-    
-    if (yplots * 3 - 2) <= nplot
-        xlabel('Number of Iterations','FontSize',fsize);
-    end
-    
-
+    %keep track of which plot is being plotted so it ends up in the
+    %appropriate column with the appropriate labels
     if trackwhichplot == 1
 
         for jj = 1:REL.nchains
@@ -116,11 +129,17 @@ for nplot=1:(yplots * 3)
         
         plot(x,tpdata);
         
-        str = strsplit(REL.out.labels{countgroupevent},'_;_');
-        str = [str{1} ' - ' str{2}];
+        if contains(REL.out.labels,'_;_')
+            str = strsplit(REL.out.labels{countgroupevent},'_;_');
+            str = [str{1} ' - ' str{2}];
+        else
+            str = REL.out.labels;
+        end
 
         ylabel(str,'FontSize',fsize);
 
+        printtitles(yplots,nplot,fsize);
+        
         trackwhichplot = trackwhichplot + 1;
 
     elseif trackwhichplot == 2
@@ -131,6 +150,8 @@ for nplot=1:(yplots * 3)
         end
 
         plot(x,tpdata);
+        
+        printtitles(yplots,nplot,fsize);
         
         trackwhichplot = trackwhichplot + 1;
 
@@ -143,61 +164,66 @@ for nplot=1:(yplots * 3)
 
         plot(x,tpdata);
         
+        printtitles(yplots,nplot,fsize);
+        
         trackwhichplot = 1;
         countgroupevent = countgroupevent + 1;
     end
 
 end
 
+%tag the gui so it can be closed in  era_computerelwrap
+tplots.Tag = 'tplots';
 
-%define parameters for figure position
-figwidth = 500;
-figheight = 200;
+if askuser == 1
+    %define parameters for figure position
+    figwidth = 500;
+    figheight = 200;
 
-%define space between rows and first row location
-rowspace = 25;
-row = figheight - rowspace*2.5;
+    %define space between rows and first row location
+    rowspace = 25;
+    row = figheight - rowspace*2.5;
 
-%initialize gui
-era_gui= figure('unit','pix','Visible','off',...
-  'position',[400 400 figwidth figheight],...
-  'menub','no',...
-  'numbertitle','off',...
-  'resize','off');
+    %initialize gui
+    era_gui= figure('unit','pix','Visible','off',...
+      'position',[400 400 figwidth figheight],...
+      'menub','no',...
+      'numbertitle','off',...
+      'resize','off');
 
-movegui(era_gui,'center');
+    movegui(era_gui,'center');
 
-str = {'Would you like to rerun with more iterations?'};
+    str = {'Would you like to rerun with more iterations?'};
 
-%Write text
-uicontrol(era_gui,'Style','text','fontsize',16,...
-    'HorizontalAlignment','center',...
-    'String',str,...
-    'Position',[0 row figwidth 50]);          
+    %Write text
+    uicontrol(era_gui,'Style','text','fontsize',16,...
+        'HorizontalAlignment','center',...
+        'String',str,...
+        'Position',[0 row figwidth 50]);          
 
-%Create a button that will not rerun the model
-uicontrol(era_gui,'Style','push','fontsize',14,...
-    'HorizontalAlignment','center',...
-    'String','<html><center>Do Not<br>Rerun',...
-    'Position', [figwidth/8 25 figwidth/3 75],...
-    'Callback',{@era_setrerun,0,era_gui}); 
+    %Create a button that will not rerun the model
+    uicontrol(era_gui,'Style','push','fontsize',14,...
+        'HorizontalAlignment','center',...
+        'String','<html><center>Do Not<br>Rerun',...
+        'Position', [figwidth/8 25 figwidth/3 75],...
+        'Callback',{@era_setrerun,0,era_gui}); 
 
-%Create button that will rerun the model with more iterations
-uicontrol(era_gui,'Style','push','fontsize',14,...
-    'HorizontalAlignment','center',...
-    'String','Rerun',...
-    'Position', [5*figwidth/8 25 figwidth/3 75],...
-    'Callback',{@era_setrerun,1,era_gui}); 
+    %Create button that will rerun the model with more iterations
+    uicontrol(era_gui,'Style','push','fontsize',14,...
+        'HorizontalAlignment','center',...
+        'String','Rerun',...
+        'Position', [5*figwidth/8 25 figwidth/3 75],...
+        'Callback',{@era_setrerun,1,era_gui}); 
 
-%display gui
-set(era_gui,'Visible','on');
+    %display gui
+    set(era_gui,'Visible','on');
 
-%tag the gui
-era_gui.Tag = 'era_gui';
+    %tag the gui
+    era_gui.Tag = 'era_gui';
 
-%wait so the user can respond
-uiwait(era_gui);
-
+    %wait so the user can respond
+    uiwait(era_gui);
+end
 
 end
 
@@ -208,5 +234,23 @@ era_gui = findobj('Tag','era_gui');
 guidata(era_gui,varargin{3});
 
 end
+
+function printtitles(yplots,nplot,fsize)
+%functiont to print axis titles
+if nplot == 1
+    title('Mean','FontSize',fsize);
+elseif nplot == 2
+    title('Between-Person Variance','FontSize',fsize);
+elseif nplot == 3
+    title('Within-Person Variance','FontSize',fsize);
+end
+    
+if (yplots * 3 - 2) <= nplot
+    xlabel('Number of Samples','FontSize',fsize);
+end
+    
+end
+
+
 
 

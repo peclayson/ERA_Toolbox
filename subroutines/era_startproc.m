@@ -3,7 +3,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 6/24/17
+%Last Updated 8/22/17
 %
 %
 %Input
@@ -73,6 +73,9 @@ function era_startproc(varargin)
 %  era_start
 % added input to preference window for viewing traceplots prior to saving
 %  Stan outputs
+%
+%8/22/17 PC
+% bug fixes for passing input for traceplots to prefs
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -486,7 +489,7 @@ uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'Tooltip','Displays traceplots to give the user the option to rerun',...
     'Position', [lcol row era_prefs.guis.pos(4)/2 30]);  
 
-newprefs.verbose = uicontrol(era_gui,'Style','pop',...
+newprefs.traceplots = uicontrol(era_gui,'Style','pop',...
     'fontsize',era_prefs.guis.fsize,'String',{'No';'Yes'},...
     'Value',era_prefs.proc.traceplots,...
     'Position', [rcol row+5 era_prefs.guis.pos(4)/2 30]);  
@@ -529,6 +532,7 @@ newprefs = varargin{ind+1};
 era_prefs.proc.nchains = str2double(newprefs.nchains.String);
 era_prefs.proc.niter = str2double(newprefs.niter.String);
 era_prefs.proc.verbose = newprefs.verbose.Value;
+era_prefs.proc.traceplots = newprefs.traceplots.Value;
 
 %find era_gui
 era_gui = findobj('Tag','era_gui');
