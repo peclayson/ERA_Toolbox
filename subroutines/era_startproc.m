@@ -71,11 +71,11 @@ function era_startproc(varargin)
 %8/16/17 PC
 % fixed bug when trying to run era_startproc in cmd win without using
 %  era_start
-% added input to preference window for viewing traceplots prior to saving
+% added input to preference window for viewing trace plots prior to saving
 %  Stan outputs
 %
 %8/22/17 PC
-% bug fixes for passing input for traceplots to prefs
+% bug fixes for passing input for trace plots to prefs
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -482,11 +482,11 @@ newprefs.verbose = uicontrol(era_gui,'Style','pop',...
 %next row
 row = row - rowspace;
 
-%input for specifying whether to view traceplots
+%input for specifying whether to view trace plots
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
-    'String','View traceplots prior to saving Stan output',...
-    'Tooltip','Displays traceplots to give the user the option to rerun',...
+    'String','View trace plots prior to saving Stan output',...
+    'Tooltip','Displays trace plots to give the user the option to rerun',...
     'Position', [lcol row era_prefs.guis.pos(4)/2 30]);  
 
 newprefs.traceplots = uicontrol(era_gui,'Style','pop',...

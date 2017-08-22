@@ -1,6 +1,6 @@
 function era_checktraceplots(REL,varargin)
 %
-%View traceplots of Stan parameters and ask the user whether Stan should
+%View trace plots of Stan parameters and ask the user whether Stan should
 % rerun or save the outputs
 %
 %Last Updated 8/22/17
@@ -108,12 +108,12 @@ tplots = figure;
 set(gcf,'NumberTitle','Off');
 tplots.Position = [125 1100 1000 1100];
 fsize = 16;
-set(gcf,'Name', 'Traceplots of Stan Parameters');
+set(gcf,'Name', 'Trace Plots of Stan Parameters');
 
 trackwhichplot = 1;
 countgroupevent = 1;
 
-%Create the traceplots for each parameter
+%Create the trace plots for each parameter
 for nplot=1:(yplots * 3)
     subplot(yplots,xplots,nplot); 
     axis([0 REL.niter/2 0 1]);

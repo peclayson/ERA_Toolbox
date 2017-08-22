@@ -52,10 +52,10 @@ function era_data = era_computerelwrap(varargin)
 % fixed typos in comments
 %
 %8/16/17 PC
-% added code to view traceplots prior to saving Stan outputs
+% added code to view trace plots prior to saving Stan outputs
 %
 %8/22/17 PC
-% updated bug fixes to viewing traceplots
+% updated bug fixes to viewing trace plots
 
 %pull era_prefs and era_data from varargin
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -193,7 +193,7 @@ while rerun ~= 0
         
     end
     
-    %check if the user wanted to see the traceplots
+    %check if the user wanted to see the trace plots
     if era_prefs.proc.traceplots == 2 && rerun == 0
         era_checktraceplots(REL,'askuser',1);
         era_gui = findobj('Tag','era_gui');
