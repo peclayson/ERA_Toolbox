@@ -3,7 +3,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 6/24/17
+%Last Updated 8/22/17
 %
 %
 %Input
@@ -67,6 +67,15 @@ function era_startproc(varargin)
 %6/24/17 PC
 % small change to clarify that a filename needs to be provided for the era
 %  output file
+%
+%8/16/17 PC
+% fixed bug when trying to run era_startproc in cmd win without using
+%  era_start
+% added input to preference window for viewing trace plots prior to saving
+%  Stan outputs
+%
+%8/22/17 PC
+% bug fixes for passing input for trace plots to prefs
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -75,7 +84,7 @@ if ~isempty(era_gui)
     %Grab preferences if they exist
     if ~isempty(varargin)
 
-        %check if for era_prefs
+        %check for era_prefs
         ind = find(strcmp('era_prefs',varargin),1);
         if ~isempty(ind)
             era_prefs = varargin{ind+1}; 
@@ -92,6 +101,17 @@ if ~isempty(era_gui)
     end
     
     close(era_gui);
+    
+elseif isempty(era_gui)
+    
+    %load default preferences for processing and viewing data
+    era_prefs = era_defaults;
+
+    %attach the current version number to era_prefs
+    era_prefs.ver = era_defineversion;
+
+    %define parameters for figure position
+    era_prefs.guis.fsize = get(0,'DefaultTextFontSize');
     
 end
 
@@ -433,7 +453,7 @@ newprefs.nchains = uicontrol(era_gui,'Style','edit','fontsize',era_prefs.guis.fs
 %next row
 row = row - rowspace;
 
-%input for number of stan iterations
+%input for specifying the number of iterations to run
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String','Number of iterations:',...
@@ -447,7 +467,7 @@ newprefs.niter = uicontrol(era_gui,'Style','edit','fontsize',era_prefs.guis.fsiz
 %next row
 row = row - rowspace;
 
-%input for number of stan iterations
+%input for specifying whether to use verbose stan output
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String','Verbose Stan output (print each iteration):',...
@@ -457,6 +477,21 @@ uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
 newprefs.verbose = uicontrol(era_gui,'Style','pop',...
     'fontsize',era_prefs.guis.fsize,'String',{'No';'Yes'},...
     'Value',era_prefs.proc.verbose,...
+    'Position', [rcol row+5 era_prefs.guis.pos(4)/2 30]);  
+
+%next row
+row = row - rowspace;
+
+%input for specifying whether to view trace plots
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
+    'HorizontalAlignment','left',...
+    'String','View trace plots prior to saving Stan output',...
+    'Tooltip','Displays trace plots to give the user the option to rerun',...
+    'Position', [lcol row era_prefs.guis.pos(4)/2 30]);  
+
+newprefs.traceplots = uicontrol(era_gui,'Style','pop',...
+    'fontsize',era_prefs.guis.fsize,'String',{'No';'Yes'},...
+    'Value',era_prefs.proc.traceplots,...
     'Position', [rcol row+5 era_prefs.guis.pos(4)/2 30]);  
 
 %next row with extra space
@@ -497,6 +532,7 @@ newprefs = varargin{ind+1};
 era_prefs.proc.nchains = str2double(newprefs.nchains.String);
 era_prefs.proc.niter = str2double(newprefs.niter.String);
 era_prefs.proc.verbose = newprefs.verbose.Value;
+era_prefs.proc.traceplots = newprefs.traceplots.Value;
 
 %find era_gui
 era_gui = findobj('Tag','era_gui');

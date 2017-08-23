@@ -4,7 +4,7 @@ function era_relfigures(varargin)
 %
 %era_relfigures('era_data',era_data)
 %
-%Last Modified 1/19/17
+%Last Modified 8/17/17
 %
 %Required Inputs:
 % era_data - ERA Toolbox data structure array containing outputs from
@@ -18,7 +18,7 @@ function era_relfigures(varargin)
 %  included in average
 % ploticc - plot the intraclass correlation coefficients for data. This ICC
 %  can be interpreted as the proportion of total variance that is between
-%  persons.
+%  persons
 % showinct - display table with information for each event/group
 %  combination (cutoffs and dependability)
 % showoverallt - display table with information for data including all
@@ -103,6 +103,8 @@ function era_relfigures(varargin)
 %
 %1/19/17 PC
 % updated copyright
+%8/17/17 PC
+% cleaned up comments a bit
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -117,15 +119,15 @@ if ~isempty(varargin)
         'See help era_relfigures for more information on optional inputs'));
     end
     
-    %check if a location for the file to be loaded was specified. 
+    %check whether era_data was provided
     %If it is not found, set display error.
     ind = find(strcmp('era_data',varargin),1);
     if ~isempty(ind)
         era_data = varargin{ind+1}; 
     else 
         error('varargin:nofile',... %Error code and associated error
-        strcat('WARNING: File location not specified \n\n',... 
-        'Please input the full path specifying the file to be loaded \n'));
+        strcat('WARNING: era_data not specified \n\n',... 
+        'Please input the era_data to be loaded \n'));
     end
    
     %check if the dependability cutoff was specified 
@@ -188,7 +190,7 @@ if ~isempty(varargin)
         showoverallt = 1; %default is 1
     end
     
-    %check if depplotntrials is provided
+    %check if plotntrials is provided
     ind = find(strcmp('plotntrials',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
@@ -287,7 +289,7 @@ end %if ~isempty(varargin)
 
 %if no good data were found then abort so you user can specify a different
 %reliability threshold
-if relerr.nogooddata == 1;
+if relerr.nogooddata == 1
     return;
 end
 
