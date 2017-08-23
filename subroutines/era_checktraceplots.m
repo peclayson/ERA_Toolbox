@@ -3,7 +3,7 @@ function era_checktraceplots(REL,varargin)
 %View trace plots of Stan parameters and ask the user whether Stan should
 % rerun or save the outputs
 %
-%Last Updated 8/22/17
+%Last Updated 8/23/17
 %
 %To identify whether the estimates are stable, the should look like "fat,
 %hairy caterpillars". See User Manual for more information.
@@ -48,6 +48,7 @@ function era_checktraceplots(REL,varargin)
 %8/23/17 PC
 % after continued testing I realized that it was collapsing across group
 %  and event for each parameter - fixed
+% additional to fix to counting groups and events
 
 %check for era_prefs
 if nargin == 0 || isempty(REL)
@@ -75,6 +76,26 @@ if ~isempty(varargin)
     else 
         askuser = 0;
     end
+end
+
+%check whether any groups exist
+if strcmpi(REL.groups,'none')
+    ngroups = 1;
+    %gnames = cellstr(era_data.rel.groups);
+    gnames ={''};
+else
+    ngroups = length(REL.groups);
+    gnames = REL.groups(:);
+end
+
+%check whether any events exist
+if strcmpi(REL.events,'none')
+    nevents = 1;
+    %enames = cellstr(REL.events);
+    enames = {''};
+else
+    nevents = length(REL.events);
+    enames = REL.events(:);
 end
 
 %create an x-axis for the number of observations

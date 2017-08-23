@@ -4,7 +4,7 @@ function era_data = era_computerelwrap(varargin)
 %
 %era_dataout = era_relwrap('era_prefs',era_prefs,'era_data',era_data)
 %
-%Last Updated 8/22/17
+%Last Updated 8/23/17
 %
 %Input
 % era_prefs - toolbox preferences
@@ -56,6 +56,9 @@ function era_data = era_computerelwrap(varargin)
 %
 %8/22/17 PC
 % updated bug fixes to viewing trace plots
+%
+%8/23/17 PC
+% fixed problem with trace plots not closing
 
 %pull era_prefs and era_data from varargin
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -180,11 +183,6 @@ while rerun ~= 0
         close(era_gui);
         delete(era_gui);
         
-        era_tplots = findobj('Tag','tplots');
-        if ~isempty(era_tplots)
-            close(era_tplots);
-            delete(era_tplots);
-        end
     else
         
         %if chains converged, do not rerun
@@ -196,10 +194,20 @@ while rerun ~= 0
     %check if the user wanted to see the trace plots
     if era_prefs.proc.traceplots == 2 && rerun == 0
         era_checktraceplots(REL,'askuser',1);
+        
+        %close gui after pulling input from user
         era_gui = findobj('Tag','era_gui');
         rerun = guidata(era_gui);
         close(era_gui);
         delete(era_gui);
+        
+        %close window for trace plots
+        era_tplots = findobj('Tag','tplots');
+        if ~isempty(era_tplots)
+            close(era_tplots);
+            delete(era_tplots);
+        end
+        
     end
     
     %if convergence was not met and the user would like to rerun the model,
