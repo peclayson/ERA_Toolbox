@@ -44,6 +44,10 @@ function era_checktraceplots(REL,varargin)
 % changes after running the checktraceplots function from the gui
 % new input to specify whether the user should be asked about rerunning the
 %  model
+%
+%8/23/17 PC
+% after continued testing I realized that it was collapsing across group
+%  and event for each parameter - fixed
 
 %check for era_prefs
 if nargin == 0 || isempty(REL)
@@ -73,26 +77,6 @@ if ~isempty(varargin)
     end
 end
 
-%check whether any groups exist
-if strcmpi(REL.groups,'none')
-    ngroups = 1;
-    %gnames = cellstr(era_data.rel.groups);
-    gnames ={''};
-else
-    ngroups = length(REL.groups);
-    gnames = REL.groups(:);
-end
-
-%check whether any events exist
-if strcmpi(REL.events,'none')
-    nevents = 1;
-    %enames = cellstr(REL.events);
-    enames = {''};
-else
-    nevents = length(REL.events);
-    enames = REL.events(:);
-end
-
 %create an x-axis for the number of observations
 x = 1:REL.niter/2;
 
@@ -112,6 +96,7 @@ set(gcf,'Name', 'Trace Plots of Stan Parameters');
 
 trackwhichplot = 1;
 countgroupevent = 1;
+nrow = 1;
 
 %Create the trace plots for each parameter
 for nplot=1:(yplots * 3)
@@ -121,10 +106,10 @@ for nplot=1:(yplots * 3)
     %keep track of which plot is being plotted so it ends up in the
     %appropriate column with the appropriate labels
     if trackwhichplot == 1
-
+        
         for jj = 1:REL.nchains
             tpdata(:,jj) = REL.out.mu(((jj-1)*(REL.niter/2))+1:...
-                jj*(REL.niter/2));
+                jj*(REL.niter/2),nrow);
         end
         
         plot(x,tpdata);
@@ -146,7 +131,7 @@ for nplot=1:(yplots * 3)
 
         for jj = 1:REL.nchains
             tpdata(:,jj) = REL.out.sig_u(((jj-1)*(REL.niter/2))+1:...
-                jj*(REL.niter/2));
+                jj*(REL.niter/2),nrow);
         end
 
         plot(x,tpdata);
@@ -159,7 +144,7 @@ for nplot=1:(yplots * 3)
 
         for jj = 1:REL.nchains
             tpdata(:,jj) = REL.out.sig_e(((jj-1)*(REL.niter/2))+1:...
-                jj*(REL.niter/2));
+                jj*(REL.niter/2),nrow);
         end
 
         plot(x,tpdata);
@@ -167,6 +152,7 @@ for nplot=1:(yplots * 3)
         printtitles(yplots,nplot,fsize);
         
         trackwhichplot = 1;
+        nrow = nrow + 1;
         countgroupevent = countgroupevent + 1;
     end
 
