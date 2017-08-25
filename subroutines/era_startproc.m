@@ -3,7 +3,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 8/24/17
+%Last Updated 8/25/17
 %
 %
 %Input
@@ -77,8 +77,8 @@ function era_startproc(varargin)
 %8/22/17 PC
 % bug fixes for passing input for trace plots to prefs
 %
-%8/24/17 PC
-% new changes to allow user to select a subset of groups or events to
+%8/25/17 PC
+% new changes to allow user to select a subset of groups and/or events to
 %  process
 
 %check if era_gui is open. If the user executes era_startproc and skips
@@ -154,6 +154,15 @@ vcollist{end+1} = 'none';
 %after the chains did not converge
 if ~exist('era_prefs','var')
     [era_prefs,~] = era_findprefsdata(varargin);
+elseif isempty(era_prefs)
+    %load default preferences for processing and viewing data
+    era_prefs = era_defaults;
+
+    %attach the current version number to era_prefs
+    era_prefs.ver = era_defineversion;
+
+    %define parameters for figure position
+    era_prefs.guis.fsize = get(0,'DefaultTextFontSize');
 end
 
 %Insert the information into a data structure for holding the era data
@@ -349,6 +358,7 @@ inplists(4) = uicontrol(era_gui,'Style','pop','fontsize',era_prefs.guis.fsize,..
 uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String','...',...
+    'TooltipString','Select a subset of events to process',...
     'Position', [14*figwidth/15 row+2 figwidth/15 27],...
     'Callback',{@selectevents_call,'era_prefs',era_prefs,...
     'era_data',era_data,'inplists',inplists}); 
@@ -358,6 +368,7 @@ uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
 uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String','...',...
+    'TooltipString','Select a subset of groups to process',...
     'Position', [14*figwidth/15 (row+2)+rowspace figwidth/15 27],...
     'Callback',{@selectgroups_call,'era_prefs',era_prefs,...
     'era_data',era_data,'inplists',inplists});
@@ -1002,6 +1013,52 @@ if choices(4) ~= length(era_data.proc.collist)
     era_data.proc.eventheader = char(era_data.proc.collist(choices(4)));
 elseif choices(4) == length(era_data.proc.collist)
     era_data.proc.eventheader = '';
+end
+
+%check whether particular events were specified to process. If not, process
+%all event types. Also, if event was changed, overwrite the old and replace
+%with all the new event types.
+if (isempty(era_prefs.proc.inp.whicheventscol) && ...
+        ~strcmpi(era_data.proc.collist{era_prefs.proc.inp.event},'none')) || ...
+        (~isempty(era_prefs.proc.inp.whicheventscol) && ...
+        era_prefs.proc.inp.whicheventscol ~= era_prefs.proc.inp.event)
+    
+    %pull a list of events from the file based on the input from era_gui
+    enames = unique(era_data.raw.data.(era_data.proc.collist{...
+        era_prefs.proc.inp.event}));
+
+    era_prefs.proc.inp.whicheventscol = era_prefs.proc.inp.event;
+    era_prefs.proc.inp.whichevents = enames;   
+    
+end
+
+%check whether particular group were specified to process. If not, process
+%all group types. Also, if group was changed, overwrite the old and replace
+%with all the new group types.
+if (isempty(era_prefs.proc.inp.whichgroupscol) &&...
+        ~strcmpi(era_data.proc.collist{era_prefs.proc.inp.group},'none')) || ...
+        (~isempty(era_prefs.proc.inp.whichgroupscol) && ...
+        era_prefs.proc.inp.whichgroupscol ~= era_prefs.proc.inp.group)
+    
+    %pull a list of groups from the file based on the input from era_gui
+    gnames = unique(era_data.raw.data.(era_data.proc.collist{...
+        era_prefs.proc.inp.group}));
+    
+    era_prefs.proc.inp.whichgroupscol = era_prefs.proc.inp.group;
+    era_prefs.proc.inp.whichgroups = gnames;  
+    
+end
+
+%put the information about which events and groups to process in era_data
+if ~strcmpi(era_data.proc.collist{era_prefs.proc.inp.event},'none')
+    era_data.proc.whichevents = era_prefs.proc.inp.whichevents;
+else
+    era_data.proc.whichevents = '';
+end
+if ~strcmpi(era_data.proc.collist{era_prefs.proc.inp.group},'none')
+    era_data.proc.whichgroups = era_prefs.proc.inp.whichgroups;
+else
+    era_data.proc.whichgroups = '';
 end
 
 %find era_gui
