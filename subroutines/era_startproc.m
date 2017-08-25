@@ -3,7 +3,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 8/22/17
+%Last Updated 8/25/17
 %
 %
 %Input
@@ -76,6 +76,10 @@ function era_startproc(varargin)
 %
 %8/22/17 PC
 % bug fixes for passing input for trace plots to prefs
+%
+%8/25/17 PC
+% new changes to allow user to select a subset of groups and/or events to
+%  process
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -126,8 +130,8 @@ end
 
 %if the user does not select a file, then take the user back to era_start    
 if filepart == 0 
-    errordlg('No file selected','File Error');
     era_start;
+    errordlg('No file selected','File Error');
     return;
 end
 
@@ -150,6 +154,15 @@ vcollist{end+1} = 'none';
 %after the chains did not converge
 if ~exist('era_prefs','var')
     [era_prefs,~] = era_findprefsdata(varargin);
+elseif isempty(era_prefs)
+    %load default preferences for processing and viewing data
+    era_prefs = era_defaults;
+
+    %attach the current version number to era_prefs
+    era_prefs.ver = era_defineversion;
+
+    %define parameters for figure position
+    era_prefs.guis.fsize = get(0,'DefaultTextFontSize');
 end
 
 %Insert the information into a data structure for holding the era data
@@ -203,6 +216,10 @@ if ~isfield(era_prefs.proc,'inp')
     era_prefs.proc.inp.meas = 2;
     era_prefs.proc.inp.group = length(era_data.proc.collist);
     era_prefs.proc.inp.event = length(era_data.proc.collist);
+    era_prefs.proc.inp.whichgroups = '';
+    era_prefs.proc.inp.whichgroupscol = [];
+    era_prefs.proc.inp.whichevents = '';
+    era_prefs.proc.inp.whicheventscol = [];
 
     %check for a participant header
     poss = {'Subject' 'ID' 'Participant' 'SubjID' 'Subj'};
@@ -316,7 +333,14 @@ uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
 
 inplists(3) = uicontrol(era_gui,'Style','pop','fontsize',era_prefs.guis.fsize,...
     'String',era_data.proc.collist,'Value',era_prefs.proc.inp.group,...
-    'Position', [rcol row figwidth/2 25]); 
+    'Position', [rcol row figwidth/2.25 25]); 
+
+uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
+    'HorizontalAlignment','center',...
+    'String','...',...
+    'Position', [14*figwidth/15 row+2 figwidth/15 27],...
+    'Callback',{@selectgroups_call,'era_prefs',era_prefs,...
+    'era_data',era_data,'inplists',inplists}); 
 
 %next row
 row = row - rowspace;
@@ -329,7 +353,25 @@ uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
 
 inplists(4) = uicontrol(era_gui,'Style','pop','fontsize',era_prefs.guis.fsize,...
     'String',era_data.proc.collist,'Value',era_prefs.proc.inp.event,...
-    'Position', [rcol row figwidth/2 25]); 
+    'Position', [rcol row figwidth/2.25 25]); 
+
+uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
+    'HorizontalAlignment','center',...
+    'String','...',...
+    'TooltipString','Select a subset of events to process',...
+    'Position', [14*figwidth/15 row+2 figwidth/15 27],...
+    'Callback',{@selectevents_call,'era_prefs',era_prefs,...
+    'era_data',era_data,'inplists',inplists}); 
+
+%Since this button uses inplists as an input, it needed to be specified 
+%after all of inputs had been placed in inplists
+uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
+    'HorizontalAlignment','center',...
+    'String','...',...
+    'TooltipString','Select a subset of groups to process',...
+    'Position', [14*figwidth/15 (row+2)+rowspace figwidth/15 27],...
+    'Callback',{@selectgroups_call,'era_prefs',era_prefs,...
+    'era_data',era_data,'inplists',inplists});
 
 %next row with extra space
 row = row - rowspace*2.5;
@@ -584,6 +626,347 @@ era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
 
 end
 
+function selectgroups_call(varargin)
+%select groups to be processed in the dataset
+%
+%Input 
+% era_prefs - toolbox preferences
+% era_data - toolbox data
+%
+%Output
+% There are no direct outputs to the Matlab workspace. The inputs will be
+%  stored for later processing
+%
+
+%pull era_prefs and era_data from varargin
+[era_prefs, era_data] = era_findprefsdata(varargin);
+
+%find inplists
+ind = find(strcmp('inplists',varargin),1);
+if ~isempty(ind)
+    inplists = varargin{ind+1}; 
+    choices = cell2mat(get(inplists(:),'value'));
+    era_prefs.proc.inp.id = choices(1);
+    era_prefs.proc.inp.meas = choices(2);
+    era_prefs.proc.inp.group = choices(3);
+    era_prefs.proc.inp.event = choices(4);
+end
+
+%check if era_gui is open.
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    era_prefs.guis.pos = era_gui.Position;
+    close(era_gui);
+else
+    era_prefs.guis.pos=[400 400 600 400];
+end
+
+%ensure that 'none' is not selected. If it is, spit out an error and go
+%back to era_startproc_gui
+if strcmpi(era_data.proc.collist{era_prefs.proc.inp.group},'none')
+    era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+    errordlg('No group column selected. Select a column for group',...
+        'Group Column Not Defined');
+    return;
+end
+
+%pull a list of groups from the file based on the input from era_gui
+gnames = unique(era_data.raw.data.(era_data.proc.collist{...
+    era_prefs.proc.inp.group}));
+
+%check whether this function has been called before and whether the column
+%assigned to group has changed
+if isempty(era_prefs.proc.inp.whichgroupscol) || ...
+        (~isempty(era_prefs.proc.inp.whichgroupscol) && ...
+        era_prefs.proc.inp.whichgroupscol ~= era_prefs.proc.inp.group)
+    era_prefs.proc.inp.whichgroupscol = era_prefs.proc.inp.group;
+    era_prefs.proc.inp.whichgroups = gnames;
+    gind = 1:length(gnames);
+    
+%if the column assigned to group is the same, then pull the previous inputs
+elseif (~isempty(era_prefs.proc.inp.whichgroupscol) && ...
+        era_prefs.proc.inp.whichgroupscol == era_prefs.proc.inp.group)   
+    gind = zeros(1,length(era_prefs.proc.inp.whichgroups));
+    for ii = 1:length(era_prefs.proc.inp.whichgroups)
+        gind(ii) = find(strcmp(era_prefs.proc.inp.whichgroups{ii},gnames));
+    end
+end
+
+%define parameters for figure position
+figwidth = 500;
+figheight = 400;
+
+%define space between rows and first row location
+rowspace = 25;
+row = figheight - rowspace*2;
+
+era_gui_whichgroups = figure('unit','pix','Visible','off',...
+  'position',[400 400 figwidth figheight],...
+  'menub','no',...
+  'name','Specify Which Groups to Process',...
+  'numbertitle','off',...
+  'resize','off');  
+
+movegui(era_gui_whichgroups,'center');
+
+str = {'Select which groups you would like to be processed:'};
+
+%Write text
+uicontrol(era_gui_whichgroups,'Style','text','fontsize',16,...
+    'HorizontalAlignment','center',...
+    'String',str,...
+    'Position',[0 row figwidth 25]);     
+
+%bump down to next row
+row = row - rowspace*8.5;
+
+glist = uicontrol(era_gui_whichgroups,'style','list',...
+     'min',0,'max',length(gnames),...
+     'Value',gind,...
+     'Position',[.5*figwidth/4 row 3*figwidth/4 figheight/2],...
+     'string',gnames);
+
+%Create a button that will go back to era_proc without saving
+uicontrol(era_gui_whichgroups,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','Back',...
+    'Position', [figwidth/8 25 figwidth/3 75],...
+    'Callback',{@era_whichgroups_back_call,'era_prefs',era_prefs,...
+    'era_data',era_data}); 
+
+%Create button that will save group inputs
+uicontrol(era_gui_whichgroups,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','Save',...
+    'Position', [4.5*figwidth/8 25 figwidth/3 75],...
+    'Callback',{@era_whichgroups_save_call,'era_prefs',era_prefs,...
+    'era_data',era_data,'glist',glist,'gnames',gnames});  
+ 
+%display gui
+set(era_gui_whichgroups,'Visible','on');
+
+%tag the gui
+era_gui_whichgroups.Tag = 'era_gui_whichgroups';
+end
+
+function era_whichgroups_back_call(varargin)
+%go back to era_startproc and do not save which groups should be processed
+
+%pull era_prefs and era_data from varargin
+[era_prefs, era_data] = era_findprefsdata(varargin);
+
+%find era_gui_whichgroups
+era_gui_whichgroups = findobj('Tag','era_gui_whichgroups');
+
+%close era_gui
+close(era_gui_whichgroups);
+
+%execute era_startproc_gui with the old preferences
+era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+
+end
+
+function era_whichgroups_save_call(varargin)
+%go back to era_startproc and save which groups should be processed
+
+%pull era_prefs and era_data from varargin
+[era_prefs, era_data] = era_findprefsdata(varargin);
+
+%find glist and gnames
+ind = find(strcmp('glist',varargin),1);
+glist = varargin{ind+1}.Value; 
+ind = find(strcmp('gnames',varargin),1);
+gnames = varargin{ind+1};
+
+groups = cell(1,length(glist));
+
+for ii = 1:length(glist)
+    groups{ii} = gnames{glist(ii)};
+end   
+
+era_prefs.proc.inp.whichgroups = groups;
+
+%find era_gui_whichgroups
+era_gui_whichgroups = findobj('Tag','era_gui_whichgroups');
+
+%close era_gui
+close(era_gui_whichgroups);
+
+%execute era_startproc_gui with the old preferences
+era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+end
+
+function selectevents_call(varargin)
+%select events to be processed in the dataset
+%
+%Input 
+% era_prefs - toolbox preferences
+% era_data - toolbox data
+%
+%Output
+% There are no direct outputs to the Matlab workspace. The inputs will be
+%  stored for later processing
+%
+
+%pull era_prefs and era_data from varargin
+[era_prefs, era_data] = era_findprefsdata(varargin);
+
+%find inplists
+ind = find(strcmp('inplists',varargin),1);
+if ~isempty(ind)
+    inplists = varargin{ind+1}; 
+    choices = cell2mat(get(inplists(:),'value'));
+    era_prefs.proc.inp.id = choices(1);
+    era_prefs.proc.inp.meas = choices(2);
+    era_prefs.proc.inp.group = choices(3);
+    era_prefs.proc.inp.event = choices(4);
+end
+
+%check if era_gui is open.
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    era_prefs.guis.pos = era_gui.Position;
+    close(era_gui);
+else
+    era_prefs.guis.pos=[400 400 600 400];
+end
+
+%ensure that 'none' is not selected. If it is, spit out an error and go
+%back to era_startproc_gui
+if strcmpi(era_data.proc.collist{era_prefs.proc.inp.event},'none')
+    era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+    errordlg('No event column selected. Select a column for event',...
+        'Event Column Not Defined');
+    return;
+end
+
+%pull a list of events from the file based on the input from era_gui
+enames = unique(era_data.raw.data.(era_data.proc.collist{...
+    era_prefs.proc.inp.event}));
+
+%check whether this function has been called before and whether the column
+%assigned to event has changed
+if isempty(era_prefs.proc.inp.whicheventscol) || ...
+        (~isempty(era_prefs.proc.inp.whicheventscol) && ...
+        era_prefs.proc.inp.whicheventscol ~= era_prefs.proc.inp.event)
+    era_prefs.proc.inp.whicheventscol = era_prefs.proc.inp.event;
+    era_prefs.proc.inp.whichevents = enames;
+    eind = 1:length(enames);
+    
+%if the column assigned to event is the same, then pull the previous inputs
+elseif (~isempty(era_prefs.proc.inp.whicheventscol) && ...
+        era_prefs.proc.inp.whicheventscol == era_prefs.proc.inp.event)   
+    eind = zeros(1,length(era_prefs.proc.inp.whichevents));
+    for ii = 1:length(era_prefs.proc.inp.whichevents)
+        eind(ii) = find(strcmp(era_prefs.proc.inp.whichevents{ii},enames));
+    end
+end
+
+
+%define parameters for figure position
+figwidth = 500;
+figheight = 400;
+
+%define space between rows and first row location
+rowspace = 25;
+row = figheight - rowspace*2;
+
+era_gui_whichevents = figure('unit','pix','Visible','off',...
+  'position',[400 400 figwidth figheight],...
+  'menub','no',...
+  'name','Specify Which Events to Process',...
+  'numbertitle','off',...
+  'resize','off');  
+
+movegui(era_gui_whichevents,'center');
+
+str = {'Select which events you would like to be processed:'};
+
+%Write text
+uicontrol(era_gui_whichevents,'Style','text','fontsize',16,...
+    'HorizontalAlignment','center',...
+    'String',str,...
+    'Position',[0 row figwidth 25]);     
+
+%bump down to next row
+row = row - rowspace*8.5;
+
+elist = uicontrol(era_gui_whichevents,'style','list',...
+     'min',0,'max',length(enames),...
+     'Value',eind,...
+     'Position',[.5*figwidth/4 row 3*figwidth/4 figheight/2],...
+     'string',enames);
+
+%Create a button that will go back to era_proc without saving
+uicontrol(era_gui_whichevents,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','Back',...
+    'Position', [figwidth/8 25 figwidth/3 75],...
+    'Callback',{@era_whichevents_back_call,'era_prefs',era_prefs,...
+    'era_data',era_data}); 
+
+%Create button that will save events inputs
+uicontrol(era_gui_whichevents,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','Save',...
+    'Position', [4.5*figwidth/8 25 figwidth/3 75],...
+    'Callback',{@era_whichevents_save_call,'era_prefs',era_prefs,...
+    'era_data',era_data,'elist',elist,'enames',enames});  
+ 
+%display gui
+set(era_gui_whichevents,'Visible','on');
+
+%tag the gui
+era_gui_whichevents.Tag = 'era_gui_whichevents';
+end
+
+function era_whichevents_back_call(varargin)
+%go back to era_startproc and do not save which events should be processed
+
+%pull era_prefs and era_data from varargin
+[era_prefs, era_data] = era_findprefsdata(varargin);
+
+%find era_gui_whichevents
+era_gui_whichevents = findobj('Tag','era_gui_whichevents');
+
+%close era_gui
+close(era_gui_whichevents);
+
+%execute era_startproc_gui with the old preferences
+era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+
+end
+
+function era_whichevents_save_call(varargin)
+%go back to era_startproc and save which events should be processed
+
+%pull era_prefs and era_data from varargin
+[era_prefs, era_data] = era_findprefsdata(varargin);
+
+%find glist and gnames
+ind = find(strcmp('elist',varargin),1);
+elist = varargin{ind+1}.Value; 
+ind = find(strcmp('enames',varargin),1);
+enames = varargin{ind+1};
+
+events = cell(1,length(elist));
+
+for ii = 1:length(elist)
+    events{ii} = enames{elist(ii)};
+end   
+
+era_prefs.proc.inp.whichevents = events;
+
+%find era_gui_whichevents
+era_gui_whichevents = findobj('Tag','era_gui_whichevents');
+
+%close era_gui
+close(era_gui_whichevents);
+
+%execute era_startproc_gui with the new preferences
+era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+end
+
 
 function era_exec(varargin)
 %if execute button is pushed, parse input to run in era_relwrap
@@ -630,6 +1013,52 @@ if choices(4) ~= length(era_data.proc.collist)
     era_data.proc.eventheader = char(era_data.proc.collist(choices(4)));
 elseif choices(4) == length(era_data.proc.collist)
     era_data.proc.eventheader = '';
+end
+
+%check whether particular events were specified to process. If not, process
+%all event types. Also, if event was changed, overwrite the old and replace
+%with all the new event types.
+if (isempty(era_prefs.proc.inp.whicheventscol) && ...
+        ~strcmpi(era_data.proc.collist{era_prefs.proc.inp.event},'none')) || ...
+        (~isempty(era_prefs.proc.inp.whicheventscol) && ...
+        era_prefs.proc.inp.whicheventscol ~= era_prefs.proc.inp.event)
+    
+    %pull a list of events from the file based on the input from era_gui
+    enames = unique(era_data.raw.data.(era_data.proc.collist{...
+        era_prefs.proc.inp.event}));
+
+    era_prefs.proc.inp.whicheventscol = era_prefs.proc.inp.event;
+    era_prefs.proc.inp.whichevents = enames;   
+    
+end
+
+%check whether particular group were specified to process. If not, process
+%all group types. Also, if group was changed, overwrite the old and replace
+%with all the new group types.
+if (isempty(era_prefs.proc.inp.whichgroupscol) &&...
+        ~strcmpi(era_data.proc.collist{era_prefs.proc.inp.group},'none')) || ...
+        (~isempty(era_prefs.proc.inp.whichgroupscol) && ...
+        era_prefs.proc.inp.whichgroupscol ~= era_prefs.proc.inp.group)
+    
+    %pull a list of groups from the file based on the input from era_gui
+    gnames = unique(era_data.raw.data.(era_data.proc.collist{...
+        era_prefs.proc.inp.group}));
+    
+    era_prefs.proc.inp.whichgroupscol = era_prefs.proc.inp.group;
+    era_prefs.proc.inp.whichgroups = gnames;  
+    
+end
+
+%put the information about which events and groups to process in era_data
+if ~strcmpi(era_data.proc.collist{era_prefs.proc.inp.event},'none')
+    era_data.proc.whichevents = era_prefs.proc.inp.whichevents;
+else
+    era_data.proc.whichevents = '';
+end
+if ~strcmpi(era_data.proc.collist{era_prefs.proc.inp.group},'none')
+    era_data.proc.whichgroups = era_prefs.proc.inp.whichgroups;
+else
+    era_data.proc.whichgroups = '';
 end
 
 %find era_gui

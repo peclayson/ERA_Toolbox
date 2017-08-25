@@ -4,7 +4,7 @@ function erainstalledver = era_updatecheck(eraver)
 %
 %era_updatecheck
 %
-%Lasted Updated 8/13/17
+%Lasted Updated 8/24/17
 %
 %Required Input:
 % eraver - ERA Toolbox version
@@ -52,6 +52,9 @@ function erainstalledver = era_updatecheck(eraver)
 %8/13/17 PC
 % fixed typo in error message
 %
+%8/24/17 PC
+% never defined output variable for when there is no internet connection.
+%  It will now be empty
 
 try
     %pull webpage from github
@@ -107,6 +110,7 @@ try
     end
 catch
     fprintf('\nUnable to connect to Github to check for new releases\n');
+    erainstalledver = [];
 end
 
 end

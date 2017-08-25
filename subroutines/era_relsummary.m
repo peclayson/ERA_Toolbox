@@ -5,7 +5,7 @@ function [era_data,relerr] = era_relsummary(varargin)
 %era_relsummary('era_data',era_data,'depcutoff',depcutoff,...
 %   'meascutoff',meascutoff,'depcentmeas',depcentmeas)
 %
-%Last Modified 1/19/17
+%Last Modified 8/25/17
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -72,6 +72,10 @@ function [era_data,relerr] = era_relsummary(varargin)
 %
 %1/19/17 PC
 % updated copyright
+%
+%8/25/17 PC
+% minor changes after adding feature to select subsets of groups and events
+%  to process
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -424,9 +428,13 @@ switch analysis
             
             %Get trial information for those that meet cutoff
             datatrls = REL.data;
-
-            trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
-
+            
+            try
+                trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+            catch
+                trltable = varfun(@length,datatrls{:},'GroupingVariables',{'id'});
+            end
+            
             ind2include = trltable.GroupCount >= trlcutoff;
             ind2exclude = trltable.GroupCount < trlcutoff;
             
@@ -443,6 +451,10 @@ switch analysis
                 relsummary.group(gloc).event(eloc).eventbadids;
 
             datatable = REL.data;
+            
+            if iscell(datatable)
+                datatable = REL.data{1};
+            end
             
             goodids = table(relsummary.group(gloc).goodids);
 

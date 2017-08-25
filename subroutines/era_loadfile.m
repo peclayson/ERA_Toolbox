@@ -3,7 +3,7 @@ function dataout = era_loadfile(varargin)
 %
 %era_loadfile('file',filename)
 %
-%Last Modified 8/13/17
+%Last Modified 8/25/17
 %
 %Required Inputs:
 % era_prefs - preferences from ERA Toolbox
@@ -18,8 +18,12 @@ function dataout = era_loadfile(varargin)
 %  'measurement')
 % groupcol - column label for the group variable. If no label is provided 
 %  it is assumed that there is only one group in the data file.
+% whichgroups - cell array of labels for the group types found in the 
+%  group column to use
 % eventcol - column label for the event variable. If no label is provided
 %  it is assumed there is only one event type in the data file.
+% whichevents - cell array of labels for the event types found in the 
+%  event column to use
 % dataraw - raw data table outputted from era_startproc (so Matlab doesn't
 %  have to re-load entire table)
 %
@@ -65,6 +69,10 @@ function dataout = era_loadfile(varargin)
 %8/13/17 PC
 % added error check: verifies that each participant has a measurement for
 %  each event type
+%
+%8/25/17 PC
+% changes associated with adding feature to select only a subset of groups
+%  and/or events to process
 
 %try to load era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -74,8 +82,10 @@ if ~isempty(era_prefs) && ~isempty(era_data)
     file = era_data.raw.filename;
     idcolname = era_data.proc.idheader;
     groupcolname = era_data.proc.groupheader;
+    whicgroups = era_data.proc.whichgroups;
     meascolname = era_data.proc.measheader;
     eventcolname = era_data.proc.eventheader;
+    whichevents = era_data.proc.whichevents;
     dataraw = era_data.raw.data;
 end
     
@@ -101,7 +111,7 @@ if ~isempty(varargin) && (isempty(era_prefs) || isempty(era_data))
         file = cell2mat(varargin(ind+1)); 
     else 
         error('varargin:nofile',... %Error code and associated error
-        strcat('WARNING: File location not specified \n\n',... 
+        strcat('Error: File location not specified \n\n',... 
         'Please input the full path specifying the file to be loaded \n'));
     end
    
@@ -123,6 +133,15 @@ if ~isempty(varargin) && (isempty(era_prefs) || isempty(era_data))
         groupcolname = '';
     end
     
+    %check if whichgroups was specified 
+    %If it is not found, assume only one group is present in file
+    ind = find(strcmp('whichgroups',varargin),1);
+    if ~isempty(ind)
+        whichgroups = cell2mat(varargin(ind+1)); 
+    else 
+        whichgroups = '';
+    end
+    
     %check if measurement column was specified 
     %If it is not found, assume default 'measurement'
     ind = find(strcmp('meascol',varargin),1);
@@ -141,6 +160,15 @@ if ~isempty(varargin) && (isempty(era_prefs) || isempty(era_data))
         eventcolname = '';
     end
     
+    %check if whichgroups was specified 
+    %If it is not found, assume only one group is present in file
+    ind = find(strcmp('whichevents',varargin),1);
+    if ~isempty(ind)
+        whichevents = cell2mat(varargin(ind+1)); 
+    else 
+        whichevents = '';
+    end
+    
     %check if dataraw was specified 
     %If it is not found, create an empty variable
     ind = find(strcmp('dataraw',varargin),1);
@@ -153,7 +181,7 @@ if ~isempty(varargin) && (isempty(era_prefs) || isempty(era_data))
 elseif isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
-    strcat('WARNING: Optional inputs are incomplete \n\n',... 
+    strcat('Error: Optional inputs are incomplete \n\n',... 
     'Make sure each variable input is paired with a value \n',...
     'See help era_loadfile for more information on inputs'));
     
@@ -224,7 +252,7 @@ end
 %the user know which columns were problematic
 if exist('headerror','var')
     error('varargin:colheaders',... %Error code and associated error
-    strcat('WARNING: Column headers not properly specified \n\n',... 
+    strcat('Error: Column headers not properly specified \n\n',... 
     'Please specify the headers for\n',char(strjoin(headerror,', ')),'\n',...
     'See help era_loadfile \n'));
 end
@@ -232,11 +260,37 @@ end
 %verify that the data in the measurement column is numeric
 if ~isnumeric(dataout.meas(:))
     error('meas:notnumeric',... %Error code and associated error
-    strcat('WARNING: The data in the measurement column is not numeric\n',...
+    strcat('Error: The data in the measurement column is not numeric\n',...
     'Was the wrong column specified as mesurement?\n\n',...
     'The column specified was',[' ' meascolname],'\n',...
     'Please specify a column with numeric data (ERP measurements)\n',...
     'See help era_loadfile for more information\n'));
+end
+
+%if groups and/or event columns are specified, check whether only certain
+%groups or event should be processed. If there are specific groups or
+%events to process, make sure those groups and events exist in the data (in
+%cases which function was not called by gui).
+if ~isempty(groupcolname) && ~isempty(era_data.proc.whichgroups)
+    for ii = 1:length(era_data.proc.whichgroups)
+       if ~any(strcmpi(dataout.group,era_data.proc.whichgroups{ii}))
+           error('groups:groupmismatch',... %Error code and associated error
+            strcat('Error: Specified groups to process do not exist in data\n',...
+            'See help era_loadfile for more information\n'));
+       end
+    end
+    dataout = dataout(ismember(dataout.group,era_data.proc.whichgroups),:);
+end
+
+if ~isempty(eventcolname) && ~isempty(era_data.proc.whichevents)
+    for ii = 1:length(era_data.proc.whichevents)
+       if ~any(strcmpi(dataout.event,era_data.proc.whichevents{ii}))
+           error('events:eventmismatch',... %Error code and associated error
+            strcat('Error: Specified events to process do not exist in data\n',...
+            'See help era_loadfile for more information\n'));
+       end
+    end
+    dataout = dataout(ismember(dataout.event,era_data.proc.whichevents),:);
 end
 
 %verify that each participant has at least one measurement per event type
@@ -252,11 +306,11 @@ if ~isempty(eventcolname)
         eventcount.Properties.VariableNames{2} = 'Number_of_Events';
         display(eventcount);
         error('meas:mismatchedevents',... %Error code and associated error
-        strcat('WARNING: All participants do not have at least one\n',...
+        strcat('Error: All participants do not have at least one\n',...
         'measurement per event\n',...
         'The ids and number of events found for each participant are printed',...
         '\nabove to help in finding the problem\n',...
-        'See the ''Preparing Data'' section of the User Manual for more info\n'));
+        'See the ''Preparing Data'' section of the User Manual for more information\n'));
     end
 end
 
