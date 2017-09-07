@@ -1,5 +1,4 @@
 function vartable = era_variancet(varargin)
-%
 %Table of ICCs and between- and within-person standard deviations
 %
 %era_depvartable('era_data',era_data,'gui',1);

@@ -1,5 +1,4 @@
 function RELout = era_checkconv(REL)
-%
 %Check for convergence by examining the potential scale reduction factor
 %(r_hat) and the effective sample size (n_eff)
 %

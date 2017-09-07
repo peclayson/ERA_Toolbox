@@ -1,5 +1,4 @@
 function depvers = era_dependentsversions
-%
 %Specifies the versions used for the dependents of the ERA Toolbox
 %
 %Last Updated 9/7/17

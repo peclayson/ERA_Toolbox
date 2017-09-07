@@ -1,5 +1,4 @@
 function ptintplot = era_ptintervalplot(varargin)
-%
 %Plot the a point estimate with its associated confidence interval
 %
 

@@ -1,5 +1,4 @@
 function overalltable = era_depoverallt(varargin)
-%
 %Display a table with the overall dependability information for data after
 %applying the cutoff
 %

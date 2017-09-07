@@ -1,5 +1,4 @@
 function era_startproc(varargin)
-%
 %Initiate Matlab gui to begin processing data in Stan
 %
 %

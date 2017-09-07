@@ -1,5 +1,4 @@
 function [ll,pt,ul] = era_dep(varargin)
-%
 %Calculate dependability using variance components from CmdStan
 %
 %[ll,pt,ul] = era_dep('bp',var_u,'wp',var_e,'obs',[1 50],'CI',.95)

@@ -1,5 +1,4 @@
 function depplot = era_depvtrialsplot(varargin)
-%
 %Plot the dependability as a function of the number of trials included in
 %an average (stratified by group and condition, if applicable)
 %

@@ -1,5 +1,4 @@
 function era_printversions
-%
 %Print the versions of Matlab, ERA Toolbox, and dependents to command
 %window
 %

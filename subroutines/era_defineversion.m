@@ -1,5 +1,4 @@
 function eraver = era_defineversion
-%
 %Set version for the ERA Toolbox
 %
 %Last Updated 6/25/17

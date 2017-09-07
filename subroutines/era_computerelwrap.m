@@ -1,5 +1,4 @@
 function era_data = era_computerelwrap(varargin)
-%
 %Function to parse inputs from  into era_computerel
 %
 %era_dataout = era_relwrap('era_prefs',era_prefs,'era_data',era_data)

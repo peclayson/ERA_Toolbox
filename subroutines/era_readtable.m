@@ -1,5 +1,4 @@
 function dataout = era_readtable(varargin)
-%
 %Load data into table by cycling through possible delimiters
 %
 %era_readtable('file','J:\Data\MyData.xlsx')

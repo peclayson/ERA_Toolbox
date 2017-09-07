@@ -1,5 +1,4 @@
 function [era_data,relerr] = era_relsummary(varargin)
-%
 %Summarize reliabilty of era_data
 %
 %era_relsummary('era_data',era_data,'depcutoff',depcutoff,...

@@ -1,5 +1,4 @@
 function era_reruncheck
-%
 %Execute gui to ask user whether to rerun model with more iterations
 %
 %Last Updated 8/16/17

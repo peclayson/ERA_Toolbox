@@ -1,5 +1,4 @@
 function versions = era_checkversionsofdeps
-%
 %Check the versions of the dependents for ERA Toolbox
 %
 %Last Updated 6/24/17

@@ -1,5 +1,4 @@
 function [era_prefs,era_data] = era_findprefsdata(varin)
-%
 %Somersault through inputs to find era_prefs and era_data
 %
 %[era_prefs,era_data] = era_findprefsdata(varargin)

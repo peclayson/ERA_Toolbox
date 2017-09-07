@@ -1,5 +1,4 @@
 function inctrltable = era_depcutofft(varargin)
-%
 %Display a table with the information for the cutoffs stratified by group
 % and condition
 %

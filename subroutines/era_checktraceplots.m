@@ -1,5 +1,4 @@
 function era_checktraceplots(REL,varargin)
-%
 %View trace plots of Stan parameters and ask the user whether Stan should
 % rerun or save the outputs
 %

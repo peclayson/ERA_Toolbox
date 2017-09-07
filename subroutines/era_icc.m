@@ -1,5 +1,4 @@
 function [ll,pt,ul] = era_icc(varargin)
-%
 %Calculate ICCs using variance components from CmdStan
 %
 %[ll,pt,ul] = era_icc('bp',var_u,'wp',var_e,'CI',.95)

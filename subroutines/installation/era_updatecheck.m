@@ -1,5 +1,4 @@
 function erainstalledver = era_updatecheck(eraver)
-%
 %Check whether a new release has been posted on Github
 %
 %era_updatecheck
