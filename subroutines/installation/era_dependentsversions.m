@@ -2,7 +2,7 @@ function depvers = era_dependentsversions
 %
 %Specifies the versions used for the dependents of the ERA Toolbox
 %
-%Last Updated 6/24/17
+%Last Updated 9/7/17
 %
 
 %This function just sets the version numbers for CmdStan, MatlabStan, and
@@ -39,9 +39,12 @@ function depvers = era_dependentsversions
 % by Peter Clayson (6/24/17)
 % peter.clayson@gmail.com
 %
+%9/7/17
+% Update cmdstan version. I will not record here each time a version is
+%  updated, but I will record if I make changes to the script itself.
 
 depvers = struct;
-depvers.cmdstan = '2.16.0';
+depvers.cmdstan = '2.17.0';
 depvers.matlabstan = '2.15.1.0';
 depvers.matlabprocessmanager = '0.5.1';
 
