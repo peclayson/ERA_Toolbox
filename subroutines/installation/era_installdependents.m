@@ -3,7 +3,7 @@ function era_installdependents(varargin)
 %
 %era_installdependents
 %
-%Last Updated 8/15/17
+%Last Updated 9/8/17
 %
 %Required Inputs:
 % No inputs are required.
@@ -73,6 +73,11 @@ function era_installdependents(varargin)
 %
 %8/15/17 PC
 % fixed problem checking whether linux is being used
+%
+%9/8/17 PC
+% Macs will not use the terminal command for unpacking the tarball. I was
+%  getting a weird error when using Matlab's unpack for the new version of
+%  CmdStan. Switching to the terminal command seems to have fixed it.
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -352,8 +357,20 @@ if depcheck.cmdstan == 0 && OSver ~= 10
     %download the cmdstan tarball
     fileout = websave('cmdstan.tar.gz',loc);
 
-    %unpack the tarball
-    untar(fileout,wrkdir);
+    %unpack the tarball 
+    %for some reason Matlab's untar function does not unpack the file
+    %correctly, so the system command is used instead
+    status = system('tar --no-same-owner -x -z -f cmdstan.tar.gz');    
+
+    %verify that the tarball was successfully unpacked
+    if status == 1
+        error('CmdStan:notinstalled',... %Error code and associated error
+            strcat('ERROR: The system failed to unpack the cmdstan tarball\n\n',...
+            'Please verify that C++ development environment is installed\n',...
+            'The recommended C++ development environment is XCode\n',...
+            'For installation instructions, see Mac Installation Instructions\n',...
+            'in Appendix A of the User Manual'));
+    end
 
     %delete the tarball after it's been unpacked
     delete(fullfile(wrkdir,'cmdstan.tar.gz'));
@@ -371,7 +388,7 @@ if depcheck.cmdstan == 0 && OSver ~= 10
     
     %update depcheck and display status
     depcheck.cmdstan = 1;
-    fprintf('CmdStan succesfully installed\n');
+    fprintf('CmdStan succesfully downloaded and unpacked\n');
     era_guistatus(depcheck);
     
 elseif depcheck.cmdstan == 0 && OSver == 10
@@ -403,7 +420,7 @@ elseif depcheck.cmdstan == 0 && OSver == 10
     
     %update depcheck and display status
     depcheck.cmdstan = 1;
-    fprintf('CmdStan succesfully installed\n');
+    fprintf('CmdStan succesfully downloaded and unzipped\n');
     era_guistatus(depcheck);
 end
 
@@ -440,7 +457,7 @@ if depcheck.cmdbuild == 0
         era_guistatus(depcheck);
     else
         error('CmdStan:notbuilt',... %Error code and associated error
-            strcat('WARNING: Automatic build of CmdStan failed \n\n',...
+            strcat('ERROR: Automatic build of CmdStan failed \n\n',...
             'Please install CmdStan manually\n',...
             'For installation instructions, see Appendix A of the User Manual'));
     end
