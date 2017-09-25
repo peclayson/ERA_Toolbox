@@ -2,7 +2,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 8/25/17
+%Last Updated 9/25/17
 %
 %
 %Input
@@ -79,6 +79,9 @@ function era_startproc(varargin)
 %8/25/17 PC
 % new changes to allow user to select a subset of groups and/or events to
 %  process
+%9/25/17 PC
+% fixed bug when trying to select a subset of gropus and/or events based on
+%  numerical inputs (rather than string)
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -687,7 +690,13 @@ elseif (~isempty(era_prefs.proc.inp.whichgroupscol) && ...
         era_prefs.proc.inp.whichgroupscol == era_prefs.proc.inp.group)   
     gind = zeros(1,length(era_prefs.proc.inp.whichgroups));
     for ii = 1:length(era_prefs.proc.inp.whichgroups)
-        gind(ii) = find(strcmp(era_prefs.proc.inp.whichgroups{ii},gnames));
+        if ~isnumeric(gnames)
+            gind(ii) = find(strcmp(era_prefs.proc.inp.whichgroups{ii},...
+                gnames));
+        elseif isnumeric(gnames)
+            gind(ii) = find(gnames(:) == ...
+                era_prefs.proc.inp.whichgroups{ii});
+        end
     end
 end
 
@@ -779,9 +788,15 @@ gnames = varargin{ind+1};
 
 groups = cell(1,length(glist));
 
-for ii = 1:length(glist)
-    groups{ii} = gnames{glist(ii)};
-end   
+if ~isnumeric(gnames)
+    for ii = 1:length(glist)
+        groups{ii} = gnames{glist(ii)};
+    end   
+elseif isnumeric(gnames)
+    for ii = 1:length(glist)
+        groups{ii} = gnames(glist(ii));
+    end
+end
 
 era_prefs.proc.inp.whichgroups = groups;
 
@@ -857,10 +872,15 @@ elseif (~isempty(era_prefs.proc.inp.whicheventscol) && ...
         era_prefs.proc.inp.whicheventscol == era_prefs.proc.inp.event)   
     eind = zeros(1,length(era_prefs.proc.inp.whichevents));
     for ii = 1:length(era_prefs.proc.inp.whichevents)
-        eind(ii) = find(strcmp(era_prefs.proc.inp.whichevents{ii},enames));
+        if ~isnumeric(enames)
+            eind(ii) = find(strcmp(era_prefs.proc.inp.whichevents{ii},...
+                enames));
+        elseif isnumeric(enames)
+            eind(ii) = find(enames(:) == ...
+                era_prefs.proc.inp.whichevents{ii});
+        end
     end
 end
-
 
 %define parameters for figure position
 figwidth = 500;
@@ -950,9 +970,15 @@ enames = varargin{ind+1};
 
 events = cell(1,length(elist));
 
-for ii = 1:length(elist)
-    events{ii} = enames{elist(ii)};
-end   
+if ~isnumeric(enames)
+    for ii = 1:length(elist)
+        events{ii} = enames{elist(ii)};
+    end  
+elseif isnumeric(enames)
+    for ii = 1:length(elist)
+        events{ii} = enames(elist(ii));
+    end
+end
 
 era_prefs.proc.inp.whichevents = events;
 
