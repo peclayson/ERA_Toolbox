@@ -5,7 +5,7 @@ function era_updateera
 %
 %era_updateera
 %
-%Last Updated 6/24/17
+%Last Updated 10/6/17
 %
 %Required Inputs:
 % No inputs are required.
@@ -36,10 +36,14 @@ function era_updateera
 % by Peter Clayson (6/24/17)
 % peter.clayson@gmail.com
 %
+% 10/6/17 PC
+%  made changes associated with downloading the new .zip that is provided
+%   so I can attempt to keep track of downloads
 
 %link to newest ERA Toolbox release on github
-urlraw = 'https://github.com/peclayson/ERA_Toolbox/archive/v';
+urlraw = 'https://github.com/peclayson/ERA_Toolbox/releases/download/';
 urlstr = 'https://github.com/peclayson/ERA_Toolbox/releases/latest';
+
 webraw = webread(urlstr,'text','html');
 
 %pull the string that contain the version number
@@ -51,8 +55,10 @@ verraw = strsplit(str{strncmp('Version',str,7)},'<');
 ver = strsplit(verraw{1},'Version ');
 
 %version number will be appended to directory
-ver = ver{2};
+%ver = ver{2};
    
+ver='0.4.6-beta' %take me out
+
 urlstr = strcat(urlraw,ver);
 
 era_dirname = strcat('ERA_Toolbox_v',ver);
@@ -90,7 +96,7 @@ if sys == 1 %mac
             end
             
             wrkdir = fullfile(savepath,era_dirname);
-            era_macdepsinstall(wrkdir,urlstr);
+            era_erainstall(wrkdir,urlstr);
             
         else
             error('mac:oldver',... %Error code and associated error
@@ -116,12 +122,12 @@ elseif sys == 2 %windows
 
     wrkdir = fullfile(savepath,era_dirname);
 
-    era_windepsinstall(wrkdir,urlstr);
+    era_erainstall(wrkdir,urlstr);
 end
         
 end
 
-function era_macdepsinstall(wrkdir,urlstr)
+function era_erainstall(wrkdir,urlstr)
 %install new version of ERA_Toolbox on a Mac
 
 %get the current directory so it can be changed after installation
@@ -132,63 +138,21 @@ old_eradir = which('era_start.m');
 old_eradir = fileparts(old_eradir);
 
 %add extenstion to html to download
-urlstr = strcat(urlstr,'.tar.gz');
-
-%download tarball
-fileout = websave('era_toolbox.tar.gz',urlstr);
-
-%unpack tarball
-untar(fileout,wrkdir);
-
-%delete the tarball file after it's been unpacked
-delete(fileout);
-
-%temporarily turn off warnings that filepaths are being removed
-warning('off','MATLAB:rmpath:DirNotFound');
-
-%remove old ERA_Toolbox files from the path
-rmpath(genpath(old_eradir)); 
-
-%turn warnings back on
-warning('on','MATLAB:rmpath:DirNotFound');
-
-%add files to the Matlab path and save it
-addpath(genpath(wrkdir));
-savepath;
-fprintf('Directories for ERA Toolbox added and saved to Matlab path\n');
-
-%go back to the starting directory
-if strcmp(genpath(old_eradir),startdir)
-    cd(startdir);
-else
-    cd(wrkdir);
-end
-
-era_start;
-
-end
-
-
-function era_windepsinstall(wrkdir,urlstr)
-%install new version of ERA_Toolbox on Windows
-
-%get the current directory so it can be changed after installation
-startdir = cd;
-
-%get the directory of the current era_start file
-old_eradir = which('era_start.m');
-old_eradir = fileparts(old_eradir);
-
-%add extenstion to html to download
-urlstr = strcat(urlstr,'.zip');
+urlstr = strcat(urlstr,'/ERA_Toolbox.zip');
 
 %download zip
-fileout = websave('era_toolbox.tar.gz',urlstr);
+fileout = websave('era_toolbox.zip',urlstr);
+
+%get the installation directory
+installdir = fileparts(fileout);
 
 %unzip
-unzip(fileout,wrkdir);
+unzip(fileout,installdir);
 
-%delete the zip file after it's been unzipped
+%move the files to where they're supposed to go
+movefile(fullfile(installdir,'ERA_Toolbox-master'),wrkdir)
+
+%delete the zip file after it's been unpacked
 delete(fileout);
 
 %temporarily turn off warnings that filepaths are being removed
@@ -215,11 +179,3 @@ end
 era_start;
 
 end
-
-
-
-
-
-
-
-
