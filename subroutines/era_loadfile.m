@@ -3,7 +3,7 @@ function dataout = era_loadfile(varargin)
 %
 %era_loadfile('file',filename)
 %
-%Last Modified 9/25/17
+%Last Modified 10/16/17
 %
 %Required Inputs:
 % era_prefs - preferences from ERA Toolbox
@@ -77,6 +77,10 @@ function dataout = era_loadfile(varargin)
 %9/25/17 PC
 % fixed bug when selecting a subset of groups and/or events based on
 %  numerical inputs
+%
+%10/16/17 PC
+% ran into a bug when indexing a whichgroups or whichevents when containing
+%  charcter arrays
 
 %try to load era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -86,7 +90,7 @@ if ~isempty(era_prefs) && ~isempty(era_data)
     file = era_data.raw.filename;
     idcolname = era_data.proc.idheader;
     groupcolname = era_data.proc.groupheader;
-    whicgroups = era_data.proc.whichgroups;
+    whichgroups = era_data.proc.whichgroups;
     meascolname = era_data.proc.measheader;
     eventcolname = era_data.proc.eventheader;
     whichevents = era_data.proc.whichevents;
@@ -277,7 +281,7 @@ end
 %cases which function was not called by gui).
 if ~isempty(groupcolname) && ~isempty(era_data.proc.whichgroups)
     for ii = 1:length(era_data.proc.whichgroups)
-      if ~isnumeric(era_data.proc.whichgroups{:})
+      if ~isnumeric(era_data.proc.whichgroups{ii})
         if ~any(strcmpi(dataout.group,era_data.proc.whichgroups{ii}))
             error('groups:groupmismatch',... %Error code and associated error
             strcat('Error: Specified groups to process do not exist in data\n',...
@@ -291,18 +295,29 @@ if ~isempty(groupcolname) && ~isempty(era_data.proc.whichgroups)
           end
       end
     end
-    if ~isnumeric(era_data.proc.whichgroups{:})
-        dataout = dataout(ismember(...
-            dataout.group,era_data.proc.whichgroups{:}),:);
-    else
-        dataout = dataout(ismember(...
-            dataout.group,era_data.proc.whichgroups{:}),:);
+    
+    try
+        if ~isnumeric(era_data.proc.whichgroups{:})
+            dataout = dataout(ismember(...
+                dataout.group,era_data.proc.whichgroups{:}),:);
+        else
+            dataout = dataout(ismember(...
+                dataout.group,era_data.proc.whichgroups{:}),:);
+        end
+    catch
+        if ~isnumeric(era_data.proc.whichgroups{1})
+            dataout = dataout(ismember(...
+                dataout.group,era_data.proc.whichgroups),:);
+        else
+            dataout = dataout(ismember(...
+                dataout.group,era_data.proc.whichgroups{:}),:);
+        end
     end
 end
 
 if ~isempty(eventcolname) && ~isempty(era_data.proc.whichevents)
     for ii = 1:length(era_data.proc.whichevents)
-       if ~isnumeric(era_data.proc.whichevents{:})
+       if ~isnumeric(era_data.proc.whichevents{ii})
         if ~any(strcmpi(dataout.event,era_data.proc.whichevents{ii}))
            error('events:eventmismatch',... %Error code and associated error
             strcat('Error: Specified events to process do not exist in data\n',...
@@ -316,13 +331,25 @@ if ~isempty(eventcolname) && ~isempty(era_data.proc.whichevents)
         end
        end   
     end
-    if ~isnumeric(era_data.proc.whichevents{:})
-        dataout = dataout(ismember(...
-            dataout.event,era_data.proc.whichevents),:);
-    else
-        dataout = dataout(ismember(...
-            dataout.event,era_data.proc.whichevents{:}),:);
+    
+    try
+        if ~isnumeric(era_data.proc.whichevents{:})
+            dataout = dataout(ismember(...
+                dataout.event,era_data.proc.whichevents),:);
+        else
+            dataout = dataout(ismember(...
+                dataout.event,era_data.proc.whichevents{:}),:);
+        end
+    catch
+        if ~isnumeric(era_data.proc.whichevents{1})
+            dataout = dataout(ismember(...
+                dataout.event,era_data.proc.whichevents),:);
+        else
+            dataout = dataout(ismember(...
+                dataout.event,era_data.proc.whichevents{:}),:);
+        end
     end
+
 end
 
 %verify that each participant has at least one measurement per event type
