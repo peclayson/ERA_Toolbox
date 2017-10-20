@@ -61,7 +61,7 @@ ver = strsplit(verraw{1},'Version ');
 %version number will be appended to directory
 ver = ver{2};
 
-urlstr = strcat(urlraw,ver);
+urlstr = strcat(urlraw,'v',ver);
 
 era_dirname = strcat('ERA_Toolbox_v',ver);
 
@@ -152,7 +152,7 @@ installdir = fileparts(fileout);
 unzip(fileout,installdir);
 
 %move the files to where they're supposed to go
-movefile(fullfile(installdir,'ERA_Toolbox-master'),wrkdir)
+movefile(fullfile(installdir,'ERA_Toolbox'),wrkdir)
 
 %delete the zip file after it's been unpacked
 delete(fileout);
