@@ -5,7 +5,7 @@ function era_updateera
 %
 %era_updateera
 %
-%Last Updated 10/6/17
+%Last Updated 10/20/17
 %
 %Required Inputs:
 % No inputs are required.
@@ -39,6 +39,10 @@ function era_updateera
 % 10/6/17 PC
 %  made changes associated with downloading the new .zip that is provided
 %   so I can attempt to keep track of downloads
+%
+% 10/20/17 PC
+%  accidentally left some code in that I used for debugging. It's been
+%   taken out.
 
 %link to newest ERA Toolbox release on github
 urlraw = 'https://github.com/peclayson/ERA_Toolbox/releases/download/';
@@ -55,9 +59,7 @@ verraw = strsplit(str{strncmp('Version',str,7)},'<');
 ver = strsplit(verraw{1},'Version ');
 
 %version number will be appended to directory
-%ver = ver{2};
-   
-ver='0.4.6-beta' %take me out
+ver = ver{2};
 
 urlstr = strcat(urlraw,ver);
 
