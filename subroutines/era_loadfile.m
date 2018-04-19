@@ -3,7 +3,7 @@ function dataout = era_loadfile(varargin)
 %
 %era_loadfile('file',filename)
 %
-%Last Modified 10/16/17
+%Last Modified 4/19/18
 %
 %Required Inputs:
 % era_prefs - preferences from ERA Toolbox
@@ -35,7 +35,7 @@ function dataout = era_loadfile(varargin)
 %  group: Group (only when specified, string variable)
 %  event: Event Type (only when specified, string variable)
 
-% Copyright (C) 2016-2017 Peter E. Clayson
+% Copyright (C) 2016-2018 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -81,6 +81,10 @@ function dataout = era_loadfile(varargin)
 %10/16/17 PC
 % ran into a bug when indexing a whichgroups or whichevents when containing
 %  charcter arrays
+%
+%4/19/18 PC
+% see issue #17 on github. fixed bug when indexing whichgroups that was not
+%  loaded as cell array due to numeric rather than string input
 
 %try to load era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -281,37 +285,75 @@ end
 %cases which function was not called by gui).
 if ~isempty(groupcolname) && ~isempty(era_data.proc.whichgroups)
     for ii = 1:length(era_data.proc.whichgroups)
-      if ~isnumeric(era_data.proc.whichgroups{ii})
-        if ~any(strcmpi(dataout.group,era_data.proc.whichgroups{ii}))
-            error('groups:groupmismatch',... %Error code and associated error
-            strcat('Error: Specified groups to process do not exist in data\n',...
-            'See help era_loadfile for more information\n'));
+        if iscell(era_data.proc.whichgroups)
+            if ~isnumeric(era_data.proc.whichgroups{ii})
+                if ~any(strcmpi(dataout.group,era_data.proc.whichgroups{ii}))
+                    error('groups:groupmismatch',... %Error code and associated error
+                        strcat('Error: Specified groups to process do not exist in data\n',...
+                        'See help era_loadfile for more information\n'));
+                end
+            else
+                if ~any(find(dataout.group==era_data.proc.whichgroups{ii}))
+                    error('groups:groupmismatch',... %Error code and associated error
+                        strcat('Error: Specified groups to process do not exist in data\n',...
+                        'See help era_loadfile for more information\n'));
+                end
+            end
+        else
+            if ~isnumeric(era_data.proc.whichgroups(ii))
+                if ~any(strcmpi(dataout.group,era_data.proc.whichgroups(ii)))
+                    error('groups:groupmismatch',... %Error code and associated error
+                        strcat('Error: Specified groups to process do not exist in data\n',...
+                        'See help era_loadfile for more information\n'));
+                end
+            else
+                if ~any(find(dataout.group==era_data.proc.whichgroups(ii)))
+                    error('groups:groupmismatch',... %Error code and associated error
+                        strcat('Error: Specified groups to process do not exist in data\n',...
+                        'See help era_loadfile for more information\n'));
+                end
+            end
+            
         end
-      else
-          if ~any(find(dataout.group==era_data.proc.whichgroups{ii}))
-            error('groups:groupmismatch',... %Error code and associated error
-            strcat('Error: Specified groups to process do not exist in data\n',...
-            'See help era_loadfile for more information\n'));
-          end
-      end
     end
     
     try
-        if ~isnumeric(era_data.proc.whichgroups{:})
-            dataout = dataout(ismember(...
-                dataout.group,era_data.proc.whichgroups{:}),:);
+        if iscell(era_data.proc.whichgroups)
+            if ~isnumeric(era_data.proc.whichgroups{:})
+                dataout = dataout(ismember(...
+                    dataout.group,era_data.proc.whichgroups{:}),:);
+            else
+                dataout = dataout(ismember(...
+                    dataout.group,era_data.proc.whichgroups{:}),:);
+            end
         else
-            dataout = dataout(ismember(...
-                dataout.group,era_data.proc.whichgroups{:}),:);
+            if ~isnumeric(era_data.proc.whichgroups(:))
+                dataout = dataout(ismember(...
+                    dataout.group,era_data.proc.whichgroups(:)),:);
+            else
+                dataout = dataout(ismember(...
+                    dataout.group,era_data.proc.whichgroups(:)),:);
+            end
         end
     catch
-        if ~isnumeric(era_data.proc.whichgroups{1})
-            dataout = dataout(ismember(...
-                dataout.group,era_data.proc.whichgroups),:);
+        if iscell(era_data.proc.whichgroups)
+            if ~isnumeric(era_data.proc.whichgroups{1})
+                dataout = dataout(ismember(...
+                    dataout.group,era_data.proc.whichgroups),:);
+            else
+                dataout = dataout(ismember(...
+                    dataout.group,era_data.proc.whichgroups{:}),:);
+            end
         else
-            dataout = dataout(ismember(...
-                dataout.group,era_data.proc.whichgroups{:}),:);
+            if ~isnumeric(era_data.proc.whichgroups(1))
+                dataout = dataout(ismember(...
+                    dataout.group,era_data.proc.whichgroups),:);
+            else
+                dataout = dataout(ismember(...
+                    dataout.group,era_data.proc.whichgroups(:)),:);
+            end
         end
+        
     end
 end
 
