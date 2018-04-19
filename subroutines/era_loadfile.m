@@ -83,8 +83,9 @@ function dataout = era_loadfile(varargin)
 %  charcter arrays
 %
 %4/19/18 PC
-% see issue #17 on github. fixed bug when indexing whichgroups that was not
-%  loaded as cell array due to numeric rather than string input
+% see issue #17 on github. fixed bug when indexing whichgroups and 
+%  whichevents that was not loaded as cell array 
+%
 
 %try to load era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -359,36 +360,73 @@ end
 
 if ~isempty(eventcolname) && ~isempty(era_data.proc.whichevents)
     for ii = 1:length(era_data.proc.whichevents)
-       if ~isnumeric(era_data.proc.whichevents{ii})
-        if ~any(strcmpi(dataout.event,era_data.proc.whichevents{ii}))
-           error('events:eventmismatch',... %Error code and associated error
-            strcat('Error: Specified events to process do not exist in data\n',...
-            'See help era_loadfile for more information\n'));
+        if iscell(era_data.proc.whichevents)
+            if ~isnumeric(era_data.proc.whichevents{ii})
+                if ~any(strcmpi(dataout.event,era_data.proc.whichevents{ii}))
+                    error('events:eventmismatch',... %Error code and associated error
+                        strcat('Error: Specified events to process do not exist in data\n',...
+                        'See help era_loadfile for more information\n'));
+                end
+            else
+                if ~any(find(dataout.event==era_data.proc.whichevents{ii}))
+                    error('events:eventmismatch',... %Error code and associated error
+                        strcat('Error: Specified events to process do not exist in data\n',...
+                        'See help era_loadfile for more information\n'));
+                end
+            end
+        else
+            if ~isnumeric(era_data.proc.whichevents(ii))
+                if ~any(strcmpi(dataout.event,era_data.proc.whichevents(ii)))
+                    error('events:eventmismatch',... %Error code and associated error
+                        strcat('Error: Specified events to process do not exist in data\n',...
+                        'See help era_loadfile for more information\n'));
+                end
+            else
+                if ~any(find(dataout.event==era_data.proc.whichevents(ii)))
+                    error('events:eventmismatch',... %Error code and associated error
+                        strcat('Error: Specified events to process do not exist in data\n',...
+                        'See help era_loadfile for more information\n'));
+                end
+            end
         end
-       else
-        if ~any(find(dataout.event==era_data.proc.whichevents{ii}))
-           error('events:eventmismatch',... %Error code and associated error
-            strcat('Error: Specified events to process do not exist in data\n',...
-            'See help era_loadfile for more information\n'));
-        end
-       end   
     end
     
     try
-        if ~isnumeric(era_data.proc.whichevents{:})
-            dataout = dataout(ismember(...
-                dataout.event,era_data.proc.whichevents),:);
+        if iscell(era_data.proc.whichevents)
+            if ~isnumeric(era_data.proc.whichevents{:})
+                dataout = dataout(ismember(...
+                    dataout.event,era_data.proc.whichevents),:);
+            else
+                dataout = dataout(ismember(...
+                    dataout.event,era_data.proc.whichevents{:}),:);
+            end
         else
-            dataout = dataout(ismember(...
-                dataout.event,era_data.proc.whichevents{:}),:);
+            if ~isnumeric(era_data.proc.whichevents(:))
+                dataout = dataout(ismember(...
+                    dataout.event,era_data.proc.whichevents),:);
+            else
+                dataout = dataout(ismember(...
+                    dataout.event,era_data.proc.whichevents(:)),:);
+            end
         end
+        
     catch
-        if ~isnumeric(era_data.proc.whichevents{1})
-            dataout = dataout(ismember(...
-                dataout.event,era_data.proc.whichevents),:);
+        if iscell(era_data.proc.whichevents)
+            if ~isnumeric(era_data.proc.whichevents{1})
+                dataout = dataout(ismember(...
+                    dataout.event,era_data.proc.whichevents),:);
+            else
+                dataout = dataout(ismember(...
+                    dataout.event,era_data.proc.whichevents{:}),:);
+            end
         else
-            dataout = dataout(ismember(...
-                dataout.event,era_data.proc.whichevents{:}),:);
+            if ~isnumeric(era_data.proc.whichevents(1))
+                dataout = dataout(ismember(...
+                    dataout.event,era_data.proc.whichevents),:);
+            else
+                dataout = dataout(ismember(...
+                    dataout.event,era_data.proc.whichevents(:)),:);
+            end
         end
     end
 
