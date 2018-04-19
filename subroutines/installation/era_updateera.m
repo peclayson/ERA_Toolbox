@@ -15,7 +15,7 @@ function era_updateera
 % No data are outputted to the Matlab command window. However, software
 %  will be installed and a new Matlab path will be saved.
 
-% Copyright (C) 2016-2017 Peter E. Clayson
+% Copyright (C) 2016-2018 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by

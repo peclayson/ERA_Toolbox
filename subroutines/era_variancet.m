@@ -14,7 +14,7 @@ function vartable = era_variancet(varargin)
 %  within-person standard deviations
 % a gui will also be shown if desired
 
-% Copyright (C) 2016-2017 Peter E. Clayson
+% Copyright (C) 2016-2018 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by

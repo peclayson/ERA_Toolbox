@@ -60,7 +60,7 @@ function RELout = era_computerel(varargin)
 %graciously provided me with all of his code. This Matlab code is based
 %off of his R code. 
 
-% Copyright (C) 2016-2017 Peter E. Clayson
+% Copyright (C) 2016-2018 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by

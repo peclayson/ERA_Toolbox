@@ -2,7 +2,7 @@ function era_start
 %
 %Initiate Matlab gui to use the ERP Reliability Analysis (ERA) toolbox
 %
-%version 0.4.7 - Last Updated 10/20/17
+%version 0.4.8 - Last Updated 04/19/18
 %
 
 %The ERA toolbox uses generalizability theory as a method for evaluating 
@@ -71,7 +71,7 @@ function era_start
 % These dependents are necessary for computing dependability data. 
 %
 
-% Copyright (C) 2016-2017 Peter E. Clayson
+% Copyright (C) 2016-2018 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
@@ -130,6 +130,7 @@ function era_start
 %6/25/17 PC
 % change dimensions of gui that asks whether the dependents should be
 %  updated
+%
 %9/7/17 PC
 % fixed placement of text in era_ask2updatedependents
 

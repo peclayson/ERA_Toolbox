@@ -28,7 +28,7 @@ function [era_data,relerr] = era_relsummary(varargin)
 %  dataset
 %
 
-% Copyright (C) 2016-2017 Peter E. Clayson
+% Copyright (C) 2016-2018 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
