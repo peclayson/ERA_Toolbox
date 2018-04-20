@@ -3,7 +3,7 @@ function dataout = era_loadfile(varargin)
 %
 %era_loadfile('file',filename)
 %
-%Last Modified 4/19/18
+%Last Modified 4/20/18
 %
 %Required Inputs:
 % era_prefs - preferences from ERA Toolbox
@@ -86,6 +86,9 @@ function dataout = era_loadfile(varargin)
 % see issue #17 on github. fixed bug when indexing whichgroups and 
 %  whichevents that was not loaded as cell array 
 %
+%4/20/18 PC
+% see issue #17 on github and comment immediately before this. Making one
+%  change to try and fix bug.
 
 %try to load era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -322,7 +325,7 @@ if ~isempty(groupcolname) && ~isempty(era_data.proc.whichgroups)
         if iscell(era_data.proc.whichgroups)
             if ~isnumeric(era_data.proc.whichgroups{:})
                 dataout = dataout(ismember(...
-                    dataout.group,era_data.proc.whichgroups{:}),:);
+                    dataout.group,era_data.proc.whichgroups),:);
             else
                 dataout = dataout(ismember(...
                     dataout.group,era_data.proc.whichgroups{:}),:);
@@ -330,7 +333,7 @@ if ~isempty(groupcolname) && ~isempty(era_data.proc.whichgroups)
         else
             if ~isnumeric(era_data.proc.whichgroups(:))
                 dataout = dataout(ismember(...
-                    dataout.group,era_data.proc.whichgroups(:)),:);
+                    dataout.group,era_data.proc.whichgroups),:);
             else
                 dataout = dataout(ismember(...
                     dataout.group,era_data.proc.whichgroups(:)),:);
