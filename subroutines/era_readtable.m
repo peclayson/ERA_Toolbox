@@ -3,7 +3,7 @@ function dataout = era_readtable(varargin)
 %
 %era_readtable('file','J:\Data\MyData.xlsx')
 %
-%Last Updated 1/19/17
+%Last Updated 5/3/18
 %
 %
 %Input
@@ -41,6 +41,10 @@ function dataout = era_readtable(varargin)
 %
 %1/19/17 PC
 % updated copyright
+%
+%5/3/18 PC
+% see issue #17 on Github. Change so Matlab will not default to using
+%  Excel on Windows systems to load files when it is installed. 
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -134,7 +138,7 @@ possdel = {',',' ', '\t',';','|'};
 i=1;
 while loadsuccess == 0
     try 
-        dataout = readtable(file,'delimiter',possdel{i});
+        dataout = readtable(file,'delimiter',possdel{i},'Basic',1);
         if width(dataout) > 1
             loadsuccess = 1;
         else
