@@ -3,7 +3,7 @@ function erainstalledver = era_updatecheck(eraver)
 %
 %era_updatecheck
 %
-%Lasted Updated 8/24/17
+%Lasted Updated 6/22/18
 %
 %Required Input:
 % eraver - ERA Toolbox version
@@ -54,6 +54,11 @@ function erainstalledver = era_updatecheck(eraver)
 %8/24/17 PC
 % never defined output variable for when there is no internet connection.
 %  It will now be empty
+%
+%6/22/18 PC
+% it appears that the html code changed at some point on github, so this
+%  script has not been working for a while now... I should thing of a better
+%  way to do this
 
 try
     %pull webpage from github
@@ -61,7 +66,7 @@ try
     webraw = webread(urlstr,'text','html');
 
     %pull the string that contain the version number
-    rellist = regexp(webraw,'<h1 class="release-title">.*?</h1>','match');
+    rellist = regexp(webraw,'<h1 class="release-title text-normal">.*?</h1>','match');
     str = strrep(rellist{1},'href','HREF');
     str = strsplit(str,'>');
 
