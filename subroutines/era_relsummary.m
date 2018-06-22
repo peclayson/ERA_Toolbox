@@ -4,7 +4,7 @@ function [era_data,relerr] = era_relsummary(varargin)
 %era_relsummary('era_data',era_data,'depcutoff',depcutoff,...
 %   'meascutoff',meascutoff,'depcentmeas',depcentmeas)
 %
-%Last Modified 8/25/17
+%Last Modified 6/22/18
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -75,6 +75,9 @@ function [era_data,relerr] = era_relsummary(varargin)
 %8/25/17 PC
 % minor changes after adding feature to select subsets of groups and events
 %  to process
+%
+%6/22/18 PC
+% added standard deviation to trial summaries
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -420,6 +423,7 @@ switch analysis
             relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
+            relsummary.group(gloc).event(eloc).trlinfo.std = std(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
             relsummary.group(gloc).event(eloc).goodn = 0;
             
@@ -488,6 +492,7 @@ switch analysis
             relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
+            relsummary.group(gloc).event(eloc).trlinfo.std = std(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
             relsummary.group(gloc).event(eloc).goodn = height(goodids);
             
@@ -717,6 +722,7 @@ switch analysis
             relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
+            relsummary.group(gloc).event(eloc).trlinfo.std = std(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
             
             %just in case a cutoff was extrapolated, the dependability
@@ -934,6 +940,7 @@ switch analysis
             relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
+            relsummary.group(gloc).event(eloc).trlinfo.std = std(trltable.GroupCount);
             relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
             
             %just in case a cutoff was extrapolated, the dependability
@@ -1156,10 +1163,11 @@ switch analysis
                 'wp',data.g(gloc).e(eloc).sig_e.raw,...
                 'obs',depcent,'CI',ciperc);
             
-            relsummary.group(gloc).event(eloc).dep.meas = depcent;                
+                relsummary.group(gloc).event(eloc).dep.meas = depcent;                
                 relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
                 relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
                 relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
+                relsummary.group(gloc).event(eloc).trlinfo.std = std(trltable.GroupCount);
                 relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
                 
                 %check if trial cutoff for an event exceeded the total

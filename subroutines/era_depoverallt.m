@@ -4,7 +4,7 @@ function overalltable = era_depoverallt(varargin)
 %
 %era_depoverallt('era_data',era_data,'gui',1);
 %
-%Last Modified 1/19/17
+%Last Modified 6/22/18
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. 
@@ -38,6 +38,8 @@ function overalltable = era_depoverallt(varargin)
 %1/19/17 PC
 % updated copyright
 %
+%6/22/18 PC
+% added standard deviation to table
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -122,6 +124,7 @@ mintrl = {};
 maxtrl = {};
 meantrl = {};
 medtrl = {};
+stdtrl = {};
 goodn = {};
 badn = {};
 
@@ -153,6 +156,7 @@ for gloc=1:ngroups
         maxtrl{end+1} = era_data.relsummary.group(gloc).event(eloc).trlinfo.max;
         meantrl{end+1} = era_data.relsummary.group(gloc).event(eloc).trlinfo.mean;
         medtrl{end+1} = era_data.relsummary.group(gloc).event(eloc).trlinfo.med;
+        stdtrl{end+1} = era_data.relsummary.group(gloc).event(eloc).trlinfo.std;
         
         %pull good and bad ns
         goodn{end+1} = era_data.relsummary.group(gloc).event(eloc).goodn;
@@ -164,19 +168,19 @@ end
 
 %create table to describe the data including all trials 
 overalltable = table(label',goodn',badn',overalldep',meantrl',...
-    medtrl',mintrl',maxtrl');
+    medtrl',stdtrl',mintrl',maxtrl');
 
 overalltable.Properties.VariableNames = {'Label', ...
     'n_Included','n_Excluded', ...
     'Dependability', 'Mean_Num_Trials', 'Med_Num_Trials',...
-    'Min_Num_Trials',...
+    'Std_Num_Trials','Min_Num_Trials',...
     'Max_Num_Trials'};
 
 %display gui if desired
 if gui == 1 
     
 %define parameters for figure size
-figwidth = 725;
+figwidth = 815;
 figheight = 500;
 
 %define space between rows and first row location
@@ -203,8 +207,8 @@ t = uitable('Parent',era_overall,'Position',...
     'Data',table2cell(overalltable));
 set(t,'ColumnName',{'Label' 'n Included' 'n Excluded' ...
     'Dependability' 'Mean # of Trials' 'Med # of Trials'...
-    'Min # of Trials' 'Max # of Trials'});
-set(t,'ColumnWidth',{'auto' 'auto' 'auto' 110 'auto' 'auto' 'auto'});
+    'Std Dev of Trials' 'Min # of Trials' 'Max # of Trials'});
+set(t,'ColumnWidth',{'auto' 'auto' 'auto' 110 'auto' 'auto' 'auto' 'auto'});
 set(t,'RowName',[]);
 
 %Create a save button that will take save the table
@@ -291,17 +295,17 @@ elseif strcmp(ext,'.csv')
     
     fprintf(fid,'%s', strcat('Label,N Included,N Excluded,',...
         'Dependability,Mean Num of Trials,Med Num of Trials,',...
-        'Min Num of Trials,Max Num of Trials'));
+        'Std Dev Num of Trials,Min Num of Trials,Max Num of Trials'));
     fprintf(fid,' \n');
     
     %write the table information
     for i = 1:height(overalltable)
-         formatspec = '%s,%d,%d,%s,%0.2f,%d,%d,%d\n';
+         formatspec = '%s,%d,%d,%s,%0.2f,%d,%0.2f,%d,%d\n';
          fprintf(fid,formatspec,char(overalltable{i,1}),...
              cell2mat(overalltable{i,2}),cell2mat(overalltable{i,3}),...
              char(overalltable{i,4}),cell2mat(overalltable{i,5}),...
              cell2mat(overalltable{i,6}),cell2mat(overalltable{i,7}),...
-             cell2mat(overalltable{i,8}));
+             cell2mat(overalltable{i,8}),cell2mat(overalltable{i,9}));
     end
     
     fclose(fid);
