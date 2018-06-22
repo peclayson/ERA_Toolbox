@@ -79,6 +79,9 @@ function era_startview(varargin)
 %
 %8/23/17 PC
 % added a button for loading a new file from the gui
+%
+%6/22/18 PC
+% added which measurement was processed
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -185,10 +188,20 @@ uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String',['Dataset:  ' era_data.rel.filename],...
     'Tooltip','Dataset that was used',...
-    'Position',[0 row figwidth 25]);          
+    'Position',[0 row figwidth 25]);
 
 %next row
-row = row - (rowspace*1.5);
+row = row - (rowspace*.45);
+
+%Print the name of the loaded dataset
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
+    'HorizontalAlignment','center',...
+    'String',['Measurement:  ' era_data.proc.measheader],...
+    'Tooltip','Dataset that was used',...
+    'Position',[0 row figwidth 25]); 
+
+%next row
+row = row - (rowspace*1.4);
 
 str = sprintf(['The dependability threshold to use for retaining data\n'...
     'Participants that do not have enough trials to meet this reliability\n'...
@@ -328,7 +341,7 @@ inputs.h(6) = uicontrol(era_gui,'Style','checkbox',...
     'Position', [rcol row+20 figwidth/2 25]);
 
 %next row for buttons
-row = row - rowspace*1.5;
+row = row - rowspace*1.4;
 
 %Create a back button that will take the user back to era_start
 uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
