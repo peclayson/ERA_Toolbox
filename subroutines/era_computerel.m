@@ -3,7 +3,7 @@ function RELout = era_computerel(varargin)
 %
 %era_computerel('data',era_datatable,'chains',3,'iter',1000)
 %
-%Lasted Updated 6/25/17
+%Lasted Updated 2/25/19
 %
 %Required Inputs:
 % data - data table outputted from the era_loadfile script (see era_loadfile
@@ -100,6 +100,9 @@ function RELout = era_computerel(varargin)
 %
 %6/25/17 PC
 % added error check for missing cells in dataset
+%
+%2/25/19 PC
+% added functionality for computing test-retest reliability
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -222,16 +225,28 @@ elseif verbose == 2
     verbosity = true;
 end
 
-%check whether groups or events are in the table
-if sum(strcmpi(colnames,'group'))
+%check whether groups, events, or occasions are in the table
+if any(strcmpi(colnames,'group'))
     groupnames = unique(datatable.group(:));
     ngroup = length(groupnames);
+else
+    ngroup = 0;
 end
 
-if sum(strcmpi(colnames,'event'))
+if any(strcmpi(colnames,'event'))
     eventnames = unique(datatable.event(:));
     nevent = length(eventnames);
+else
+    nevent = 0;
 end
+
+if any(strcmpi(colnames,'time'))
+    timenames = unique(datatable.time(:));
+    ntime = length(timenames);
+else 
+    ntime = 0;
+end
+
 
 %create a structure array to store information that will later be outputted
 REL = struct;
@@ -247,15 +262,20 @@ REL.nchains = nchains;
 %2 - possible multiple groups but no event types to consider
 %3 - possible event types but no groups to consider
 %4 - possible groups and event types to consider
+%5 - possible occasions to consider
 
-if ~exist('ngroup','var') && ~exist('nevent','var')
-    analysis = 1;
-elseif exist('ngroup','var') && ~exist('nevent','var')
-    analysis = 2;
-elseif ~exist('ngroup','var') && exist('nevent','var')
-    analysis = 3;
-elseif exist('ngroup','var') && exist('nevent','var')
-    analysis = 4;
+if (ntime == 0)
+    if (ngroup == 0) && (nevent == 0)
+        analysis = 1;
+    elseif (ngroup > 0) && (nevent == 0)
+        analysis = 2;
+    elseif (ngroup == 0) && (nevent > 0)
+        analysis = 3;
+    elseif (ngroup > 0) && (nevent > 0)
+        analysis = 4;
+    end
+elseif (ntime > 0)
+    analysis = 5;
 end
 
 %show a gui that indicates data are processing in cmdstan if the user
@@ -423,7 +443,7 @@ switch analysis
 
         datatable.id2 = id2(:);
         
-        %create labels for the gorups
+        %create labels for the groups
         REL.data = datatable;
         groupnames = unique(datatable.group(:));
         ngroup = length(groupnames);
@@ -1141,7 +1161,314 @@ switch analysis
             REL.out.conv.data{end+1} = era_storeconv(fit);
             
         end %for j=1:nevent
+        
+    case 5
+        
+        fprintf('\nPreparing data for analysis...\n');
+        
+        if (ngroup == 0) && (nevent == 0)
+            datatable = sortrows(datatable,{'id','time'});
+        elseif (ngroup > 0) && (nevent == 0)
+            datatable = sortrows(datatable,{'group','id','time'});
+        elseif (ngroup == 0) && (nevent > 0)
+            datatable = sortrows(datatable,{'id','time','event'});
+        elseif (ngroup > 0) && (nevent > 0)
+            datatable = sortrows(datatable,{'group','id','time','event'});
+        end
+        
+        if nevent > 0
+            REL.events = eventnames;
+        end
+        
+        if ngroup > 0
+            REL.groups = groupnames;
+        end
+       
+        REL.time = timenames;
 
+        %cmdstan requires the id variable to be numeric and sequential. 
+        %an id2 variable is created to satisfy this requirement. 
+        
+        id2 = zeros(0,height(datatable));
+        time2 = zeros(0,height(datatable));
+        trl2 = zeros(0,height(datatable));
+        
+        for i = 1:height(datatable)
+            %recode ids
+            if i == 1
+                id2(1) = 1;
+                count = 1;
+            elseif i > 1 && strcmp(char(datatable.id(i)),...
+                    char(datatable.id(i-1)))
+                id2(i) = count;
+            elseif i > 1 && ~strcmp(char(datatable.id(i)),...
+                    char(datatable.id(i-1)))
+                count = count+1;
+                id2(i) = count;
+            end
+            
+            %recode time
+            time2(i) = find(strcmp(timenames,datatable.time(i)));
+            
+            if nevent == 0
+                %recode ids
+                if i == 1
+                    trl2(1) = 1;
+                    trlcount = 2;
+                elseif i > 1 && strcmp(char(datatable.id(i)),...
+                        char(datatable.id(i-1)))
+                    trl2(i) = trlcount;
+                    trlcount = trlcount + 1;
+                elseif i > 1 && ~strcmp(char(datatable.id(i)),...
+                        char(datatable.id(i-1)))
+                    trl2(i) = 1;
+                    trlcount = 2;
+                end
+            elseif nevent > 0
+                %recode ids
+                if i == 1
+                    trl2(1) = 1;
+                    trlcount = 2;
+                elseif i > 1 && strcmp(char(datatable.id(i)),...
+                        char(datatable.id(i-1))) && ... 
+                        strcmp(char(datatable.event(i)),...
+                        char(datatable.event(i-1)))
+                    trl2(i) = trlcount;
+                    trlcount = trlcount + 1;
+                elseif i > 1 && strcmp(char(datatable.id(i)),...
+                        char(datatable.id(i-1))) && ... 
+                        ~strcmp(char(datatable.event(i)),...
+                        char(datatable.event(i-1)))
+                    trl2(i) = 1;
+                    trlcount = 2;
+                elseif i > 1 && ~strcmp(char(datatable.id(i)),...
+                        char(datatable.id(i-1))) 
+                    trl2(i) = 1;
+                    trlcount = 2;
+                end
+            end
+        end
+        
+        datatable.id2 = id2';
+        datatable.time2 = time2';
+        datatable.trl2 = trl2';
+                
+        int_terms = x2fx([id2' time2' trl2'],'interaction');
+        datatable.idxtrl = int_terms(:,5);
+        datatable.idxtim = int_terms(:,6);
+        datatable.trlxtim = int_terms(:,7);
+        
+        %put the compiled data into REL structure
+        REL.data = datatable;
+        
+        %create the fields for storing the parsed cmdstan outputs 
+        REL.out = [];
+        REL.out.mu = [];
+        REL.out.sig_id = [];
+        REL.out.sig_tim = [];
+        REL.out.sig_trl = [];
+        REL.out.sig_idxtrl = [];
+        REL.out.sig_idxtim = [];
+        REL.out.sig_trlxtim =[];
+        REL.out.sig_e = [];
+        REL.out.labels = {};
+        REL.out.conv.data = {};
+        REL.stan_in = {};
+        
+        if showgui == 2
+            
+            %find whether gui exists (the user may have closed it)
+            era_relgui = findobj('Tag','era_relgui');
+            
+            if ~isempty(era_relgui)
+                
+                %Write text
+                uicontrol(era_relgui,'Style','text',...
+                    'fontsize',fsize+6,...
+                    'HorizontalAlignment','center',...
+                    'String','Data are crunching. This will take a long time!',...
+                    'Position',[0 row-rowspace*1.5 figwidth 25]);
+                
+                %pause a moment so the gui will be displayed
+                pause(.02)
+            end
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        clear stan_in
+        stan_in{1,1} = 'data {';
+        
+        for i=1:ngroup
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=0> NG%d; //number of obs in g%d',i,i);
+        end
+        
+        for i=1:ngroup
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=0> JG%d; //number of subj in g%d',i,i);
+        end
+        
+        for i=1:ngroup
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=0, upper=JG%d> id_G%d[NG%d]; //subject id g%d;',...
+                i,i,i,i);
+        end
+        
+        for i=1:ngroup
+            stan_in{end+1,1} = ...
+                sprintf('  real meas_G%d[NG%d];',i,i);
+        end
+        
+        stan_in{end+1,1} = '}';
+        stan_in{end+1,1} = 'parameters {';
+        
+        for i=1:ngroup
+            stan_in{end+1,1} = ...
+                sprintf('  real mu_G%d;',i);
+        end
+        
+        for i=1:ngroup
+            stan_in{end+1,1} = ...
+                sprintf('  real<lower=0> sig_u_G%d;',i);
+        end
+        
+        for i=1:ngroup
+            stan_in{end+1,1} = ...
+                sprintf('  real<lower=0> sig_e_G%d;',i);
+        end
+        
+        for i=1:ngroup
+            stan_in{end+1,1} = ...
+                sprintf('  vector[JG%d] u_raw_G%d;',i,i);
+        end
+        
+        stan_in{end+1,1} = '}';
+        stan_in{end+1,1} = 'transformed parameters {';
+        
+        for i=1:ngroup
+            stan_in{end+1,1} = ...
+                sprintf('  vector[JG%d] u_G%d;',i,i);
+        end
+        
+        for i=1:ngroup
+            stan_in{end+1,1} = ...
+                sprintf('  u_G%d = mu_G%d + sig_u_G%d*u_raw_G%d;',...
+                i,i,i,i);
+        end
+        
+        stan_in{end+1,1} = '}';
+        stan_in{end+1,1} = 'model {';
+        
+        for i=1:ngroup
+            stan_in{end+1,1} = ...
+                sprintf('  u_raw_G%d ~ normal(0,1);',i);
+            stan_in{end+1,1} = ...
+                sprintf('    meas_G%d ~ normal(u_G%d[id_G%d], sig_e_G%d);',...
+                i,i,i,i);
+        end
+        
+        stan_in{end+1,1} = '  ';
+        
+        for i=1:ngroup
+            stan_in{end+1,1} = ...
+                sprintf('  mu_G%d ~ normal(0,100);',i);
+        end
+        
+        for i=1:ngroup
+            stan_in{end+1,1} = ...
+                sprintf('  sig_u_G%d ~ cauchy(0,40);',i);
+        end
+        
+        for i=1:ngroup
+            stan_in{end+1,1} = ...
+                sprintf('  sig_e_G%d ~ cauchy(0,40);',i);
+        end
+        
+        stan_in{end+1,1} = '}';
+        
+        %store the cmdstan syntax
+        REL.stan_in{end+1} = stan_in;
+        
+        %create structure for the data to be sent to cmdstan
+        data = struct;
+        
+        %prep data structure for cmdstan
+        for i=1:ngroup
+            fieldname = sprintf('NG%d',i);
+            fieldvalue = length(eventarray.data{j}.group(ismember(eventarray.data{j}.group,...
+                groupnames(i)),1));
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i=1:ngroup
+            fieldname = sprintf('JG%d',i);
+            dummy = eventarray.data{j}(ismember(eventarray.data{j}.group,...
+                groupnames(i)),:);
+            fieldvalue = length(unique(dummy.id));
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i=1:ngroup
+            fieldname = sprintf('id_G%d',i);
+            fieldvalue = eventarray.data{j}{ismember(eventarray.data{j}.group,...
+                groupnames(i)),{'id2'}};
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i=1:ngroup
+            fieldname = sprintf('meas_G%d',i);
+            fieldvalue = eventarray.data{j}{ismember(eventarray.data{j}.group,...
+                groupnames(i)),{'meas'}};
+            data.(fieldname) = fieldvalue;
+        end
+        
+        %execute model code
+        
+        modelname = strcat('cmdstan',char(date));
+        
+        fprintf('\nModel is being run in cmdstan\n');
+        fprintf('\nThis may take a while depending on the amount of data\n');
+        
+        %run cmdstan
+        fit = stan('model_code', stan_in, 'model_name', modelname,...
+            'data', data, 'iter', niter,'chains', nchains, 'refresh',...
+            niter/10, 'verbose', verbosity, 'file_overwrite', true);
+        
+        %block user from using Matlab command window
+        fit.block();
+        
+        %parse cmdstan outputs
+        for i=1:ngroup
+            measname = sprintf('mu_G%d',i);
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.mu(:,end+1) = measvalue;
+        end
+        
+        for i=1:ngroup
+            measname = sprintf('sig_u_G%d',i);
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.sig_u(:,end+1) = measvalue;
+        end
+        
+        for i=1:ngroup
+            measname = sprintf('sig_e_G%d',i);
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.sig_e(:,end+1) = measvalue;
+        end
+        
+        %store labels for each column by separating the event name and
+        %group name with an underscore
+        for i=1:ngroup
+            REL.out.labels(:,end+1) = strcat(eventnames(j),...
+                '_;_',groupnames(i));
+        end
+        
+        REL.out.conv.data{end+1} = era_storeconv(fit);
+        
+
+        
 end %switch analysis
 
 %close the gui if one was shown
