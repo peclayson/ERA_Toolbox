@@ -20,7 +20,7 @@ function ptintplot = era_ptintervalplot(varargin)
 % ptintplot - figure handle for the plot
 % figure that displays a point estimate and its credible interval
 
-% Copyright (C) 2016-2018 Peter E. Clayson
+% Copyright (C) 2016-2019 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by

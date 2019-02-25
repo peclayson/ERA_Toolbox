@@ -16,7 +16,7 @@ function era_printversions
 % The versions are printed in the command window
 %
 
-% Copyright (C) 2016-2018 Peter E. Clayson
+% Copyright (C) 2016-2019 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
