@@ -3,7 +3,7 @@ function dataout = era_loadfile(varargin)
 %
 %era_loadfile('file',filename)
 %
-%Last Modified 4/20/18
+%Last Modified 10/29/18
 %
 %Required Inputs:
 % era_prefs - preferences from ERA Toolbox
@@ -89,6 +89,10 @@ function dataout = era_loadfile(varargin)
 %4/20/18 PC
 % see issue #17 on github and comment immediately before this. Making one
 %  change to try and fix bug.
+%
+%10/29/18 PC
+% continued issues loading events/groups that don't follow typical formats.
+%
 
 %try to load era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -327,8 +331,13 @@ if ~isempty(groupcolname) && ~isempty(era_data.proc.whichgroups)
                 dataout = dataout(ismember(...
                     dataout.group,era_data.proc.whichgroups),:);
             else
-                dataout = dataout(ismember(...
-                    dataout.group,era_data.proc.whichgroups{:}),:);
+                try
+                    dataout = dataout(ismember(...
+                        dataout.group,era_data.proc.whichgroups{:}),:);
+                catch
+                    dataout = dataout(ismember(...
+                        dataout.group,[era_data.proc.whichgroups{:}]),:);
+                end
             end
         else
             if ~isnumeric(era_data.proc.whichgroups(:))
@@ -345,8 +354,13 @@ if ~isempty(groupcolname) && ~isempty(era_data.proc.whichgroups)
                 dataout = dataout(ismember(...
                     dataout.group,era_data.proc.whichgroups),:);
             else
-                dataout = dataout(ismember(...
-                    dataout.group,era_data.proc.whichgroups{:}),:);
+                try
+                    dataout = dataout(ismember(...
+                        dataout.group,era_data.proc.whichgroups{:}),:);
+                catch
+                    dataout = dataout(ismember(...
+                        dataout.group,[era_data.proc.whichgroups{:}]),:);
+                end
             end
         else
             if ~isnumeric(era_data.proc.whichgroups(1))
@@ -394,14 +408,21 @@ if ~isempty(eventcolname) && ~isempty(era_data.proc.whichevents)
         end
     end
     
+    
+    
     try
         if iscell(era_data.proc.whichevents)
             if ~isnumeric(era_data.proc.whichevents{:})
                 dataout = dataout(ismember(...
                     dataout.event,era_data.proc.whichevents),:);
             else
-                dataout = dataout(ismember(...
-                    dataout.event,era_data.proc.whichevents{:}),:);
+                try
+                    dataout = dataout(ismember(...
+                        dataout.event,era_data.proc.whichevents{:}),:);
+                catch
+                    dataout = dataout(ismember(...
+                        dataout.event,[era_data.proc.whichevents{:}]),:);
+                end
             end
         else
             if ~isnumeric(era_data.proc.whichevents(:))
@@ -419,8 +440,13 @@ if ~isempty(eventcolname) && ~isempty(era_data.proc.whichevents)
                 dataout = dataout(ismember(...
                     dataout.event,era_data.proc.whichevents),:);
             else
-                dataout = dataout(ismember(...
-                    dataout.event,era_data.proc.whichevents{:}),:);
+                try
+                    dataout = dataout(ismember(...
+                        dataout.event,era_data.proc.whichevents{:}),:);
+                catch
+                    dataout = dataout(ismember(...
+                        dataout.event,[era_data.proc.whichevents{:}]),:);
+                end
             end
         else
             if ~isnumeric(era_data.proc.whichevents(1))
