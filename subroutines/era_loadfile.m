@@ -3,7 +3,7 @@ function dataout = era_loadfile(varargin)
 %
 %era_loadfile('file',filename)
 %
-%Last Modified 10/29/18
+%Last Modified 2/25/19
 %
 %Required Inputs:
 % era_prefs - preferences from ERA Toolbox
@@ -24,16 +24,21 @@ function dataout = era_loadfile(varargin)
 %  it is assumed there is only one event type in the data file.
 % whichevents - cell array of labels for the event types found in the 
 %  event column to use
+% timecol - column label for the occasion variable. If no label is provided
+%  it is assumed there is only one occasion in the data file.
+% whichtimess - cell array of labels for the occasions found in the 
+%  occasion column to use
 % dataraw - raw data table outputted from era_startproc (so Matlab doesn't
 %  have to re-load entire table)
 %
 %Output:
 % dataout - matlab table with prepared data for reliability analysis.
-%  Depending on specifications, the table will have 2 to 4 columns.
+%  Depending on specifications, the table will have 2 to 5 columns.
 %  id: Subject ID (string variable)
 %  meas: Measurement
 %  group: Group (only when specified, string variable)
 %  event: Event Type (only when specified, string variable)
+%  time: Occasion (only when specified, string variable)
 
 % Copyright (C) 2016-2019 Peter E. Clayson
 % 
@@ -93,6 +98,8 @@ function dataout = era_loadfile(varargin)
 %10/29/18 PC
 % continued issues loading events/groups that don't follow typical formats.
 %
+%2/25/19 PC
+% changes associated with adding functionality for test-retest reliability 
 
 %try to load era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -101,12 +108,14 @@ function dataout = era_loadfile(varargin)
 if ~isempty(era_prefs) && ~isempty(era_data)
     file = era_data.raw.filename;
     idcolname = era_data.proc.idheader;
-    groupcolname = era_data.proc.groupheader;
-    whichgroups = era_data.proc.whichgroups;
     meascolname = era_data.proc.measheader;
     eventcolname = era_data.proc.eventheader;
     whichevents = era_data.proc.whichevents;
-    dataraw = era_data.raw.data;
+    groupcolname = era_data.proc.groupheader;
+    whichgroups = era_data.proc.whichgroups;
+    timecolname = era_data.proc.timeheader;
+    whichtimes = era_data.proc.whichtimes;
+    dataraw = era_data.raw.data; 
 end
     
 
@@ -189,6 +198,24 @@ if ~isempty(varargin) && (isempty(era_prefs) || isempty(era_data))
         whichevents = '';
     end
     
+    %check if occasion type column was specified 
+    %If it is not found, assume only one occasion is present in file
+    ind = find(strcmp('eventcol',varargin),1);
+    if ~isempty(ind)
+        timecolname = cell2mat(varargin(ind+1)); 
+    else 
+        timecolname = '';
+    end
+    
+    %check if whichtimes was specified 
+    %If it is not found, assume only one occasion is present in file
+    ind = find(strcmp('whichtimes',varargin),1);
+    if ~isempty(ind)
+        whichtimes = cell2mat(varargin(ind+1)); 
+    else 
+        whichtimes = '';
+    end
+    
     %check if dataraw was specified 
     %If it is not found, create an empty variable
     ind = find(strcmp('dataraw',varargin),1);
@@ -268,6 +295,18 @@ elseif sum(strcmpi(colnames,eventcolname)) && ~isempty(eventcolname)
     dataout.event = dataraw{:,strcmpi(colnames,eventcolname)};
 end
 
+%ensure that the time column is present if the time header should be
+%there
+if ~sum(strcmpi(colnames,timecolname)) && ~isempty(timecolname)
+    if ~exist('headererror','var')
+        headerror{1} = 'Occasion';
+    elseif ~exist('headererror','var')
+        headerror{end+1} = 'Occasion';
+    end
+elseif sum(strcmpi(colnames,timecolname)) && ~isempty(timecolname)
+    dataout.time = dataraw{:,strcmpi(colnames,timecolname)};
+end
+
 %error catch in case headers for the columns needed are not specified. Let
 %the user know which columns were problematic
 if exist('headerror','var')
@@ -287,8 +326,8 @@ if ~isnumeric(dataout.meas(:))
     'See help era_loadfile for more information\n'));
 end
 
-%if groups and/or event columns are specified, check whether only certain
-%groups or event should be processed. If there are specific groups or
+%if groups, event and/or time columns are specified, check whether only 
+%certain groups or event should be processed. If there are specific groups or
 %events to process, make sure those groups and events exist in the data (in
 %cases which function was not called by gui).
 if ~isempty(groupcolname) && ~isempty(era_data.proc.whichgroups)
@@ -461,6 +500,92 @@ if ~isempty(eventcolname) && ~isempty(era_data.proc.whichevents)
 
 end
 
+if ~isempty(timecolname) && ~isempty(era_data.proc.whichtimes)
+    for ii = 1:length(era_data.proc.whichtimes)
+        if iscell(era_data.proc.whichtimes)
+            if ~isnumeric(era_data.proc.whichtimes{ii})
+                if ~any(strcmpi(dataout.time,era_data.proc.whichtimes{ii}))
+                    error('times:occasionmismatch',... %Error code and associated error
+                        strcat('Error: Specified occasions to process do not exist in data\n',...
+                        'See help era_loadfile for more information\n'));
+                end
+            else
+                if ~any(find(dataout.time==era_data.proc.whichtimes{ii}))
+                    error('times:occasionmismatch',... %Error code and associated error
+                        strcat('Error: Specified occasions to process do not exist in data\n',...
+                        'See help era_loadfile for more information\n'));
+                end
+            end
+        else
+            if ~isnumeric(era_data.proc.whichtimes(ii))
+                if ~any(strcmpi(dataout.time,era_data.proc.whichtimes(ii)))
+                    error('times:occasionmismatch',... %Error code and associated error
+                        strcat('Error: Specified ocassions to process do not exist in data\n',...
+                        'See help era_loadfile for more information\n'));
+                end
+            else
+                if ~any(find(dataout.time==era_data.proc.whichtimes(ii)))
+                    error('times:occasionmismatch',... %Error code and associated error
+                        strcat('Error: Specified occasions to process do not exist in data\n',...
+                        'See help era_loadfile for more information\n'));
+                end
+            end
+        end
+    end
+    
+    
+    
+    try
+        if iscell(era_data.proc.whichtimes)
+            if ~isnumeric(era_data.proc.whichtimes{:})
+                dataout = dataout(ismember(...
+                    dataout.time,era_data.proc.whichtimes),:);
+            else
+                try
+                    dataout = dataout(ismember(...
+                        dataout.time,era_data.proc.whichtimes{:}),:);
+                catch
+                    dataout = dataout(ismember(...
+                        dataout.time,[era_data.proc.whichtimes{:}]),:);
+                end
+            end
+        else
+            if ~isnumeric(era_data.proc.whichtimes(:))
+                dataout = dataout(ismember(...
+                    dataout.time,era_data.proc.whichtimes),:);
+            else
+                dataout = dataout(ismember(...
+                    dataout.time,era_data.proc.whichtimes(:)),:);
+            end
+        end
+        
+    catch
+        if iscell(era_data.proc.whichtimes)
+            if ~isnumeric(era_data.proc.whichtimes{1})
+                dataout = dataout(ismember(...
+                    dataout.time,era_data.proc.whichtimes),:);
+            else
+                try
+                    dataout = dataout(ismember(...
+                        dataout.time,era_data.proc.whichtimes{:}),:);
+                catch
+                    dataout = dataout(ismember(...
+                        dataout.time,[era_data.proc.whichtimes{:}]),:);
+                end
+            end
+        else
+            if ~isnumeric(era_data.proc.whichtimes(1))
+                dataout = dataout(ismember(...
+                    dataout.time,era_data.proc.whichtimes),:);
+            else
+                dataout = dataout(ismember(...
+                    dataout.time,era_data.proc.whichtimes(:)),:);
+            end
+        end
+    end
+
+end
+
 %verify that each participant has at least one measurement per event type
 %(this works because it's already been verified that there are no empty
 %cells)
@@ -482,8 +607,30 @@ if ~isempty(eventcolname)
     end
 end
 
-%turn all of the ids, groups, and events into strings. ERA toolbox will 
-%use this later
+%verify that each participant has at least one measurement per occasion and
+%per event
+%(this works because it's already been verified that there are no empty
+%cells)
+if ~isempty(timecolname)
+    datacheck = varfun(@mean,dataout,'InputVariables','meas',...
+       'GroupingVariables',{'id','event','time'});
+    timecount = varfun(@numel,datacheck,'InputVariables','time',...
+        'GroupingVariables','id');
+    if length(unique(timecount.GroupCount)) > 1
+        timecount.GroupCount = [];
+        timecount.Properties.VariableNames{2} = 'Number_of_Events';
+        display(timecount);
+        error('meas:mismatchedoccasions',... %Error code and associated error
+        strcat('Error: All participants do not have at least one\n',...
+        'measurement per event per occasion\n',...
+        'The ids and number of occasions found for each participant are printed',...
+        '\nabove to help in finding the problem\n',...
+        'See the ''Preparing Data'' section of the User Manual for more information\n'));
+    end
+end
+
+%turn all of the ids, groups, events, and occasions into strings. ERA  
+%toolbox will use this later
 if isnumeric(dataout.id(:))
     newid = cellstr(num2str(dataout.id(:)));
     dataout.id = [];
@@ -500,6 +647,12 @@ if ~isempty(eventcolname) && isnumeric(dataout.event(:))
     newevent = cellstr(num2str(dataout.event(:)));
     dataout.event = [];
     dataout.event = newevent(:);
+end
+
+if ~isempty(timecolname) && isnumeric(dataout.time(:)) 
+    newtime = cellstr(num2str(dataout.time(:)));
+    dataout.time = [];
+    dataout.time = newtime(:);
 end
 
 end
