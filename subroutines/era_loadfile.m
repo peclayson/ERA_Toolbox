@@ -611,9 +611,25 @@ end
 %per event
 %(this works because it's already been verified that there are no empty
 %cells)
-if ~isempty(timecolname)
+if ~isempty(timecolname) && ~isempty(eventcolname)
     datacheck = varfun(@mean,dataout,'InputVariables','meas',...
        'GroupingVariables',{'id','event','time'});
+    timecount = varfun(@numel,datacheck,'InputVariables','time',...
+        'GroupingVariables','id');
+    if length(unique(timecount.GroupCount)) > 1
+        timecount.GroupCount = [];
+        timecount.Properties.VariableNames{2} = 'Number_of_Events';
+        display(timecount);
+        error('meas:mismatchedoccasions',... %Error code and associated error
+        strcat('Error: All participants do not have at least one\n',...
+        'measurement per event per occasion\n',...
+        'The ids and number of occasions found for each participant are printed',...
+        '\nabove to help in finding the problem\n',...
+        'See the ''Preparing Data'' section of the User Manual for more information\n'));
+    end
+elseif ~isempty(timecolname) && isempty(eventcolname)
+        datacheck = varfun(@mean,dataout,'InputVariables','meas',...
+       'GroupingVariables',{'id','time'});
     timecount = varfun(@numel,datacheck,'InputVariables','time',...
         'GroupingVariables','id');
     if length(unique(timecount.GroupCount)) > 1
