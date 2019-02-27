@@ -1273,15 +1273,8 @@ switch analysis
         datatable.id2 = id2';
         datatable.time2 = time2';
         datatable.trl2 = trl2';
-                
-        int_terms = x2fx([id2' time2' trl2'],'interaction');
-        datatable.idxtrl = int_terms(:,5);
-        datatable.idxtim = int_terms(:,6);
-        datatable.trlxtim = int_terms(:,7);
         
-        datatable.idxtrl = id2' .* trl2';
-        datatable.idxtim = id2' .* time2';
-        datatable.trlxtim = trl2' .* time2';
+        
         
         %parse data based on number of events and groups
         %create structure for storing data
@@ -1318,6 +1311,52 @@ switch analysis
                         '_',char(eventnames(i)));
                 end
             end
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%double
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%check the
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%indexing
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%here.
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%need to
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%do this
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%for each
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%of the
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%interaction
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%variables
+        idxtrl_count = 1;
+        idxtim = 1;
+        trlxtim = 1;
+        
+        for da = 1:length(darray.names)
+            warray = darray.data{da};
+            for i = 1:height(warray)
+                if i == 1
+                    idxtrl = idxtrl_count;
+                    idxtrl_count = idxtrl_count + 1;
+                    idxtrl_count_base = 1;
+                    poss_idxtrl = 1;
+                elseif i > 1 
+                    if warray.id2(i) == warray.id2(i-1)
+                        if warray.trl2(i) == (warray.trl2(i-1)+1)
+                            idxtrl(end+1) = idxtrl_count;
+                            poss_idxtrl(end+1) = idxtrl_count;
+                            idxtrl_count = idxtrl_count + 1;
+                        elseif warray.trl2(i) ~= (warray.trl2(i-1)+1)
+                            poss_idxtrl(end+1) = idxtrl_count;
+                            idxtrl_count = idxtrl_count_base;
+                            idxtrl(end+1) = idxtrl_count;
+                            idxtrl_count = idxtrl_count + 1;
+                        end
+                    elseif warray.id2(i) ~= warray.id2(i-1)
+                        idxtrl_count_base = max(poss_idxtrl) + 1;
+                        idxtrl_count = idxtrl_count_base;
+                        poss_idxtrl = [];
+                        idxtrl(end+1) = idxtrl_count;
+                        idxtrl_count = idxtrl_count + 1;
+                    end
+                end
+            end
+            warray.idxtrl = idxtrl';
+            darray.data{da} = warray;
         end
         
         %put the compiled data into REL structure
@@ -1577,297 +1616,297 @@ switch analysis
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
        
-%         %define number of data chunks to crunch through
-%         ndchunks = length(darray.names);
-%         clear stan_in
-%         stan_in{1,1} = 'data {';
-%         
-%         for i = 1:ndchunks
-%             stan_in{end+1,1} = ...
-%                 sprintf('  int<lower=1> NOBS;'); %#ok<*AGROW>
-%             stan_in{end+1,1} = ...
-%                 sprintf('  int<lower=1> NSUB;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  int<lower=1> NOCC;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  int<lower=1> NTRL;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  int<lower=1> NTID;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  int<lower=1> NOID;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  int<lower=1> NTO;');
-%         end
-%         
-%         stan_in{end+1,1} = '  ';
-%         
-%         for i = 1:ndchunks
-%             stan_in{end+1,1} = ...
-%                 sprintf('  int<lower=1, upper=NSUB> id[NOBS];');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  int<lower=1, upper=NOCC> occ[NOBS];');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  int<lower=1, upper=NTRL> trl[NOBS];');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  int<lower=1, upper=NTID> trlxid[NOBS];');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  int<lower=1, upper=NOID> occxid[NOBS];');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  int<lower=1, upper=NTO> trlxocc[NOBS];');
-%         end
-%         
-%         stan_in{end+1,1} = '  ';
-%         
-%         for i = 1:ndchunks
-%             stan_in{end+1,1} = ...
-%                 sprintf('  vector[NOBS] meas;');
-%         end
-%         
-%         stan_in{end+1,1} = '}';
-%         stan_in{end+1,1} = '  ';
-%         stan_in{end+1,1} = 'parameters {';
-%         
-%         for i=1:ndchunks
-%             stan_in{end+1,1} = ...
-%                 sprintf('  real pop_int;');
-%         end
-%         
-%         stan_in{end+1,1} = '  ';
-%         
-%         for i=1:ndchunks
-%             stan_in{end+1,1} = ...
-%                 sprintf('  real<lower=0> sig_id;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  real<lower=0> sig_occ;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  real<lower=0> sig_trl;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  real<lower=0> sig_err;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  real<lower=0> sig_trlxid;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  real<lower=0> sig_occxid;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  real<lower=0> sig_trlxocc;');
-%         end
-%         
-%         stan_in{end+1,1} = '  ';
-%         
-%         for i=1:ndchunks
-%             stan_in{end+1,1} = ...
-%                 sprintf('  vector[NSUB] id_raw;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  vector[NOCC] occ_raw;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  vector[NTRL] trl_raw;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  vector[NTID] trlxid_raw;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  vector[NOID] occxid_raw;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  vector[NTO] trlxocc_raw;');
-%         end
-%         
-%         stan_in{end+1,1} = '}';
-%         stan_in{end+1,1} = '  ';
-%         stan_in{end+1,1} = 'transformed parameters {';
-%         
-%         for i=1:ndchunks
-%             stan_in{end+1,1} = ...
-%                 sprintf('  vector[NSUB] id_terms;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  vector[NOCC] occ_terms;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  vector[NTRL] trl_terms;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  vector[NTID] trlxid_terms;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  vector[NOID] occxid_terms;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  vector[NTO] trlxocc_terms;');
-%         end
-%         
-%         stan_in{end+1,1} = '  ';
-%         
-%         for i=1:ndchunks
-%             stan_in{end+1,1} = ...
-%                 sprintf('  id_terms = sig_id * id_raw;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  occ_terms = sig_occ * occ_raw;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  trl_terms = sig_trl * trl_raw;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  trlxid_terms = sig_trlxid * trlxid_raw;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  occxid_terms = sig_occxid * occxid_raw;');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  trlxocc_terms = sig_trlxocc * trlxocc_raw;');
-%         end
-%         
-%         stan_in{end+1,1} = '}';
-%         stan_in{end+1,1} = '  ';
-%         stan_in{end+1,1} = 'model {';
-%         
-%         for i=1:ndchunks
-%             stan_in{end+1,1} = ...
-%                 sprintf('  vector[NOBS] y_hat;');
-%         end
-%         
-%         stan_in{end+1,1} = '  ';
-%         
-%         for i=1:ndchunks
-%             stan_in{end+1,1} = ...
-%                 sprintf('  for(i in 1:NOBS)');
-%             stan_in{end+1,1} = ...
-%                 sprintf('    y_hat[i] = pop_int + id_terms[id[i]] +');
-%             stan_in{end+1,1} = ...
-%                 sprintf('    occ_terms[occ[i]] + trl_terms[trl[i]] +');
-%             stan_in{end+1,1} = ...
-%                 sprintf('    trlxid_terms[trlxid[i]] + occxid_terms[occxid[i]] +');
-%             stan_in{end+1,1} = ...
-%                 sprintf('    trlxocc_terms[trlxocc[i]];');
-%         end
-%         
-%         stan_in{end+1,1} = '  ';
-%         
-%         for i=1:ndchunks
-%             stan_in{end+1,1} = ...
-%                 sprintf('  meas ~ normal(y_hat,sig_err);');
-%         end
-%         
-%         stan_in{end+1,1} = '  ';
-%         
-%         for i=1:ndchunks
-%             stan_in{end+1,1} = ...
-%                 sprintf('  id_raw ~ normal(0,1);');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  occ_raw ~ normal(0,1);');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  trl_raw ~ normal(0,1);');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  trlxid_raw ~ normal(0,1);');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  occxid_raw ~ normal(0,1);');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  trlxocc_raw ~ normal(0,1);');
-%         end
-%         
-%         stan_in{end+1,1} = '  ';
-%         
-%         for i=1:ndchunks
-%             stan_in{end+1,1} = ...
-%                 sprintf('  sig_id ~ cauchy(0,20);');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  sig_occ ~ cauchy(0,.1);');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  sig_trl ~ cauchy(0,20);');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  sig_err ~ cauchy(0,20);');
-%         end
-%         
-%         stan_in{end+1,1} = '  ';
-%         
-%         for i=1:ndchunks
-%             stan_in{end+1,1} = ...
-%                 sprintf('  sig_trlxid ~ cauchy(0,10);');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  sig_occxid ~ cauchy(0,10);');
-%             stan_in{end+1,1} = ...
-%                 sprintf('  sig_trlxocc ~ cauchy(0,.05);');
-%         end
-%         
-%         stan_in{end+1,1} = '}';
-%         %store the cmdstan syntax
-%         REL.stan_in = stan_in;
-%         
-%         %create structure for the data to be sent to cmdstan
-%         data = struct;
-%         
-%         %prep data structure for cmdstan
-%         for i = 1:ndchunks
-%             fieldname = sprintf('NOBS');
-%             fieldvalue = height(darray.data{i});
-%             data.(fieldname) = fieldvalue;
-%         end
-%         
-%         for i = 1:ndchunks
-%             fieldname = sprintf('NOCC');
-%             fieldvalue = length(unique(darray.data{i}.time));
-%             data.(fieldname) = fieldvalue;
-%         end
-%         
-%         for i = 1:ndchunks
-%             fieldname = sprintf('NSUB');
-%             fieldvalue = length(unique(darray.data{i}.id2));
-%             data.(fieldname) = fieldvalue;
-%         end
-%         
-%         for i = 1:ndchunks
-%             fieldname = sprintf('NTRL');
-%             fieldvalue = length(unique(darray.data{i}.trl2));
-%             data.(fieldname) = fieldvalue;
-%         end
-%         
-%         
-%         for i = 1:ndchunks
-%             fieldname = sprintf('occ');
-%             fieldvalue = darray.data{i}.time2;
-%             data.(fieldname) = fieldvalue;
-%         end
-%         
-%         for i = 1:ndchunks
-%             fieldname = sprintf('id');
-%             fieldvalue = darray.data{i}.id2;
-%             data.(fieldname) = fieldvalue;
-%         end
-%         
-%         for i = 1:ndchunks
-%             fieldname = sprintf('trl');
-%             fieldvalue = darray.data{i}.trl2;
-%             data.(fieldname) = fieldvalue;
-%         end
-%         
-%         for i = 1:ndchunks
-%             fieldname = sprintf('meas');
-%             fieldvalue = darray.data{i}.meas;
-%             data.(fieldname) = fieldvalue;
-%         end
-%         
-%         for i = 1:ndchunks
-%             fieldname = sprintf('trlxid');
-%             fieldvalue = darray.data{i}.idxtrl;
-%             data.(fieldname) = fieldvalue;
-%         end
-%         
-%         for i = 1:ndchunks
-%             fieldname = sprintf('occxid');
-%             fieldvalue = darray.data{i}.idxtim;
-%             data.(fieldname) = fieldvalue;
-%         end
-%         
-%         for i = 1:ndchunks
-%             fieldname = sprintf('trlxocc');
-%             fieldvalue = darray.data{i}.trlxtim;
-%             data.(fieldname) = fieldvalue;
-%         end
-%         
-%         for i = 1:ndchunks
-%             fieldname = sprintf('NTID');
-%             fieldvalue = length(unique(darray.data{i}.idxtrl));
-%             data.(fieldname) = fieldvalue;
-%         end
-%         
-%         for i = 1:ndchunks
-%             fieldname = sprintf('NOID');
-%             fieldvalue = length(unique(darray.data{i}.idxtim));
-%             data.(fieldname) = fieldvalue;
-%         end
-%         
-%         for i = 1:ndchunks
-%             fieldname = sprintf('NTO');
-%             fieldvalue = length(unique(darray.data{i}.trlxtim));
-%             data.(fieldname) = fieldvalue;
-%         end
+        %define number of data chunks to crunch through
+        ndchunks = length(darray.names);
+        clear stan_in
+        stan_in{1,1} = 'data {';
+        
+        for i = 1:ndchunks
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=1> NOBS;'); %#ok<*AGROW>
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=1> NSUB;');
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=1> NOCC;');
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=1> NTRL;');
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=1> NTID;');
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=1> NOID;');
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=1> NTO;');
+        end
+        
+        stan_in{end+1,1} = '  ';
+        
+        for i = 1:ndchunks
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=1, upper=NSUB> id[NOBS];');
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=1, upper=NOCC> occ[NOBS];');
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=1, upper=NTRL> trl[NOBS];');
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=1, upper=NTID> trlxid[NOBS];');
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=1, upper=NOID> occxid[NOBS];');
+            stan_in{end+1,1} = ...
+                sprintf('  int<lower=1, upper=NTO> trlxocc[NOBS];');
+        end
+        
+        stan_in{end+1,1} = '  ';
+        
+        for i = 1:ndchunks
+            stan_in{end+1,1} = ...
+                sprintf('  vector[NOBS] meas;');
+        end
+        
+        stan_in{end+1,1} = '}';
+        stan_in{end+1,1} = '  ';
+        stan_in{end+1,1} = 'parameters {';
+        
+        for i=1:ndchunks
+            stan_in{end+1,1} = ...
+                sprintf('  real pop_int;');
+        end
+        
+        stan_in{end+1,1} = '  ';
+        
+        for i=1:ndchunks
+            stan_in{end+1,1} = ...
+                sprintf('  real<lower=0> sig_id;');
+            stan_in{end+1,1} = ...
+                sprintf('  real<lower=0> sig_occ;');
+            stan_in{end+1,1} = ...
+                sprintf('  real<lower=0> sig_trl;');
+            stan_in{end+1,1} = ...
+                sprintf('  real<lower=0> sig_err;');
+            stan_in{end+1,1} = ...
+                sprintf('  real<lower=0> sig_trlxid;');
+            stan_in{end+1,1} = ...
+                sprintf('  real<lower=0> sig_occxid;');
+            stan_in{end+1,1} = ...
+                sprintf('  real<lower=0> sig_trlxocc;');
+        end
+        
+        stan_in{end+1,1} = '  ';
+        
+        for i=1:ndchunks
+            stan_in{end+1,1} = ...
+                sprintf('  vector[NSUB] id_raw;');
+            stan_in{end+1,1} = ...
+                sprintf('  vector[NOCC] occ_raw;');
+            stan_in{end+1,1} = ...
+                sprintf('  vector[NTRL] trl_raw;');
+            stan_in{end+1,1} = ...
+                sprintf('  vector[NTID] trlxid_raw;');
+            stan_in{end+1,1} = ...
+                sprintf('  vector[NOID] occxid_raw;');
+            stan_in{end+1,1} = ...
+                sprintf('  vector[NTO] trlxocc_raw;');
+        end
+        
+        stan_in{end+1,1} = '}';
+        stan_in{end+1,1} = '  ';
+        stan_in{end+1,1} = 'transformed parameters {';
+        
+        for i=1:ndchunks
+            stan_in{end+1,1} = ...
+                sprintf('  vector[NSUB] id_terms;');
+            stan_in{end+1,1} = ...
+                sprintf('  vector[NOCC] occ_terms;');
+            stan_in{end+1,1} = ...
+                sprintf('  vector[NTRL] trl_terms;');
+            stan_in{end+1,1} = ...
+                sprintf('  vector[NTID] trlxid_terms;');
+            stan_in{end+1,1} = ...
+                sprintf('  vector[NOID] occxid_terms;');
+            stan_in{end+1,1} = ...
+                sprintf('  vector[NTO] trlxocc_terms;');
+        end
+        
+        stan_in{end+1,1} = '  ';
+        
+        for i=1:ndchunks
+            stan_in{end+1,1} = ...
+                sprintf('  id_terms = sig_id * id_raw;');
+            stan_in{end+1,1} = ...
+                sprintf('  occ_terms = sig_occ * occ_raw;');
+            stan_in{end+1,1} = ...
+                sprintf('  trl_terms = sig_trl * trl_raw;');
+            stan_in{end+1,1} = ...
+                sprintf('  trlxid_terms = sig_trlxid * trlxid_raw;');
+            stan_in{end+1,1} = ...
+                sprintf('  occxid_terms = sig_occxid * occxid_raw;');
+            stan_in{end+1,1} = ...
+                sprintf('  trlxocc_terms = sig_trlxocc * trlxocc_raw;');
+        end
+        
+        stan_in{end+1,1} = '}';
+        stan_in{end+1,1} = '  ';
+        stan_in{end+1,1} = 'model {';
+        
+        for i=1:ndchunks
+            stan_in{end+1,1} = ...
+                sprintf('  vector[NOBS] y_hat;');
+        end
+        
+        stan_in{end+1,1} = '  ';
+        
+        for i=1:ndchunks
+            stan_in{end+1,1} = ...
+                sprintf('  for(i in 1:NOBS)');
+            stan_in{end+1,1} = ...
+                sprintf('    y_hat[i] = pop_int + id_terms[id[i]] +');
+            stan_in{end+1,1} = ...
+                sprintf('    occ_terms[occ[i]] + trl_terms[trl[i]] +');
+            stan_in{end+1,1} = ...
+                sprintf('    trlxid_terms[trlxid[i]] + occxid_terms[occxid[i]] +');
+            stan_in{end+1,1} = ...
+                sprintf('    trlxocc_terms[trlxocc[i]];');
+        end
+        
+        stan_in{end+1,1} = '  ';
+        
+        for i=1:ndchunks
+            stan_in{end+1,1} = ...
+                sprintf('  meas ~ normal(y_hat,sig_err);');
+        end
+        
+        stan_in{end+1,1} = '  ';
+        
+        for i=1:ndchunks
+            stan_in{end+1,1} = ...
+                sprintf('  id_raw ~ normal(0,1);');
+            stan_in{end+1,1} = ...
+                sprintf('  occ_raw ~ normal(0,1);');
+            stan_in{end+1,1} = ...
+                sprintf('  trl_raw ~ normal(0,1);');
+            stan_in{end+1,1} = ...
+                sprintf('  trlxid_raw ~ normal(0,1);');
+            stan_in{end+1,1} = ...
+                sprintf('  occxid_raw ~ normal(0,1);');
+            stan_in{end+1,1} = ...
+                sprintf('  trlxocc_raw ~ normal(0,1);');
+        end
+        
+        stan_in{end+1,1} = '  ';
+        
+        for i=1:ndchunks
+            stan_in{end+1,1} = ...
+                sprintf('  sig_id ~ cauchy(0,20);');
+            stan_in{end+1,1} = ...
+                sprintf('  sig_occ ~ cauchy(0,.1);');
+            stan_in{end+1,1} = ...
+                sprintf('  sig_trl ~ cauchy(0,20);');
+            stan_in{end+1,1} = ...
+                sprintf('  sig_err ~ cauchy(0,20);');
+        end
+        
+        stan_in{end+1,1} = '  ';
+        
+        for i=1:ndchunks
+            stan_in{end+1,1} = ...
+                sprintf('  sig_trlxid ~ cauchy(0,10);');
+            stan_in{end+1,1} = ...
+                sprintf('  sig_occxid ~ cauchy(0,10);');
+            stan_in{end+1,1} = ...
+                sprintf('  sig_trlxocc ~ cauchy(0,.05);');
+        end
+        
+        stan_in{end+1,1} = '}';
+        %store the cmdstan syntax
+        REL.stan_in = stan_in;
+        
+        %create structure for the data to be sent to cmdstan
+        data = struct;
+        
+        %prep data structure for cmdstan
+        for i = 1:ndchunks
+            fieldname = sprintf('NOBS');
+            fieldvalue = height(darray.data{i});
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i = 1:ndchunks
+            fieldname = sprintf('NOCC');
+            fieldvalue = length(unique(darray.data{i}.time));
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i = 1:ndchunks
+            fieldname = sprintf('NSUB');
+            fieldvalue = length(unique(darray.data{i}.id2));
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i = 1:ndchunks
+            fieldname = sprintf('NTRL');
+            fieldvalue = length(unique(darray.data{i}.trl2));
+            data.(fieldname) = fieldvalue;
+        end
+        
+        
+        for i = 1:ndchunks
+            fieldname = sprintf('occ');
+            fieldvalue = darray.data{i}.time2;
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i = 1:ndchunks
+            fieldname = sprintf('id');
+            fieldvalue = darray.data{i}.id2;
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i = 1:ndchunks
+            fieldname = sprintf('trl');
+            fieldvalue = darray.data{i}.trl2;
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i = 1:ndchunks
+            fieldname = sprintf('meas');
+            fieldvalue = darray.data{i}.meas;
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i = 1:ndchunks
+            fieldname = sprintf('trlxid');
+            fieldvalue = darray.data{i}.idxtrl;
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i = 1:ndchunks
+            fieldname = sprintf('occxid');
+            fieldvalue = darray.data{i}.idxtim;
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i = 1:ndchunks
+            fieldname = sprintf('trlxocc');
+            fieldvalue = darray.data{i}.trlxtim;
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i = 1:ndchunks
+            fieldname = sprintf('NTID');
+            fieldvalue = length(unique(darray.data{i}.idxtrl));
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i = 1:ndchunks
+            fieldname = sprintf('NOID');
+            fieldvalue = length(unique(darray.data{i}.idxtim));
+            data.(fieldname) = fieldvalue;
+        end
+        
+        for i = 1:ndchunks
+            fieldname = sprintf('NTO');
+            fieldvalue = length(unique(darray.data{i}.trlxtim));
+            data.(fieldname) = fieldvalue;
+        end
         
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
