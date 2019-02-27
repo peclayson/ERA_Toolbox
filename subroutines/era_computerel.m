@@ -1312,50 +1312,97 @@ switch analysis
                 end
             end
         end
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%double
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%check the
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%indexing
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%here.
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%need to
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%do this
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%for each
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%of the
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%interaction
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%variables
-        idxtrl_count = 1;
-        idxtim = 1;
-        trlxtim = 1;
         
         for da = 1:length(darray.names)
             warray = darray.data{da};
-            for i = 1:height(warray)
+             for i = 1:height(warray)
                 if i == 1
-                    idxtrl = idxtrl_count;
-                    idxtrl_count = idxtrl_count + 1;
+                    idxtrl_count = 1;
                     idxtrl_count_base = 1;
-                    poss_idxtrl = 1;
+                    
+                    idxtrl = idxtrl_count;
+                    poss_idxtrl = idxtrl_count;
+                    idxtrl_count = idxtrl_count + 1;
                 elseif i > 1 
                     if warray.id2(i) == warray.id2(i-1)
                         if warray.trl2(i) == (warray.trl2(i-1)+1)
-                            idxtrl(end+1) = idxtrl_count;
                             poss_idxtrl(end+1) = idxtrl_count;
+                            idxtrl(end+1) = idxtrl_count;                            
                             idxtrl_count = idxtrl_count + 1;
                         elseif warray.trl2(i) ~= (warray.trl2(i-1)+1)
-                            poss_idxtrl(end+1) = idxtrl_count;
                             idxtrl_count = idxtrl_count_base;
+                            poss_idxtrl(end+1) = idxtrl_count;
                             idxtrl(end+1) = idxtrl_count;
                             idxtrl_count = idxtrl_count + 1;
                         end
                     elseif warray.id2(i) ~= warray.id2(i-1)
                         idxtrl_count_base = max(poss_idxtrl) + 1;
                         idxtrl_count = idxtrl_count_base;
-                        poss_idxtrl = [];
+                        poss_idxtrl = idxtrl_count;
                         idxtrl(end+1) = idxtrl_count;
                         idxtrl_count = idxtrl_count + 1;
                     end
                 end
             end
+            
+            for i = 1:height(warray)
+                if i == 1
+                    idxtim_count = 1;
+                    idxtim = idxtim_count;
+                elseif i > 1 
+                    if warray.id2(i) == warray.id2(i-1)
+                        if warray.time2(i) == (warray.time2(i-1))
+                            idxtim(end+1) = idxtim_count;    
+                        elseif warray.time2(i) ~= (warray.time2(i-1))
+                            idxtim_count = idxtim_count + 1;
+                            idxtim(end+1) = idxtim_count;
+                        end
+                    elseif warray.id2(i) ~= warray.id2(i-1)
+                        idxtim_count = idxtim_count + 1;
+                        idxtim(end+1) = idxtim_count;
+                    end
+                end
+            end
+            
+            for i = 1:height(warray)
+                if i == 1
+                    trlxtim_count = 1;
+                    ind_trlxtim = [unique(warray.time2) ...
+                        zeros(1,length(unique(warray.time2)))'];
+                    
+                    for j = 1:length(unique(warray.time2))
+                        if j == 1
+                            ind_trlxtim(j,2) = 1;
+                            maxprev = max(warray{warray.time2 == 1,'trl2'});
+                        elseif j > 1
+                            ind_trlxtim(j,2) = maxprev + 1;
+                            maxprev = maxprev + 1 +... 
+                                max(warray{warray.time2 == 1,'trl2'});
+                        end                      
+                    end
+                    
+                    trlxtim = trlxtim_count;
+                    trlxtim_count = trlxtim_count + 1;
+                elseif i > 1 
+                    if warray.time2(i) == warray.time2(i-1)
+                        if warray.trl2(i) == (warray.trl2(i-1)+1)                           
+                            trlxtim(end+1) = trlxtim_count;                            
+                            trlxtim_count = trlxtim_count + 1;
+                        elseif warray.trl2(i) ~= (warray.trl2(i-1)+1)
+                            trlxtim_count = ind_trlxtim(warray.time2(i),2);
+                            trlxtim(end+1) = trlxtim_count;
+                            trlxtim_count = trlxtim_count + 1;
+                        end
+                    elseif warray.time2(i) ~= warray.time2(i-1)
+                        trlxtim_count = ind_trlxtim(warray.time2(i),2);
+                        trlxtim(end+1) = trlxtim_count;
+                        trlxtim_count = trlxtim_count + 1;
+                    end
+                end
+            end
             warray.idxtrl = idxtrl';
+            warray.idxtim = idxtim';
+            warray.trlxtim = trlxtim';
             darray.data{da} = warray;
         end
         
@@ -1546,15 +1593,15 @@ switch analysis
         
         for i=1:ndchunks
             stan_in{end+1,1} = ...
-                sprintf('  for(i in 1:NOBS%d)',i);
+                sprintf('  for(i%d in 1:NOBS%d)',i,i);
             stan_in{end+1,1} = ...
-                sprintf('    y_hat%d[i] = pop_int%d + id_terms%d[id%d[i]] +',i,i,i,i);
+                sprintf('    y_hat%d[i%d] = pop_int%d + id_terms%d[id%d[i%d]] +',i,i,i,i,i,i);
             stan_in{end+1,1} = ...
-                sprintf('    occ_terms%d[occ%d[i]] + trl_terms%d[trl%d[i]] +',i,i,i,i);
+                sprintf('    occ_terms%d[occ%d[i%d]] + trl_terms%d[trl%d[i%d]] +',i,i,i,i,i,i);
             stan_in{end+1,1} = ...
-                sprintf('    trlxid_terms%d[trlxid%d[i]] + occxid_terms%d[occxid%d[i]] +',i,i,i,i);
+                sprintf('    trlxid_terms%d[trlxid%d[i%d]] + occxid_terms%d[occxid%d[i%d]] +',i,i,i,i,i,i);
             stan_in{end+1,1} = ...
-                sprintf('    trlxocc_terms%d[trlxocc%d[i]];',i,i);
+                sprintf('    trlxocc_terms%d[trlxocc%d[i%d]];',i,i,i);
         end
         
         stan_in{end+1,1} = '  ';
@@ -1615,299 +1662,370 @@ switch analysis
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-       
-        %define number of data chunks to crunch through
-        ndchunks = length(darray.names);
-        clear stan_in
-        stan_in{1,1} = 'data {';
-        
-        for i = 1:ndchunks
-            stan_in{end+1,1} = ...
-                sprintf('  int<lower=1> NOBS;'); %#ok<*AGROW>
-            stan_in{end+1,1} = ...
-                sprintf('  int<lower=1> NSUB;');
-            stan_in{end+1,1} = ...
-                sprintf('  int<lower=1> NOCC;');
-            stan_in{end+1,1} = ...
-                sprintf('  int<lower=1> NTRL;');
-            stan_in{end+1,1} = ...
-                sprintf('  int<lower=1> NTID;');
-            stan_in{end+1,1} = ...
-                sprintf('  int<lower=1> NOID;');
-            stan_in{end+1,1} = ...
-                sprintf('  int<lower=1> NTO;');
-        end
-        
-        stan_in{end+1,1} = '  ';
-        
-        for i = 1:ndchunks
-            stan_in{end+1,1} = ...
-                sprintf('  int<lower=1, upper=NSUB> id[NOBS];');
-            stan_in{end+1,1} = ...
-                sprintf('  int<lower=1, upper=NOCC> occ[NOBS];');
-            stan_in{end+1,1} = ...
-                sprintf('  int<lower=1, upper=NTRL> trl[NOBS];');
-            stan_in{end+1,1} = ...
-                sprintf('  int<lower=1, upper=NTID> trlxid[NOBS];');
-            stan_in{end+1,1} = ...
-                sprintf('  int<lower=1, upper=NOID> occxid[NOBS];');
-            stan_in{end+1,1} = ...
-                sprintf('  int<lower=1, upper=NTO> trlxocc[NOBS];');
-        end
-        
-        stan_in{end+1,1} = '  ';
-        
-        for i = 1:ndchunks
-            stan_in{end+1,1} = ...
-                sprintf('  vector[NOBS] meas;');
-        end
-        
-        stan_in{end+1,1} = '}';
-        stan_in{end+1,1} = '  ';
-        stan_in{end+1,1} = 'parameters {';
-        
-        for i=1:ndchunks
-            stan_in{end+1,1} = ...
-                sprintf('  real pop_int;');
-        end
-        
-        stan_in{end+1,1} = '  ';
-        
-        for i=1:ndchunks
-            stan_in{end+1,1} = ...
-                sprintf('  real<lower=0> sig_id;');
-            stan_in{end+1,1} = ...
-                sprintf('  real<lower=0> sig_occ;');
-            stan_in{end+1,1} = ...
-                sprintf('  real<lower=0> sig_trl;');
-            stan_in{end+1,1} = ...
-                sprintf('  real<lower=0> sig_err;');
-            stan_in{end+1,1} = ...
-                sprintf('  real<lower=0> sig_trlxid;');
-            stan_in{end+1,1} = ...
-                sprintf('  real<lower=0> sig_occxid;');
-            stan_in{end+1,1} = ...
-                sprintf('  real<lower=0> sig_trlxocc;');
-        end
-        
-        stan_in{end+1,1} = '  ';
-        
-        for i=1:ndchunks
-            stan_in{end+1,1} = ...
-                sprintf('  vector[NSUB] id_raw;');
-            stan_in{end+1,1} = ...
-                sprintf('  vector[NOCC] occ_raw;');
-            stan_in{end+1,1} = ...
-                sprintf('  vector[NTRL] trl_raw;');
-            stan_in{end+1,1} = ...
-                sprintf('  vector[NTID] trlxid_raw;');
-            stan_in{end+1,1} = ...
-                sprintf('  vector[NOID] occxid_raw;');
-            stan_in{end+1,1} = ...
-                sprintf('  vector[NTO] trlxocc_raw;');
-        end
-        
-        stan_in{end+1,1} = '}';
-        stan_in{end+1,1} = '  ';
-        stan_in{end+1,1} = 'transformed parameters {';
-        
-        for i=1:ndchunks
-            stan_in{end+1,1} = ...
-                sprintf('  vector[NSUB] id_terms;');
-            stan_in{end+1,1} = ...
-                sprintf('  vector[NOCC] occ_terms;');
-            stan_in{end+1,1} = ...
-                sprintf('  vector[NTRL] trl_terms;');
-            stan_in{end+1,1} = ...
-                sprintf('  vector[NTID] trlxid_terms;');
-            stan_in{end+1,1} = ...
-                sprintf('  vector[NOID] occxid_terms;');
-            stan_in{end+1,1} = ...
-                sprintf('  vector[NTO] trlxocc_terms;');
-        end
-        
-        stan_in{end+1,1} = '  ';
-        
-        for i=1:ndchunks
-            stan_in{end+1,1} = ...
-                sprintf('  id_terms = sig_id * id_raw;');
-            stan_in{end+1,1} = ...
-                sprintf('  occ_terms = sig_occ * occ_raw;');
-            stan_in{end+1,1} = ...
-                sprintf('  trl_terms = sig_trl * trl_raw;');
-            stan_in{end+1,1} = ...
-                sprintf('  trlxid_terms = sig_trlxid * trlxid_raw;');
-            stan_in{end+1,1} = ...
-                sprintf('  occxid_terms = sig_occxid * occxid_raw;');
-            stan_in{end+1,1} = ...
-                sprintf('  trlxocc_terms = sig_trlxocc * trlxocc_raw;');
-        end
-        
-        stan_in{end+1,1} = '}';
-        stan_in{end+1,1} = '  ';
-        stan_in{end+1,1} = 'model {';
-        
-        for i=1:ndchunks
-            stan_in{end+1,1} = ...
-                sprintf('  vector[NOBS] y_hat;');
-        end
-        
-        stan_in{end+1,1} = '  ';
-        
-        for i=1:ndchunks
-            stan_in{end+1,1} = ...
-                sprintf('  for(i in 1:NOBS)');
-            stan_in{end+1,1} = ...
-                sprintf('    y_hat[i] = pop_int + id_terms[id[i]] +');
-            stan_in{end+1,1} = ...
-                sprintf('    occ_terms[occ[i]] + trl_terms[trl[i]] +');
-            stan_in{end+1,1} = ...
-                sprintf('    trlxid_terms[trlxid[i]] + occxid_terms[occxid[i]] +');
-            stan_in{end+1,1} = ...
-                sprintf('    trlxocc_terms[trlxocc[i]];');
-        end
-        
-        stan_in{end+1,1} = '  ';
-        
-        for i=1:ndchunks
-            stan_in{end+1,1} = ...
-                sprintf('  meas ~ normal(y_hat,sig_err);');
-        end
-        
-        stan_in{end+1,1} = '  ';
-        
-        for i=1:ndchunks
-            stan_in{end+1,1} = ...
-                sprintf('  id_raw ~ normal(0,1);');
-            stan_in{end+1,1} = ...
-                sprintf('  occ_raw ~ normal(0,1);');
-            stan_in{end+1,1} = ...
-                sprintf('  trl_raw ~ normal(0,1);');
-            stan_in{end+1,1} = ...
-                sprintf('  trlxid_raw ~ normal(0,1);');
-            stan_in{end+1,1} = ...
-                sprintf('  occxid_raw ~ normal(0,1);');
-            stan_in{end+1,1} = ...
-                sprintf('  trlxocc_raw ~ normal(0,1);');
-        end
-        
-        stan_in{end+1,1} = '  ';
-        
-        for i=1:ndchunks
-            stan_in{end+1,1} = ...
-                sprintf('  sig_id ~ cauchy(0,20);');
-            stan_in{end+1,1} = ...
-                sprintf('  sig_occ ~ cauchy(0,.1);');
-            stan_in{end+1,1} = ...
-                sprintf('  sig_trl ~ cauchy(0,20);');
-            stan_in{end+1,1} = ...
-                sprintf('  sig_err ~ cauchy(0,20);');
-        end
-        
-        stan_in{end+1,1} = '  ';
-        
-        for i=1:ndchunks
-            stan_in{end+1,1} = ...
-                sprintf('  sig_trlxid ~ cauchy(0,10);');
-            stan_in{end+1,1} = ...
-                sprintf('  sig_occxid ~ cauchy(0,10);');
-            stan_in{end+1,1} = ...
-                sprintf('  sig_trlxocc ~ cauchy(0,.05);');
-        end
-        
-        stan_in{end+1,1} = '}';
-        %store the cmdstan syntax
-        REL.stan_in = stan_in;
-        
-        %create structure for the data to be sent to cmdstan
-        data = struct;
-        
-        %prep data structure for cmdstan
-        for i = 1:ndchunks
-            fieldname = sprintf('NOBS');
-            fieldvalue = height(darray.data{i});
-            data.(fieldname) = fieldvalue;
-        end
-        
-        for i = 1:ndchunks
-            fieldname = sprintf('NOCC');
-            fieldvalue = length(unique(darray.data{i}.time));
-            data.(fieldname) = fieldvalue;
-        end
-        
-        for i = 1:ndchunks
-            fieldname = sprintf('NSUB');
-            fieldvalue = length(unique(darray.data{i}.id2));
-            data.(fieldname) = fieldvalue;
-        end
-        
-        for i = 1:ndchunks
-            fieldname = sprintf('NTRL');
-            fieldvalue = length(unique(darray.data{i}.trl2));
-            data.(fieldname) = fieldvalue;
-        end
-        
-        
-        for i = 1:ndchunks
-            fieldname = sprintf('occ');
-            fieldvalue = darray.data{i}.time2;
-            data.(fieldname) = fieldvalue;
-        end
-        
-        for i = 1:ndchunks
-            fieldname = sprintf('id');
-            fieldvalue = darray.data{i}.id2;
-            data.(fieldname) = fieldvalue;
-        end
-        
-        for i = 1:ndchunks
-            fieldname = sprintf('trl');
-            fieldvalue = darray.data{i}.trl2;
-            data.(fieldname) = fieldvalue;
-        end
-        
-        for i = 1:ndchunks
-            fieldname = sprintf('meas');
-            fieldvalue = darray.data{i}.meas;
-            data.(fieldname) = fieldvalue;
-        end
-        
-        for i = 1:ndchunks
-            fieldname = sprintf('trlxid');
-            fieldvalue = darray.data{i}.idxtrl;
-            data.(fieldname) = fieldvalue;
-        end
-        
-        for i = 1:ndchunks
-            fieldname = sprintf('occxid');
-            fieldvalue = darray.data{i}.idxtim;
-            data.(fieldname) = fieldvalue;
-        end
-        
-        for i = 1:ndchunks
-            fieldname = sprintf('trlxocc');
-            fieldvalue = darray.data{i}.trlxtim;
-            data.(fieldname) = fieldvalue;
-        end
-        
-        for i = 1:ndchunks
-            fieldname = sprintf('NTID');
-            fieldvalue = length(unique(darray.data{i}.idxtrl));
-            data.(fieldname) = fieldvalue;
-        end
-        
-        for i = 1:ndchunks
-            fieldname = sprintf('NOID');
-            fieldvalue = length(unique(darray.data{i}.idxtim));
-            data.(fieldname) = fieldvalue;
-        end
-        
-        for i = 1:ndchunks
-            fieldname = sprintf('NTO');
-            fieldvalue = length(unique(darray.data{i}.trlxtim));
-            data.(fieldname) = fieldvalue;
-        end
-        
+%        
+%         stan_in = {
+% 'data { '
+% '  int<lower=1> NOBS; //total number of observations '
+% '  int<lower=1> NSUB; //total number of subjects'
+% '  int<lower=1> NOCC; //total number of occasions'
+% '  int<lower=1> NTRL; //total number of trials'
+% '  int<lower=1> NTID; // total unique for trial*id'
+% '  int<lower=1> NOID; // total unique for occ*id'
+% '  int<lower=1> NTO; // total unique for trial*occ'
+% '  int<lower=1, upper=NSUB> id[NOBS]; //id variable'
+% '  int<lower=1, upper=NOCC> occ[NOBS]; //occ variable'
+% '  int<lower=1, upper=NTRL> trl[NOBS]; //trl variable'
+% '  int<lower=1, upper=NTID> trlxid[NOBS]; //trlxid variable'
+% '  int<lower=1, upper=NOID> occxid[NOBS]; //occxid variable'
+% '  int<lower=1, upper=NTO> trlxocc[NOBS]; //trlxocc variable'
+% '  vector[NOBS] meas; //measurements'
+% '}'
+% 'parameters {' 
+% '  real pop_int; //population intercept'
+% '  real<lower=0> sig_id; //id-level std dev'
+% '  real<lower=0> sig_occ; //occ-level std dev'
+% '  real<lower=0> sig_trl; //trl-level std dev'
+% '  real<lower=0> sig_err; //residual std dev'
+% '  real<lower=0> sig_trlxid; //trlxid std dev'
+% '  real<lower=0> sig_occxid; //occxid std dev'
+% '  real<lower=0> sig_trlxocc; //trlxocc std dev'
+% '  vector[NSUB] id_raw; //id means'
+% '  vector[NOCC] occ_raw; //occ means'
+% '  vector[NTRL] trl_raw; //trl means'
+% '  vector[NTID] trlxid_raw; //trlxid means'
+% '  vector[NOID] occxid_raw; //occxid means'
+% '  vector[NTO] trlxocc_raw; //trlxocc means'
+% '}'
+% 'transformed parameters {' 
+% '  vector[NSUB] id_terms; //id-level terms'
+% '  vector[NOCC] occ_terms; //occ-level terms'
+% '  vector[NTRL] trl_terms; //trl-level terms'
+% '  vector[NTID] trlxid_terms; //trlxid terms'
+% '  vector[NOID] occxid_terms; //trlxocc terms'
+% '  vector[NTO] trlxocc_terms; //trlxocc terms'
+% '  id_terms = sig_id * id_raw;'
+% '  occ_terms = sig_occ * occ_raw;'
+% '  trl_terms = sig_trl * trl_raw;'
+% '  trlxid_terms = sig_trlxid * trlxid_raw;'
+% '  occxid_terms = sig_occxid * occxid_raw;'
+% '  trlxocc_terms = sig_trlxocc * trlxocc_raw;'
+% '}'
+% 'model {'
+% '  vector[NOBS] y_hat;'
+% '  for (i in 1:NOBS) '
+% '    y_hat[i] = pop_int + id_terms[id[i]] + '
+% '    occ_terms[occ[i]] + trl_terms[trl[i]] +'
+% '    trlxid_terms[trlxid[i]] + occxid_terms[occxid[i]] + '
+% '    trlxocc_terms[trlxocc[i]];'
+% '  meas ~ normal(y_hat,sig_err);'
+% '  id_raw ~ normal(0,1);'
+% '  occ_raw ~ normal(0,1);'
+% '  trl_raw ~ normal(0,1);'
+% '  trlxid_raw ~ normal(0,1);'
+% '  occxid_raw ~ normal(0,1);'
+% '  trlxocc_raw ~ normal(0,1);'
+% '  sig_id ~ cauchy(0,20);' 
+% '  sig_occ ~ cauchy(0,.1);'
+% '  sig_trl ~ cauchy(0,20);'
+% '  sig_err ~ cauchy(0,20);' 
+% '  sig_trlxid ~ cauchy(0,10);'
+% '  sig_occxid ~ cauchy(0,10);'
+% '  sig_trlxocc ~ cauchy(0,.05);'
+% '}'
+% };
+%         
+%         %define number of data chunks to crunch through
+%         ndchunks = length(darray.names);
+%         clear stan_in
+%         stan_in{1,1} = 'data {';
+%         
+%         for i = 1:ndchunks
+%             stan_in{end+1,1} = ...
+%                 sprintf('  int<lower=1> NOBS;'); %#ok<*AGROW>
+%             stan_in{end+1,1} = ...
+%                 sprintf('  int<lower=1> NSUB;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  int<lower=1> NOCC;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  int<lower=1> NTRL;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  int<lower=1> NTID;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  int<lower=1> NOID;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  int<lower=1> NTO;');
+%         end
+%         
+%         stan_in{end+1,1} = '  ';
+%         
+%         for i = 1:ndchunks
+%             stan_in{end+1,1} = ...
+%                 sprintf('  int<lower=1, upper=NSUB> id[NOBS];');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  int<lower=1, upper=NOCC> occ[NOBS];');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  int<lower=1, upper=NTRL> trl[NOBS];');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  int<lower=1, upper=NTID> trlxid[NOBS];');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  int<lower=1, upper=NOID> occxid[NOBS];');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  int<lower=1, upper=NTO> trlxocc[NOBS];');
+%         end
+%         
+%         stan_in{end+1,1} = '  ';
+%         
+%         for i = 1:ndchunks
+%             stan_in{end+1,1} = ...
+%                 sprintf('  vector[NOBS] meas;');
+%         end
+%         
+%         stan_in{end+1,1} = '}';
+%         stan_in{end+1,1} = '  ';
+%         stan_in{end+1,1} = 'parameters {';
+%         
+%         for i=1:ndchunks
+%             stan_in{end+1,1} = ...
+%                 sprintf('  real pop_int;');
+%         end
+%         
+%         stan_in{end+1,1} = '  ';
+%         
+%         for i=1:ndchunks
+%             stan_in{end+1,1} = ...
+%                 sprintf('  real<lower=0> sig_id;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  real<lower=0> sig_occ;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  real<lower=0> sig_trl;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  real<lower=0> sig_err;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  real<lower=0> sig_trlxid;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  real<lower=0> sig_occxid;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  real<lower=0> sig_trlxocc;');
+%         end
+%         
+%         stan_in{end+1,1} = '  ';
+%         
+%         for i=1:ndchunks
+%             stan_in{end+1,1} = ...
+%                 sprintf('  vector[NSUB] id_raw;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  vector[NOCC] occ_raw;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  vector[NTRL] trl_raw;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  vector[NTID] trlxid_raw;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  vector[NOID] occxid_raw;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  vector[NTO] trlxocc_raw;');
+%         end
+%         
+%         stan_in{end+1,1} = '}';
+%         stan_in{end+1,1} = '  ';
+%         stan_in{end+1,1} = 'transformed parameters {';
+%         
+%         for i=1:ndchunks
+%             stan_in{end+1,1} = ...
+%                 sprintf('  vector[NSUB] id_terms;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  vector[NOCC] occ_terms;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  vector[NTRL] trl_terms;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  vector[NTID] trlxid_terms;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  vector[NOID] occxid_terms;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  vector[NTO] trlxocc_terms;');
+%         end
+%         
+%         stan_in{end+1,1} = '  ';
+%         
+%         for i=1:ndchunks
+%             stan_in{end+1,1} = ...
+%                 sprintf('  id_terms = sig_id * id_raw;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  occ_terms = sig_occ * occ_raw;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  trl_terms = sig_trl * trl_raw;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  trlxid_terms = sig_trlxid * trlxid_raw;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  occxid_terms = sig_occxid * occxid_raw;');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  trlxocc_terms = sig_trlxocc * trlxocc_raw;');
+%         end
+%         
+%         stan_in{end+1,1} = '}';
+%         stan_in{end+1,1} = '  ';
+%         stan_in{end+1,1} = 'model {';
+%         
+%         for i=1:ndchunks
+%             stan_in{end+1,1} = ...
+%                 sprintf('  vector[NOBS] y_hat;');
+%         end
+%         
+%         stan_in{end+1,1} = '  ';
+%         
+%         for i=1:ndchunks
+%             stan_in{end+1,1} = ...
+%                 sprintf('  for(i in 1:NOBS)');
+%             stan_in{end+1,1} = ...
+%                 sprintf('    y_hat[i] = pop_int + id_terms[id[i]] +');
+%             stan_in{end+1,1} = ...
+%                 sprintf('    occ_terms[occ[i]] + trl_terms[trl[i]] +');
+%             stan_in{end+1,1} = ...
+%                 sprintf('    trlxid_terms[trlxid[i]] + occxid_terms[occxid[i]] +');
+%             stan_in{end+1,1} = ...
+%                 sprintf('    trlxocc_terms[trlxocc[i]];');
+%         end
+%         
+%         stan_in{end+1,1} = '  ';
+%         
+%         for i=1:ndchunks
+%             stan_in{end+1,1} = ...
+%                 sprintf('  meas ~ normal(y_hat,sig_err);');
+%         end
+%         
+%         stan_in{end+1,1} = '  ';
+%         
+%         for i=1:ndchunks
+%             stan_in{end+1,1} = ...
+%                 sprintf('  id_raw ~ normal(0,1);');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  occ_raw ~ normal(0,1);');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  trl_raw ~ normal(0,1);');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  trlxid_raw ~ normal(0,1);');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  occxid_raw ~ normal(0,1);');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  trlxocc_raw ~ normal(0,1);');
+%         end
+%         
+%         stan_in{end+1,1} = '  ';
+%         
+%         for i=1:ndchunks
+%             stan_in{end+1,1} = ...
+%                 sprintf('  sig_id ~ cauchy(0,20);');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  sig_occ ~ cauchy(0,.1);');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  sig_trl ~ cauchy(0,20);');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  sig_err ~ cauchy(0,20);');
+%         end
+%         
+%         stan_in{end+1,1} = '  ';
+%         
+%         for i=1:ndchunks
+%             stan_in{end+1,1} = ...
+%                 sprintf('  sig_trlxid ~ cauchy(0,10);');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  sig_occxid ~ cauchy(0,10);');
+%             stan_in{end+1,1} = ...
+%                 sprintf('  sig_trlxocc ~ cauchy(0,.05);');
+%         end
+%         
+%         stan_in{end+1,1} = '}';
+%         %store the cmdstan syntax
+%         REL.stan_in = stan_in;
+%         
+%         %create structure for the data to be sent to cmdstan
+%         data = struct;
+%         
+%         %prep data structure for cmdstan
+%         for i = 1:ndchunks
+%             fieldname = sprintf('NOBS');
+%             fieldvalue = height(darray.data{i});
+%             data.(fieldname) = fieldvalue;
+%         end
+%         
+%         for i = 1:ndchunks
+%             fieldname = sprintf('NOCC');
+%             fieldvalue = length(unique(darray.data{i}.time));
+%             data.(fieldname) = fieldvalue;
+%         end
+%         
+%         for i = 1:ndchunks
+%             fieldname = sprintf('NSUB');
+%             fieldvalue = length(unique(darray.data{i}.id2));
+%             data.(fieldname) = fieldvalue;
+%         end
+%         
+%         for i = 1:ndchunks
+%             fieldname = sprintf('NTRL');
+%             fieldvalue = length(unique(darray.data{i}.trl2));
+%             data.(fieldname) = fieldvalue;
+%         end
+%         
+%         
+%         for i = 1:ndchunks
+%             fieldname = sprintf('occ');
+%             fieldvalue = darray.data{i}.time2;
+%             data.(fieldname) = fieldvalue;
+%         end
+%         
+%         for i = 1:ndchunks
+%             fieldname = sprintf('id');
+%             fieldvalue = darray.data{i}.id2;
+%             data.(fieldname) = fieldvalue;
+%         end
+%         
+%         for i = 1:ndchunks
+%             fieldname = sprintf('trl');
+%             fieldvalue = darray.data{i}.trl2;
+%             data.(fieldname) = fieldvalue;
+%         end
+%         
+%         for i = 1:ndchunks
+%             fieldname = sprintf('meas');
+%             fieldvalue = darray.data{i}.meas;
+%             data.(fieldname) = fieldvalue;
+%         end
+%         
+%         for i = 1:ndchunks
+%             fieldname = sprintf('trlxid');
+%             fieldvalue = darray.data{i}.idxtrl;
+%             data.(fieldname) = fieldvalue;
+%         end
+%         
+%         for i = 1:ndchunks
+%             fieldname = sprintf('occxid');
+%             fieldvalue = darray.data{i}.idxtim;
+%             data.(fieldname) = fieldvalue;
+%         end
+%         
+%         for i = 1:ndchunks
+%             fieldname = sprintf('trlxocc');
+%             fieldvalue = darray.data{i}.trlxtim;
+%             data.(fieldname) = fieldvalue;
+%         end
+%         
+%         for i = 1:ndchunks
+%             fieldname = sprintf('NTID');
+%             fieldvalue = length(unique(darray.data{i}.idxtrl));
+%             data.(fieldname) = fieldvalue;
+%         end
+%         
+%         for i = 1:ndchunks
+%             fieldname = sprintf('NOID');
+%             fieldvalue = length(unique(darray.data{i}.idxtim));
+%             data.(fieldname) = fieldvalue;
+%         end
+%         
+%         for i = 1:ndchunks
+%             fieldname = sprintf('NTO');
+%             fieldvalue = length(unique(darray.data{i}.trlxtim));
+%             data.(fieldname) = fieldvalue;
+%         end
+%         
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1935,13 +2053,13 @@ switch analysis
         
         for i = 1:ndchunks
             fieldname = sprintf('NOCC%d',i);
-            fieldvalue = ntime;
+            fieldvalue = length(unique(darray.data{i}.time));;
             data.(fieldname) = fieldvalue;
         end
         
         for i = 1:ndchunks
             fieldname = sprintf('NSUB%d',i);
-            fieldvalue = length(unique(id2));
+            fieldvalue = length(unique(darray.data{i}.id2));
             data.(fieldname) = fieldvalue;
         end
         
@@ -2019,6 +2137,17 @@ switch analysis
         fprintf('\nModel is being run in cmdstan\n');
         fprintf('\nThis may take a while depending on the amount of data\n');
         
+        stan_control = struct;
+        stan_control.delta = .98;
+        stan_control.t0 = 15;
+        
+        niter = 20;
+        nchains = 1;
+        verbosity = true;
+        
+        %for some reason works for chunks 1 and 2, but not 3 (not sure
+        %about 4). There might be missing data or something in chunk 3.
+        
         %run cmdstan
         fit = stan('model_code', stan_in,... 
             'model_name', modelname,...
@@ -2027,10 +2156,8 @@ switch analysis
             'chains', nchains,... 
             'refresh', niter/10,... 
             'verbose', verbosity,... 
-            'file_overwrite', true);
-        
-        
-        %%%?????control = list(adapt_delta=.98, max_treedepth=15)
+            'file_overwrite', true,...
+            'control',stan_control);
         
         %block user from using Matlab command window
         fit.block();
