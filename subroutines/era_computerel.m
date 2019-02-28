@@ -3,7 +3,7 @@ function RELout = era_computerel(varargin)
 %
 %era_computerel('data',era_datatable,'chains',3,'iter',1000)
 %
-%Lasted Updated 2/25/19
+%Lasted Updated 2/28/19
 %
 %Required Inputs:
 % data - data table outputted from the era_loadfile script (see era_loadfile
@@ -101,7 +101,7 @@ function RELout = era_computerel(varargin)
 %6/25/17 PC
 % added error check for missing cells in dataset
 %
-%2/25/19 PC
+%2/28/19 PC
 % added functionality for computing test-retest reliability
 
 %somersault through varargin inputs to check for which inputs were
@@ -1166,7 +1166,6 @@ switch analysis
         
         fprintf('\nPreparing data for analysis...\n');
         
-        
         if (ngroup == 0) && (nevent == 0)
             datatable = sortrows(datatable,{'id','time'});
         elseif (ngroup > 0) && (nevent == 0)
@@ -1190,92 +1189,7 @@ switch analysis
         end
        
         REL.time = timenames;
-
-        %cmdstan requires the id variable to be numeric and sequential. 
-        %an id2 variable is created to satisfy this requirement. 
-        
-        id2 = zeros(0,height(datatable));
-        time2 = zeros(0,height(datatable));
-        trl2 = zeros(0,height(datatable));
-        
-        for i = 1:height(datatable)
-            %recode ids
-            if i == 1
-                id2(1) = 1;
-                count = 1;
-            elseif i > 1 && strcmp(char(datatable.id(i)),...
-                    char(datatable.id(i-1)))
-                id2(i) = count;
-            elseif i > 1 && ~strcmp(char(datatable.id(i)),...
-                    char(datatable.id(i-1)))
-                count = count+1;
-                id2(i) = count;
-            end
-            
-            %recode time
-            time2(i) = find(strcmp(timenames,datatable.time(i)));
-            
-            if nevent == 0
-                %recode trials
-                if i == 1
-                    trl2(1) = 1;
-                    trlcount = 2;
-                elseif i > 1 && strcmp(char(datatable.id(i)),...
-                        char(datatable.id(i-1))) && ... 
-                        strcmp(char(datatable.time(i)),...
-                        char(datatable.time(i-1)))
-                    trl2(i) = trlcount;
-                    trlcount = trlcount + 1;
-                elseif i > 1 && strcmp(char(datatable.id(i)),...
-                        char(datatable.id(i-1))) && ... 
-                        ~strcmp(char(datatable.time(i)),...
-                        char(datatable.time(i-1)))
-                    trl2(i) = 1;
-                    trlcount = 2;
-                elseif i > 1 && ~strcmp(char(datatable.id(i)),...
-                        char(datatable.id(i-1)))
-                    trl2(i) = 1;
-                    trlcount = 2;
-                end
-            elseif nevent > 0
-                %recode trials
-                if i == 1
-                    trl2(1) = 1;
-                    trlcount = 2;
-                elseif i > 1 && strcmp(char(datatable.id(i)),...
-                        char(datatable.id(i-1))) && ... 
-                        strcmp(char(datatable.event(i)),...
-                        char(datatable.event(i-1))) && ... 
-                        strcmp(char(datatable.time(i)),...
-                        char(datatable.time(i-1)))
-                    trl2(i) = trlcount;
-                    trlcount = trlcount + 1;
-                elseif (i > 1 && strcmp(char(datatable.id(i)),...
-                        char(datatable.id(i-1))) && ... 
-                        ~strcmp(char(datatable.event(i)),...
-                        char(datatable.event(i-1)))) || ...
-                        (i > 1 && strcmp(char(datatable.id(i)),...
-                        char(datatable.id(i-1))) && ... 
-                        strcmp(char(datatable.event(i)),...
-                        char(datatable.event(i-1))) && ...
-                        strcmp(char(datatable.time(i)),...
-                        char(datatable.time(i-1))))
-                    trl2(i) = 1;
-                    trlcount = 2;
-                elseif i > 1 && ~strcmp(char(datatable.id(i)),...
-                        char(datatable.id(i-1))) 
-                    trl2(i) = 1;
-                    trlcount = 2;
-                end
-            end
-        end
-        
-        datatable.id2 = id2';
-        datatable.time2 = time2';
-        datatable.trl2 = trl2';
-        
-        
-        
+  
         %parse data based on number of events and groups
         %create structure for storing data
         darray = struct;
@@ -1304,13 +1218,67 @@ switch analysis
                 dummytable = datatable(ismember(datatable.group,...
                     char(groupnames(i))),:);
                 for j = 1:nevent
-                    dummytable2 = datatable(ismember(dummytable.event,...
+                    dummytable2 = dummytable(ismember(dummytable.event,...
                         char(eventnames(j))),:);
                     darray.data{end+1} = dummytable2;
                     darray.names{end+1} = strcat(char(groupnames(j)),...
                         '_',char(eventnames(i)));
                 end
             end
+        end
+        
+        
+        %cmdstan requires the id variable to be numeric and sequential. 
+        %an id2 variable is created to satisfy this requirement. 
+        
+        for da = 1:length(darray.names)
+            warray = darray.data{da};
+            id2 = zeros(0,height(warray));
+            time2 = zeros(0,height(warray));
+            trl2 = zeros(0,height(warray));
+            for i = 1:height(warray)
+                %recode ids
+                if i == 1
+                    id2(1) = 1;
+                    count = 1;
+                elseif i > 1 && strcmp(char(warray.id(i)),...
+                        char(warray.id(i-1)))
+                    id2(i) = count;
+                elseif i > 1 && ~strcmp(char(warray.id(i)),...
+                        char(warray.id(i-1)))
+                    count = count+1;
+                    id2(i) = count;
+                end
+                
+                %recode time
+                time2(i) = find(strcmp(timenames,warray.time(i)));
+                
+                %recode trials
+                if i == 1
+                    trl2(1) = 1;
+                    trlcount = 2;
+                elseif i > 1 && strcmp(char(warray.id(i)),...
+                        char(warray.id(i-1))) && ...
+                        strcmp(char(warray.time(i)),...
+                        char(warray.time(i-1)))
+                    trl2(i) = trlcount;
+                    trlcount = trlcount + 1;
+                elseif i > 1 && strcmp(char(warray.id(i)),...
+                        char(warray.id(i-1))) && ...
+                        ~strcmp(char(warray.time(i)),...
+                        char(warray.time(i-1)))
+                    trl2(i) = 1;
+                    trlcount = 2;
+                elseif i > 1 && ~strcmp(char(warray.id(i)),...
+                        char(warray.id(i-1)))
+                    trl2(i) = 1;
+                    trlcount = 2;
+                end
+            end
+            warray.id2 = id2';
+            warray.time2 = time2';
+            warray.trl2 = trl2';
+            darray.data{da} = warray;
         end
         
         for da = 1:length(darray.names)
@@ -1408,24 +1376,6 @@ switch analysis
         
         %put the compiled data into REL structure
         REL.data = datatable;
-        
-        %create the fields for storing the parsed cmdstan outputs 
-        REL.out = [];
-        REL.out.mu = [];
-        REL.out.sig_id = [];
-        REL.out.sig_tim = [];
-        REL.out.sig_trl = [];
-        REL.out.sig_idxtrl = [];
-        REL.out.sig_idxtim = [];
-        REL.out.sig_trlxtim =[];
-        REL.out.sig_e = [];
-        REL.out.labels = {};
-        REL.out.conv.data = {};
-        REL.stan_in = {};
-        
-        %parse data into chunks based on event and group
-        
-        
         
         if showgui == 2
             
@@ -2035,9 +1985,7 @@ switch analysis
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-
-        
-        
+ 
         %store the cmdstan syntax
         REL.stan_in = stan_in;
         
@@ -2053,7 +2001,7 @@ switch analysis
         
         for i = 1:ndchunks
             fieldname = sprintf('NOCC%d',i);
-            fieldvalue = length(unique(darray.data{i}.time));;
+            fieldvalue = length(unique(darray.data{i}.time));
             data.(fieldname) = fieldvalue;
         end
         
@@ -2141,12 +2089,11 @@ switch analysis
         stan_control.delta = .98;
         stan_control.t0 = 15;
         
-        niter = 20;
-        nchains = 1;
+        niter = 500;
+        nchains = 3;
         verbosity = true;
         
-        %for some reason works for chunks 1 and 2, but not 3 (not sure
-        %about 4). There might be missing data or something in chunk 3.
+        %fix id2 indexing! (see R output)
         
         %run cmdstan
         fit = stan('model_code', stan_in,... 
@@ -2159,36 +2106,65 @@ switch analysis
             'file_overwrite', true,...
             'control',stan_control);
         
+%         writetable(darray.data{1},'/Users/peter/Dropbox/trt_ern_food/data/matlab_darray1.csv');
+%         writetable(darray.data{2},'/Users/peter/Dropbox/trt_ern_food/data/matlab_darray2.csv');
+%         writetable(darray.data{3},'/Users/peter/Dropbox/trt_ern_food/data/matlab_darray3.csv');
+%         writetable(darray.data{4},'/Users/peter/Dropbox/trt_ern_food/data/matlab_darray4.csv');
+        
         %block user from using Matlab command window
         fit.block();
         
+        %create the fields for storing the parsed cmdstan outputs 
+        REL.out = [];
+        REL.out.mu = [];
+        REL.out.sig_id = [];
+        REL.out.sig_tim = [];
+        REL.out.sig_trl = [];
+        REL.out.sig_idxtrl = [];
+        REL.out.sig_idxtim = [];
+        REL.out.sig_trlxtim =[];
+        REL.out.sig_e = [];
+        REL.out.labels = {};
+        REL.out.conv.data = {};
+        
         %parse cmdstan outputs
-        for i=1:ngroup
-            measname = sprintf('mu_G%d',i);
+        for i=1:ndchunks
+            measname = sprintf('pop_int%d',i);
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.mu(:,end+1) = measvalue;
+            
+            measname = sprintf('sig_id%d',i);
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.mu(:,end+1) = measvalue;
+            
+            measname = sprintf('sig_occ%d',i);
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.mu(:,end+1) = measvalue;
+            
+            measname = sprintf('sig_trl%d',i);
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.mu(:,end+1) = measvalue;
+            
+            measname = sprintf('sig_trlxid%d',i);
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.mu(:,end+1) = measvalue;
+            
+            measname = sprintf('sig_occxid%d',i);
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.mu(:,end+1) = measvalue;
+            
+            measname = sprintf('sig_trlxocc%d',i);
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.mu(:,end+1) = measvalue;
+            
+            measname = sprintf('sig_err%d',i);
             measvalue = fit.extract('pars',measname).(measname);
             REL.out.mu(:,end+1) = measvalue;
         end
         
-        for i=1:ngroup
-            measname = sprintf('sig_u_G%d',i);
-            measvalue = fit.extract('pars',measname).(measname);
-            REL.out.sig_u(:,end+1) = measvalue;
-        end
+        REL.out.labels = darray.names;
         
-        for i=1:ngroup
-            measname = sprintf('sig_e_G%d',i);
-            measvalue = fit.extract('pars',measname).(measname);
-            REL.out.sig_e(:,end+1) = measvalue;
-        end
-        
-        %store labels for each column by separating the event name and
-        %group name with an underscore
-        for i=1:ngroup
-            REL.out.labels(:,end+1) = strcat(eventnames(j),...
-                '_;_',groupnames(i));
-        end
-        
-        REL.out.conv.data{end+1} = era_storeconv(fit);
+        REL.out.conv.data{end+1} = era_storeconv(fit,1,ndchunks);
         
 
         
@@ -2207,8 +2183,13 @@ RELout = REL;
 
 end
 
-function convstats = era_storeconv(fit)
+function convstats = era_storeconv(fit,trt)
 %pull out r_hats from Stanfit model
+
+if nargin < 2
+    trt = 0;
+    ndchunks = 0;
+end
 
 %pull summary using the print function
 %there's no other way to get at the r_hat values, so output will also be
@@ -2221,23 +2202,50 @@ convstats{1,1} = 'name';
 convstats{1,2} = 'n_eff';
 convstats{1,3} = 'r_hat';
 
-%cycle through the important inputs
-%depending on whether there are multiple events/groups there may be 
-%multiple mu_, sig_u_, and sig_e_
-inp2check = {'lp__' 'mu_' 'sig_u_' 'sig_e_'}; 
-
-for j = 1:length(inp2check)
-    check = strncmp(output,inp2check{j},length(inp2check{j}));
-    ind2check = find(check == 1);
-    for i = 1:length(ind2check)
-        pullrow = strsplit(output{ind2check(i),:},' ');
-        label = pullrow{1};
-        neff = str2num(pullrow{end-2});
-        rhat = str2num(pullrow{end});
-        convstats{end+1,1} = label;
-        convstats{end,2} = neff;
-        convstats{end,3} = rhat;
+if trt == 0
+    %cycle through the important inputs
+    %depending on whether there are multiple events/groups there may be
+    %multiple mu_, sig_u_, and sig_e_
+    inp2check = {'lp__' 'mu_' 'sig_u_' 'sig_e_'};
+    
+    for j = 1:length(inp2check)
+        check = strncmp(output,inp2check{j},length(inp2check{j}));
+        ind2check = find(check == 1);
+        for i = 1:length(ind2check)
+            pullrow = strsplit(output{ind2check(i),:},' ');
+            label = pullrow{1};
+            neff = str2num(pullrow{end-2});
+            rhat = str2num(pullrow{end});
+            convstats{end+1,1} = label;
+            convstats{end,2} = neff;
+            convstats{end,3} = rhat;
+        end
+    end
+elseif trt == 1
+    inp2check = {'lp__'};
+    for i = 1:ndchunks
+        inp2check{end+1} = sprintf('pop_int%d',i);
+        inp2check{end+1} = sprintf('sig_id%d',i);
+        inp2check{end+1} = sprintf('sig_occ%d',i);
+        inp2check{end+1} = sprintf('sig_trl%d',i);
+        inp2check{end+1} = sprintf('sig_trlxid%d',i);
+        inp2check{end+1} = sprintf('sig_occxid%d',i);
+        inp2check{end+1} = sprintf('sig_trlxocc%d',i);
+        inp2check{end+1} = sprintf('sig_err%d',i);
+    end
+    
+    for j = 1:length(inp2check)
+        check = strncmp(output,inp2check{j},length(inp2check{j}));
+        ind2check = find(check == 1);
+        for i = 1:length(ind2check)
+            pullrow = strsplit(output{ind2check(i),:},' ');
+            label = pullrow{1};
+            neff = str2num(pullrow{end-2});
+            rhat = str2num(pullrow{end});
+            convstats{end+1,1} = label;
+            convstats{end,2} = neff;
+            convstats{end,3} = rhat;
+        end
     end
 end
-
 end
