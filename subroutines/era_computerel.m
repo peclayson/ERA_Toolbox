@@ -1376,6 +1376,7 @@ switch analysis
         
         %put the compiled data into REL structure
         REL.data = datatable;
+        REL.analysis = 'trt';
         
         if showgui == 2
             
@@ -1542,16 +1543,24 @@ switch analysis
         stan_in{end+1,1} = '  ';
         
         for i=1:ndchunks
+            %             stan_in{end+1,1} = ...
+            %                 sprintf('  for(i%d in 1:NOBS%d)',i,i);
+            %             stan_in{end+1,1} = ...
+            %                 sprintf('    y_hat%d[i%d] = pop_int%d + id_terms%d[id%d[i%d]] +',i,i,i,i,i,i);
+            %             stan_in{end+1,1} = ...
+            %                 sprintf('    occ_terms%d[occ%d[i%d]] + trl_terms%d[trl%d[i%d]] +',i,i,i,i,i,i);
+            %             stan_in{end+1,1} = ...
+            %                 sprintf('    trlxid_terms%d[trlxid%d[i%d]] + occxid_terms%d[occxid%d[i%d]] +',i,i,i,i,i,i);
+            %             stan_in{end+1,1} = ...
+            %                 sprintf('    trlxocc_terms%d[trlxocc%d[i%d]];',i,i,i);
             stan_in{end+1,1} = ...
-                sprintf('  for(i%d in 1:NOBS%d)',i,i);
+                sprintf('    y_hat%d = pop_int%d + id_terms%d[id%d] +',i,i,i,i);
             stan_in{end+1,1} = ...
-                sprintf('    y_hat%d[i%d] = pop_int%d + id_terms%d[id%d[i%d]] +',i,i,i,i,i,i);
+                sprintf('    occ_terms%d[occ%d] + trl_terms%d[trl%d] +',i,i,i,i);
             stan_in{end+1,1} = ...
-                sprintf('    occ_terms%d[occ%d[i%d]] + trl_terms%d[trl%d[i%d]] +',i,i,i,i,i,i);
+                sprintf('    trlxid_terms%d[trlxid%d] + occxid_terms%d[occxid%d] +',i,i,i,i);
             stan_in{end+1,1} = ...
-                sprintf('    trlxid_terms%d[trlxid%d[i%d]] + occxid_terms%d[occxid%d[i%d]] +',i,i,i,i,i,i);
-            stan_in{end+1,1} = ...
-                sprintf('    trlxocc_terms%d[trlxocc%d[i%d]];',i,i,i);
+                sprintf('    trlxocc_terms%d[trlxocc%d];',i,i);
         end
         
         stan_in{end+1,1} = '  ';
@@ -1707,16 +1716,19 @@ switch analysis
         stan_control.delta = .98;
         stan_control.t0 = 15;
         
+        %writetable(darray.data{1},'darray_test.csv');
+        
         %run cmdstan
-        fit = stan('model_code', stan_in,... 
+        fit = stan('model_code', stan_in,...
             'model_name', modelname,...
-            'data', data,... 
+            'data', data,...
             'iter', niter,...
-            'chains', nchains,... 
-            'refresh', niter/10,... 
-            'verbose', verbosity,... 
+            'chains', nchains,...
+            'refresh', niter/10,...
+            'verbose', verbosity,...
             'file_overwrite', true,...
-            'control', stan_control);
+            'control', stan_control,...
+            'seed', 1000);
         
         %block user from using Matlab command window
         fit.block();
@@ -1725,11 +1737,11 @@ switch analysis
         REL.out = [];
         REL.out.mu = [];
         REL.out.sig_id = [];
-        REL.out.sig_tim = [];
+        REL.out.sig_occ = [];
         REL.out.sig_trl = [];
         REL.out.sig_idxtrl = [];
-        REL.out.sig_idxtim = [];
-        REL.out.sig_trlxtim =[];
+        REL.out.sig_idxocc = [];
+        REL.out.sig_trlxocc =[];
         REL.out.sig_e = [];
         REL.out.labels = {};
         REL.out.conv.data = {};
@@ -1742,39 +1754,37 @@ switch analysis
             
             measname = sprintf('sig_id%d',i);
             measvalue = fit.extract('pars',measname).(measname);
-            REL.out.mu(:,end+1) = measvalue;
+            REL.out.sig_id(:,end+1) = measvalue;
             
             measname = sprintf('sig_occ%d',i);
             measvalue = fit.extract('pars',measname).(measname);
-            REL.out.mu(:,end+1) = measvalue;
+            REL.out.sig_occ(:,end+1) = measvalue;
             
             measname = sprintf('sig_trl%d',i);
             measvalue = fit.extract('pars',measname).(measname);
-            REL.out.mu(:,end+1) = measvalue;
+            REL.out.sig_trl(:,end+1) = measvalue;
             
             measname = sprintf('sig_trlxid%d',i);
             measvalue = fit.extract('pars',measname).(measname);
-            REL.out.mu(:,end+1) = measvalue;
+            REL.out.sig_trlxid(:,end+1) = measvalue;
             
             measname = sprintf('sig_occxid%d',i);
             measvalue = fit.extract('pars',measname).(measname);
-            REL.out.mu(:,end+1) = measvalue;
+            REL.out.sig_occxid(:,end+1) = measvalue;
             
             measname = sprintf('sig_trlxocc%d',i);
             measvalue = fit.extract('pars',measname).(measname);
-            REL.out.mu(:,end+1) = measvalue;
+            REL.out.sig_trlxocc(:,end+1) = measvalue;
             
             measname = sprintf('sig_err%d',i);
             measvalue = fit.extract('pars',measname).(measname);
-            REL.out.mu(:,end+1) = measvalue;
+            REL.out.sig_err(:,end+1) = measvalue;
         end
         
         REL.out.labels = darray.names;
         
         REL.out.conv.data{end+1} = era_storeconv(fit,1,ndchunks);
-        
-
-        
+       
 end %switch analysis
 
 %close the gui if one was shown
@@ -1790,7 +1800,7 @@ RELout = REL;
 
 end
 
-function convstats = era_storeconv(fit,trt)
+function convstats = era_storeconv(fit,trt,ndchunks)
 %pull out r_hats from Stanfit model
 
 if nargin < 2

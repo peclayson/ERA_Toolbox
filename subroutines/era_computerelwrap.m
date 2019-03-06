@@ -174,6 +174,11 @@ while rerun ~= 0
     %check convergence of chains
     RELout = era_checkconv(REL);
     
+    %delete me%
+                                        era_data.rel = RELout;
+                                        save(fullfile(era_data.proc.savepath,era_data.proc.savename),'era_data');
+    %delete me%
+    
     if RELout.out.conv.converged == 0
        
         era_reruncheck;
@@ -189,6 +194,8 @@ while rerun ~= 0
         fprintf('\nModel converged\n');
         
     end
+    
+    
     
     %check if the user wanted to see the trace plots
     if era_prefs.proc.traceplots == 2 && rerun == 0
