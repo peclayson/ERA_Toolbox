@@ -281,6 +281,10 @@ end
 %show a gui that indicates data are processing in cmdstan if the user
 %specified to do so
 if showgui == 2
+    era_relgui = findobj('Tag','era_relgui');
+    if ~isempty(era_relgui)
+        close(era_relgui);
+    end
     %define parameters for figure position
     figwidth = 400;
     figheight = 150;
@@ -1716,22 +1720,37 @@ switch analysis
         stan_control.delta = .98;
         stan_control.t0 = 15;
         
-        %writetable(darray.data{1},'darray_test.csv');
+        %lme = fitlme(darray.data{1},'meas~1+(1|id2)+(1|time2)+...
+        %(1|trl2)+(1|time2:id2)+(1|trl2:id2)+(1|trl2:time2)');
         
+%         datatable.id = data.id1;
+%         writetable(datatable,fullfile('/Users/peter/Dropbox/Data/Food_TRT/Data',strcat('data_comp_mlab',REL.filename,'.csv')));
+         
         %run cmdstan
         fit = stan('model_code', stan_in,...
             'model_name', modelname,...
             'data', data,...
             'iter', niter,...
             'chains', nchains,...
-            'refresh', niter/10,...
+            'refresh', niter/20,...
             'verbose', verbosity,...
             'file_overwrite', true,...
             'control', stan_control,...
-            'seed', 1000);
+            'seed', 12345);
         
         %block user from using Matlab command window
         fit.block();
+        
+        %what happens if niter/20 is not an evenly divisly number of niter
+        %or decimal number
+         
+        [~,tab] = print(fit);
+        writetable(tab,fullfile('/Users/peter/Dropbox/Data/Food_TRT/Data',strcat('mlab',REL.filename,'.csv')));
+        save(fullfile('/Users/peter/Dropbox/Data/Food_TRT/Data',strcat('mlab',REL.filename,'.mat')),'tab');
+        
+
+            %try saving the fit!
+
         
         %create the fields for storing the parsed cmdstan outputs 
         REL.out = [];
@@ -1739,10 +1758,10 @@ switch analysis
         REL.out.sig_id = [];
         REL.out.sig_occ = [];
         REL.out.sig_trl = [];
-        REL.out.sig_idxtrl = [];
-        REL.out.sig_idxocc = [];
+        REL.out.sig_trlxid = [];
+        REL.out.sig_occxid = [];
         REL.out.sig_trlxocc =[];
-        REL.out.sig_e = [];
+        REL.out.sig_err = [];
         REL.out.labels = {};
         REL.out.conv.data = {};
         

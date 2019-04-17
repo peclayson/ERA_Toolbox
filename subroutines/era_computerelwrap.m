@@ -177,6 +177,7 @@ while rerun ~= 0
     %delete me%
                                         era_data.rel = RELout;
                                         save(fullfile(era_data.proc.savepath,era_data.proc.savename),'era_data');
+                                        %load('/Users/peter/Desktop/test.erat','-mat');
     %delete me%
     
     if RELout.out.conv.converged == 0
