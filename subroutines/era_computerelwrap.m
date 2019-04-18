@@ -3,7 +3,7 @@ function era_data = era_computerelwrap(varargin)
 %
 %era_dataout = era_relwrap('era_prefs',era_prefs,'era_data',era_data)
 %
-%Last Updated 8/23/17
+%Last Updated 4/18/19
 %
 %Input
 % era_prefs - toolbox preferences
@@ -58,6 +58,9 @@ function era_data = era_computerelwrap(varargin)
 %
 %8/23/17 PC
 % fixed problem with trace plots not closing
+%
+%4/18/19 PC
+% changes related to trt analyses
 
 %pull era_prefs and era_data from varargin
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -174,12 +177,6 @@ while rerun ~= 0
     %check convergence of chains
     RELout = era_checkconv(REL);
     
-    %delete me%
-                                        era_data.rel = RELout;
-                                        save(fullfile(era_data.proc.savepath,era_data.proc.savename),'era_data');
-                                        %load('/Users/peter/Desktop/test.erat','-mat');
-    %delete me%
-    
     if RELout.out.conv.converged == 0
        
         era_reruncheck;
@@ -196,11 +193,10 @@ while rerun ~= 0
         
     end
     
-    
-    
     %check if the user wanted to see the trace plots
-    if era_prefs.proc.traceplots == 2 && rerun == 0
-        era_checktraceplots(REL,'askuser',1);
+    if era_prefs.proc.traceplots == 2 && rerun == 0 && ...
+            strcmp(RELout.anlaysis,'ic')
+        era_checktraceplots(RELout,'askuser',1);
         
         %close gui after pulling input from user
         era_gui = findobj('Tag','era_gui');
@@ -214,7 +210,9 @@ while rerun ~= 0
             close(era_tplots);
             delete(era_tplots);
         end
-        
+    elseif era_prefs.proc.traceplots == 2 && rerun == 0 && ...
+            strcmp(RELout.anlaysis,'trt')
+        fprintf('\nViewing trace plots for trt analyses is not currently supported\n');
     end
     
     %if convergence was not met and the user would like to rerun the model,
