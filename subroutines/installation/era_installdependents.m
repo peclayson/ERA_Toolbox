@@ -78,6 +78,11 @@ function era_installdependents(varargin)
 % Macs will not use the terminal command for unpacking the tarball. I was
 %  getting a weird error when using Matlab's unpack for the new version of
 %  CmdStan. Switching to the terminal command seems to have fixed it.
+%
+%6/17/19 PC
+% Fixed bug where cmdstan path not updated in stan_home when cmdstan was 
+%  updated on Mac OS
+%
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -546,7 +551,7 @@ if depcheck.mstan == 0
   
 %this is necessary in case cmdstan was updated, but a new version  
 %matlabstan was not installed. Matlabstan needs to be pointed to cmdstan.
-elseif depcheck.mstan == 1 && exist('cmdstannewbuild','var')
+elseif depcheck.mstan == 1 && exist('newcmdstanbuild','var')
     %in case cmdstan wasn't installed in this run, find the location of the
     %cmdstan dir
     if isempty(cmdstandir)
