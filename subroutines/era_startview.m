@@ -82,6 +82,9 @@ function era_startview(varargin)
 %
 %6/22/18 PC
 % added which measurement was processed
+%
+%6/17/19 PC
+% fixed bug: era_data not loaded when specified in era_startview
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -94,9 +97,11 @@ if ~isempty(varargin) && (isempty(era_data) && isempty(era_prefs))
     ind = find(strcmp('file',varargin),1);
     if ~isempty(ind)
         file = varargin{ind+1};
-        [pathpart,filepart] = fileparts(file);
+        
+        %if file has been provided, load it
+        load(file,'-mat');
     end
-
+ 
 end %if ~isempty(varargin)
 
 %check if era_gui is open. If the user executes era_startproc and skips
