@@ -131,7 +131,7 @@ inputs.depgen = uicontrol(era_gui,...
     'Style','pop',...
     'fontsize',era_prefs.guis.fsize,...
     'String',{'Dependability' 'Generalizability'},...
-    'Value',1,...
+    'Value',era_prefs.view.gcoeff,...
     'Position', [rcol row figwidth/4 25]);  
 
 %next row
@@ -153,7 +153,7 @@ inputs.equistab = uicontrol(era_gui,...
     'Style','pop',...
     'fontsize',era_prefs.guis.fsize,...
     'String',{'Equivalence' 'Stability'},...
-    'Value',1,...
+    'Value',era_prefs.view.reltype,...
     'Position', [rcol row figwidth/4 25]);  
 
 %next row
@@ -181,7 +181,7 @@ str = sprintf(['Display a plot that shows the impact of the number of\n'...
 %reliability with increasing trials
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
-    'String','Plot: Number of Trials v Dependability',...
+    'String','Plot: Number of Trials v Reliability',...
     'Tooltip',str,...
     'Position', [lcol row figwidth/2 40]);  
 
@@ -230,7 +230,7 @@ str = sprintf(['Display a table showing the number of trials needed\n',...
 %reliability cutoff table
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
-    'String','Table: Trial Cutoffs for Specified Dependability Threshold',...
+    'String','Table: Trial Cutoffs for Specified Reliability Threshold',...
     'Tooltip',str,...
     'Position', [lcol row figwidth/2 40]);  
 
@@ -252,7 +252,7 @@ str = sprintf(['Display a table that summarizes the number of participants\n'...
 %overall reliability table
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
-    'String','Table: Overall Dependability and Summary Information',...
+    'String','Table: Overall Reliability and Summary Information',...
     'Tooltip',str,...
     'Position', [lcol row figwidth/2 40]);  
 
@@ -378,15 +378,17 @@ inputs = varargin{ind+1};
 
 %check whether the reliability estimate provided is numeric and between 0
 %and 1
-releval = relcheck(str2double(inputs.h(1).String));
+releval = relcheck(str2double(inputs.relcutoff.String));
 
-era_prefs.view.relvalue = str2double(inputs.h(1).String);
-era_prefs.view.plotrel = inputs.h(2).Value;
-era_prefs.view.ploticc = inputs.h(3).Value;
-era_prefs.view.inctrltable = inputs.h(4).Value;
-era_prefs.view.overalltable = inputs.h(5).Value;
-era_prefs.view.showstddevt = inputs.h(6).Value;
-era_prefs.view.showstddevf = inputs.h(7).Value;
+era_prefs.view.relvalue = str2double(inputs.relcutoff.String);
+era_prefs.view.gcoeff = inputs.depgen.Value;
+era_prefs.view.reltype = inputs.equistab.Value;
+era_prefs.view.plotrel = inputs.plotrel.Value;
+era_prefs.view.ploticc = inputs.ploticc.Value;
+era_prefs.view.inctrltable = inputs.relcutt.Value;
+era_prefs.view.overalltable = inputs.overallt.Value;
+era_prefs.view.showstddevt = inputs.sdt.Value;
+era_prefs.view.showstddevf = inputs.plotbetsd.Value;
 
 %if the reliability estimate was not numeric or between 0 and 1, give the
 %user an error and take the user back.
@@ -407,7 +409,7 @@ if releval ~= 0
     errordlg(errorstr);
     
     %execute era_startview_sing with the new preferences
-    era_startview_sing('era_prefs',era_prefs,'era_data',era_data);
+    era_startview_trt('era_prefs',era_prefs,'era_data',era_data);
     
     return;
 end
@@ -463,17 +465,19 @@ if ~isempty(ind)
         %execute era_startview_sing with the new preferences
         era_startview_sing(h_view_gui.filename,h_view_gui.pathname,'inputs',...
             h_view_gui.inputs,'viewprefs',initialprefs);
-
+        
         return;
     end
-
-    era_prefs.view.relvalue = str2double(inputs.h(1).String);
-    era_prefs.view.plotrel = inputs.h(2).Value;
-    era_prefs.view.ploticc = inputs.h(3).Value;
-    era_prefs.view.inctrltable = inputs.h(4).Value;
-    era_prefs.view.overalltable = inputs.h(5).Value;
-    era_prefs.view.showstddevt = inputs.h(6).Value;
-    era_prefs.view.showstddevf = inputs.h(7).Value;
+    
+    era_prefs.view.relvalue = str2double(inputs.relcutoff.String);
+    era_prefs.view.gcoeff = inputs.depgen.Value;
+    era_prefs.view.reltype = inputs.equistab.Value;
+    era_prefs.view.plotrel = inputs.plotrel.Value;
+    era_prefs.view.ploticc = inputs.ploticc.Value;
+    era_prefs.view.inctrltable = inputs.relcutt.Value;
+    era_prefs.view.overalltable = inputs.overallt.Value;
+    era_prefs.view.showstddevt = inputs.sdt.Value;
+    era_prefs.view.showstddevf = inputs.plotbetsd.Value;
 end
 
 %check if era_gui is open.
@@ -482,7 +486,7 @@ if ~isempty(era_gui)
     pos = era_gui.Position;
     close(era_gui);
 else
-    pos=[400 400 550 550];
+    pos=[400 400 550 650];
 end
 
 %define list for plotting reliability against number of trials
@@ -533,7 +537,7 @@ uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'Position', [lcol row pos(4)/2 35]);  
 
 str = sprintf(['Lower Limit of Credible Interval\n',...
-    'Dependability Point Estimate\n',...
+    'Reliability Point Estimate\n',...
     'Upper Limit of Credible Interval']);
 
 newprefs.plotrelline = uicontrol(era_gui,'Style','listbox',...
@@ -641,8 +645,8 @@ if ~isempty(era_gui)
     close(era_gui);
 end
 
-%execute era_startview_sing with the old preferences
-era_startview_sing('era_prefs',era_prefs,'era_data',era_data);
+%execute era_startview_trt with the old preferences
+era_startview_trt('era_prefs',era_prefs,'era_data',era_data);
 
 end
 
@@ -669,8 +673,8 @@ if ~isempty(era_gui)
 end
 
 if era_prefs.view.ntrials > 1
-    %execute era_startview_sing with the new preferences
-    era_startview_sing('era_prefs',era_prefs,'era_data',era_data);
+    %execute era_startview_trt with the new preferences
+    era_startview_trt('era_prefs',era_prefs,'era_data',era_data);
 end
 
 %make sure the user has defined at least 2 trials to plot for the figure
