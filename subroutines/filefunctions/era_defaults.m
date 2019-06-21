@@ -134,4 +134,39 @@ era_prefs.view.meascutoff = 2;
 % 2 = median
 era_prefs.view.depcentmeas = 1;
 
+%%%%Additional preferences relevant to only analyses on data with %%%%%%%%%
+%%%% multiple occasions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%Which G-theory coefficient should be calculated
+% 1 = dependability
+% 2 = generalizability
+era_prefs.view.gcoeff = 1;
+
+%Which reliability coefficient should be calculated
+% 1 = equivalence
+% 2 = stability
+era_prefs.view.reltype = 1;
+
+%Value to be used for reliability cutoff/threshold
+era_prefs.view.relvalue = .8;
+
+%Plot that shows the relationship between the number of trials retained 
+%for averaging and reliability
+era_prefs.view.plotrel = 1;
+
+%Which reliability estimate to plot on the figure that shows the
+%relationship between the number of trials retained for averaging and
+%reliability (default = 2)
+% 1 = lower limit of the credible interval
+% 2 = point estimate of the credible interval
+% 3 = upper limit of the credible interval
+era_prefs.view.plotrelline = 2;
+
+%Measure of central tendency to use for estimating the overall score
+%reliability of waveforms after applying the trial cutoffs (default = 1)
+% 1 = mean
+% 2 = median
+era_prefs.view.relcentmeas = 1;
+
+
 end
