@@ -5,7 +5,7 @@ function [era_data,relerr] = era_relsummary(varargin)
 %   'depcutoff',depcutoff,'meascutoff',meascutoff,...
 %   'depcentmeas',depcentmeas)
 %
-%Last Modified 6/22/18
+%Last Modified 6/21/19
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -94,6 +94,9 @@ function [era_data,relerr] = era_relsummary(varargin)
 %
 %6/22/18 PC
 % added standard deviation to trial summaries
+%
+%6/21/19 PC
+% started working on adding trt capabilities
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -220,7 +223,7 @@ switch relanalysis
         %If it is not found, set display error.
         ind = find(strcmpi('relcutoff',varargin),1);
         if ~isempty(ind)
-            depcutoff = varargin{ind+1};
+            relcutoff = varargin{ind+1};
         else
             error('varargin:relcutoff',... %Error code and associated error
                 strcat('WARNING: relcutoff not specified \n\n',...
@@ -247,12 +250,12 @@ switch relanalysis
         %If it is not found, set display error.
         ind = find(strcmpi('relcentmeas',varargin),1);
         if ~isempty(ind)
-            depcentmeas = varargin{ind+1};
+            relcentmeas = varargin{ind+1};
         else
             error('varargin:relcentmeas',... %Error code and associated error
                 strcat('WARNING: Which central tendency to use for ',...
                 'estimating overall score reliability\n',...
-                'Please ented a valid input for depcentmeas\n',...
+                'Please ented a valid input for relcentmeas\n',...
                 '1 - mean\n',...
                 '2 - median\n',...
                 'See help era_relsummary for more information \n'));
@@ -382,9 +385,6 @@ switch relanalysis
                     
                     eloc = find(ismember(enames,lblstr(1)));
                     gloc = find(ismember(gnames,lblstr(2)));
-                    
-                    %             if isempty(eloc); eloc = 1; end;
-                    %             if isempty(gloc); gloc = 1; end;
                     
                     data.g(gloc).e(eloc).label = REL.out.labels(i);
                     data.g(gloc).e(eloc).mu.raw = REL.out.mu(:,i);
@@ -1365,23 +1365,109 @@ switch relanalysis
             enames = REL.events(:);
         end
         
-        %get the number of groups and/or events to consider
-        ncells = length(REL.out.labels);
+        %figure out whether groups or events need to be considered
+        %1 - no groups or event types to consider
+        %2 - possible multiple groups but no event types to consider
+        %3 - possible event types but no groups to consider
+        %4 - possible groups and event types to consider
         
-        %extract information from REL and store in data for crunching
-        for ii = 1:ncells
-            data(ii).label = REL.out.labels{ii};
-            data(ii).mu = REL.out.mu(:,ii);
-            data(ii).sig_id = REL.out.sig_id(:,ii);
-            data(ii).sig_occ = REL.out.sig_occ(:,ii);
-            data(ii).sig_trl = REL.out.sig_trl(:,ii);
-            data(ii).sig_trlxid = REL.out.sig_trlxid(:,ii);
-            data(ii).sig_occxid = REL.out.sig_occxid(:,ii);
-            data(ii).sig_err = REL.out.sig_err(:,ii);
+        if ngroups == 1 && nevents == 1
+            analysis = 1;
+        elseif ngroups > 1 && nevents == 1
+            analysis = 2;
+        elseif ngroups == 1 && nevents > 1
+            analysis = 3;
+        elseif ngroups > 1 && nevents > 1
+            analysis = 4;
         end
         
-        %store the cutoff in relsummary to pass to other functions more easily
+        %extract information from REL and store in data for crunching
+        switch analysis
+            case 1 %1 - no groups or event types to consider
+                
+                gloc = 1;
+                eloc = 1;
+                
+                data.g(gloc).e(eloc).label = REL.out.labels{gloc};
+                data.g(gloc).e(eloc).mu.raw = REL.out.mu(:,gloc);
+                data.g(gloc).e(eloc).sig_id.raw = REL.out.sig_id(:,gloc);
+                data.g(gloc).e(eloc).sig_occ.raw = REL.out.sig_occ(:,gloc);
+                data.g(gloc).e(eloc).sig_trl.raw = REL.out.sig_trl(:,gloc);
+                data.g(gloc).e(eloc).sig_trlxid.raw = REL.out.sig_trlxid(:,gloc);
+                data.g(gloc).e(eloc).sig_occxid.raw = REL.out.sig_occxid(:,gloc);
+                data.g(gloc).e(eloc).sig_trlxocc.raw = REL.out.sig_trlxocc(:,gloc);
+                data.g(gloc).e(eloc).sig_err.raw = REL.out.sig_err(:,gloc);
+                data.g(gloc).e(eloc).elabel = cellstr('none');
+                data.g(gloc).glabel = gnames(gloc);
+                
+            case 2 %2 - possible multiple groups but no event types to consider
+                
+                eloc = 1;
+                
+                for gloc=1:length(REL.out.labels)
+                    
+                    data.g(gloc).e(eloc).label = REL.out.labels{gloc};
+                    data.g(gloc).e(eloc).mu.raw = REL.out.mu(:,gloc);
+                    data.g(gloc).e(eloc).sig_id.raw = REL.out.sig_id(:,gloc);
+                    data.g(gloc).e(eloc).sig_occ.raw = REL.out.sig_occ(:,gloc);
+                    data.g(gloc).e(eloc).sig_trl.raw = REL.out.sig_trl(:,gloc);
+                    data.g(gloc).e(eloc).sig_trlxid.raw = REL.out.sig_trlxid(:,gloc);
+                    data.g(gloc).e(eloc).sig_occxid.raw = REL.out.sig_occxid(:,gloc);
+                    data.g(gloc).e(eloc).sig_trlxocc.raw = REL.out.sig_trlxocc(:,gloc);
+                    data.g(gloc).e(eloc).sig_err.raw = REL.out.sig_err(:,gloc);
+                    data.g(gloc).e(eloc).elabel = cellstr('none');
+                    data.g(gloc).glabel = gnames(gloc);
+                    
+                end
+                
+            case 3 %3 - possible event types but no groups to consider
+                
+                gloc = 1;
+                
+                for eloc=1:length(REL.out.labels)
+                    
+                    data.g(gloc).e(eloc).label = REL.out.labels{eloc};
+                    data.g(gloc).e(eloc).mu.raw = REL.out.mu(:,eloc);
+                    data.g(gloc).e(eloc).sig_id.raw = REL.out.sig_id(:,eloc);
+                    data.g(gloc).e(eloc).sig_occ.raw = REL.out.sig_occ(:,eloc);
+                    data.g(gloc).e(eloc).sig_trl.raw = REL.out.sig_trl(:,eloc);
+                    data.g(gloc).e(eloc).sig_trlxid.raw = REL.out.sig_trlxid(:,eloc);
+                    data.g(gloc).e(eloc).sig_occxid.raw = REL.out.sig_occxid(:,eloc);
+                    data.g(gloc).e(eloc).sig_trlxocc.raw = REL.out.sig_trlxocc(:,eloc);
+                    data.g(gloc).e(eloc).sig_err.raw = REL.out.sig_err(:,eloc);
+                    data.g(gloc).e(eloc).elabel = enames(eloc);
+                    data.g(gloc).glabel = gnames(gloc);
+                    
+                end
+                
+            case 4 %4 - possible groups and event types to consider
+                for ii=1:length(REL.out.labels)
+                    
+                    %use the underscores that were added in era_computerel to
+                    %differentiate where the group and event the data are for
+                    lblstr = strsplit(REL.out.labels{ii},'_;_');
+                    
+                    eloc = find(ismember(enames,lblstr(2)));
+                    gloc = find(ismember(gnames,lblstr(1)));                 
+                    
+                    data.g(gloc).e(eloc).label = REL.out.labels{ii};
+                    data.g(gloc).e(eloc).mu.raw = REL.out.mu(:,ii);
+                    data.g(gloc).e(eloc).sig_id.raw = REL.out.sig_id(:,ii);
+                    data.g(gloc).e(eloc).sig_occ.raw = REL.out.sig_occ(:,ii);
+                    data.g(gloc).e(eloc).sig_trl.raw = REL.out.sig_trl(:,ii);
+                    data.g(gloc).e(eloc).sig_trlxid.raw = REL.out.sig_trlxid(:,ii);
+                    data.g(gloc).e(eloc).sig_occxid.raw = REL.out.sig_occxid(:,ii);
+                    data.g(gloc).e(eloc).sig_trlxocc.raw = REL.out.sig_trlxocc(:,ii);
+                    data.g(gloc).e(eloc).sig_err.raw = REL.out.sig_err(:,ii);
+                    data.g(gloc).e(eloc).elabel = enames(eloc);
+                    data.g(gloc).glabel = gnames(gloc);
+                    
+                end
+        end %switch analysis
+        
+        %store reliability info in relsummary to pass to other functions more easily
         relsummary.relcutoff = relcutoff;
+        relsummary.reltype = reltype;
         
         %store which measure was used to specify cutoff
         switch meascutoff
@@ -1395,16 +1481,52 @@ switch relanalysis
                     sprintf(' %2.0f',ciperc*100),'% Credible Interval');
         end
         
-        for ii = 1:ncells
-            %compute reliability data for each cell
-            tempsumm(ii).name = label;
-            
-            
-            
-            
-            
-            
+        %compute reliability data for each group and event
+        switch analysis
+            case 1 %no groups or event types to consider
+                
+                %the same generic structure is used for relsummary, so the event
+                %and group locations will both be 1 for the data
+                eloc = 1;
+                gloc = 1;
+                
+                %grab the group names (if present)
+                relsummary.group(gloc).name = gnames{gloc};
+                
+                %set the event name as measure
+                relsummary.group(gloc).event(eloc).name = 'measure';
+                
+                try
+                    %create empty arrays for storing dependability information
+                    trltable = varfun(@length,REL.data{1},'GroupingVariables',{'id'});
+                catch
+                    %create empty arrays for storing dependability information
+                    trltable = varfun(@length,REL.data,'GroupingVariables',{'id'});
+                end
+                
+                %compute reliabiltiy
+                ntrials = max(trltable.GroupCount(:)) + 1000;
+                [llrel,mrel,ulrel] = era_rel_trt(...
+                    'gcoeff',gcoeff,...
+                    'reltype',reltype,...
+                    'bp',data.g(gloc).e(eloc).sig_id.raw,...
+                    'bo',data.g(gloc).e(eloc).sig_occ.raw,...
+                    'bt',data.g(gloc).e(eloc).sig_trl.raw,...
+                    'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
+                    'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
+                    'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
+                    'err',data.g(gloc).e(eloc).sig_err.raw,...
+                    'obs',[1 ntrials],'CI',ciperc);
+                
+                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         end
+        
         
 end
 
