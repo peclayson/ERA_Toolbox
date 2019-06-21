@@ -168,5 +168,4 @@ era_prefs.view.plotrelline = 2;
 % 2 = median
 era_prefs.view.relcentmeas = 1;
 
-
 end

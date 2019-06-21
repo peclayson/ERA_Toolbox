@@ -2,46 +2,86 @@ function era_relfigures(varargin)
 %Creates various figures and tables for dependability data. See user manual
 % for more specific information about each figure.
 %
-%era_relfigures('era_data',era_data)
+%era_relfigures('era_data',era_data,'analysis','sing')
 %
 %Last Modified 8/17/17
 %
 %Required Inputs:
 % era_data - ERA Toolbox data structure array containing outputs from
 %  CmdStan
+% analysis - 'sing' for single session data, 'trt' for data with multiple
+%  occasions
 %
-%Optional Inputs:
-% depcutoff - dependability level to use for cutoff when deciding the
-%  minimum number of trials needed to achieve this specified level of
-%  dependability
-% plotdep - plot the table displaying dependability v number of trials
-%  included in average
-% ploticc - plot the intraclass correlation coefficients for data. This ICC
-%  can be interpreted as the proportion of total variance that is between
-%  persons
-% showinct - display table with information for each event/group
-%  combination (cutoffs and dependability)
-% showoverallt - display table with information for data including all
-%  trials for those participants that meet cutoff threshhold
-% showstddevt - display table with information about the sources of
-%  variance (between person v within person)
-% plotbetstddev - plot the between-person standard deviations stratified
-%  by group and event
-% plotdepline - indicate whether to plot 1-lower limit of credible
-%  interval, 2-point estimate, 3-upper limit of credible interval for the  
-%  plot of dependability v number of trials (default: 1)
-% plotntrials - indicate the number of trials to plot (x-axis) in the 
-%  dependability v number of trials plot (default: 50)
-% meascutoff - which estimate to use to define cutoff for number of trials
-%  1 - lower limit of credible interval, 2 - point estimate, 3 - upper
-%  limit of credible interval (default: 1)
-% depcentmeas - which measure of central tendency to use to estimate the
-%  overall dependability, 1 - mean, 2 - median (default: 1)
+% Option 1:
+%  era_prefs - can contain all of the preferences for plotting figures and
+%   tables
+%
+% Option 2 (for analysis = 'sing'):
+%  depcutoff - dependability level to use for cutoff when deciding the
+%   minimum number of trials needed to achieve this specified level of
+%   dependability
+%  plotdep - plot the table displaying dependability v number of trials
+%   included in average
+%  ploticc - plot the intraclass correlation coefficients for data. This ICC
+%   can be interpreted as the proportion of total variance that is between
+%   persons
+%  showinct - display table with information for each event/group
+%   combination (cutoffs and dependability)
+%  showoverallt - display table with information for data including all
+%   trials for those participants that meet cutoff threshhold
+%  showstddevt - display table with information about the sources of
+%   variance (between person v within person)
+%  plotbetstddev - plot the between-person standard deviations stratified
+%   by group and event
+%  plotdepline - indicate whether to plot 1-lower limit of credible
+%   interval, 2-point estimate, 3-upper limit of credible interval for the  
+%   plot of dependability v number of trials (default: 1)
+%  plotntrials - indicate the number of trials to plot (x-axis) in the 
+%   dependability v number of trials plot (default: 50)
+%  meascutoff - which estimate to use to define cutoff for number of trials
+%   1 - lower limit of credible interval, 2 - point estimate, 3 - upper
+%   limit of credible interval (default: 1)
+%  depcentmeas - which measure of central tendency to use to estimate the
+%   overall dependability, 1 - mean, 2 - median (default: 1)
+%
+% Option 3 (for analysis = 'trt'):
+%  relcutoff - reliability level to use for cutoff when deciding the
+%   minimum number of trials needed to achieve this specified level of
+%   reliability
+%  plotrel - plot the table displaying reliability v number of trials
+%   included in average
+%  ploticc - plot the intraclass correlation coefficients for data. This ICC
+%   can be interpreted as the proportion of total variance that is between
+%   persons
+%  showinct - display table with information for each event/group
+%   combination (cutoffs and reliability)
+%  showoverallt - display table with information for data including all
+%   trials for those participants that meet cutoff threshhold
+%  showstddevt - display table with information about the sources of
+%   variance (between person v within person)
+%  plotbetstddev - plot the between-person standard deviations stratified
+%   by group and event
+%  plotrelline - indicate whether to plot 1-lower limit of credible
+%   interval, 2-point estimate, 3-upper limit of credible interval for the  
+%   plot of reliability v number of trials (default: 1)
+%  plotntrials - indicate the number of trials to plot (x-axis) in the 
+%   reliability v number of trials plot (default: 50)
+%  meascutoff - which estimate to use to define cutoff for number of trials
+%   1 - lower limit of credible interval, 2 - point estimate, 3 - upper
+%   limit of credible interval (default: 1)
+%  relcentmeas - which measure of central tendency to use to estimate the
+%   overall reliability, 1 - mean, 2 - median (default: 1)
+%  gcoeff - g-theory coefficient to calculate 1 - dependability, 2 -
+%   generalizability
+%  reltype - reliability coefficient to plot/calculate - 1 - coefficent of
+%   equivalence (internal consistency), 2 - coefficient of stability (test
+%   retest reliability)
+%
 %
 %Output:
 % Various figures may be plotted. Tables will also have buttons for
 %  saving the table to a file. Additionally the table showing the cutoffs
-%  for numbers of trials to achieve a given level of dependability will
+%  for numbers of trials to achieve a given level of reliability will
 %  have a button to save the ids of participants to include and exclude.
 
 % Copyright (C) 2016-2019 Peter E. Clayson
@@ -103,12 +143,26 @@ function era_relfigures(varargin)
 %
 %1/19/17 PC
 % updated copyright
+%
 %8/17/17 PC
 % cleaned up comments a bit
+%
+%6/21/19 PC
+% edits for including trt analyses
 
-%somersault through inputs
-if ~isempty(varargin)
-    
+%somersault through varargin inputs to check for era_prefs and era_data
+[era_prefs, era_data] = era_findprefsdata(varargin);
+
+%check whether era_data was provided
+%If it is not found, set display error.
+if isempty(era_data)
+    error('varargin:nofile',... %Error code and associated error
+        strcat('WARNING: era_data not specified \n\n',...
+        'Please input the era_data to be loaded \n'));
+end
+
+%somersault through inputs to find analysis type
+if ~isempty(varargin) 
     %the optional inputs check assumes that there was an even number of 
     %optional inputs entered. If not, an error will displayed and the
     %script will terminate.
@@ -119,17 +173,20 @@ if ~isempty(varargin)
         'See help era_relfigures for more information on optional inputs'));
     end
     
-    %check whether era_data was provided
-    %If it is not found, set display error.
-    ind = find(strcmp('era_data',varargin),1);
+    %check if the dependability cutoff was specified 
+    ind = find(strcmp('analysis',varargin),1);
     if ~isempty(ind)
-        era_data = varargin{ind+1}; 
-    else 
-        error('varargin:nofile',... %Error code and associated error
-        strcat('WARNING: era_data not specified \n\n',... 
-        'Please input the era_data to be loaded \n'));
+        analysis = varargin{ind+1};
+    else
+        error('varargin:noanalysistype',... %Error code and associated error
+        strcat('WARNING: analysis not specified \n\n',...
+        'Please input the analysis to be run: ''sing'' or ''trt'' \n'));
     end
+end
    
+%somersault through inputs to find preferences for running data, if
+%era_prefs was not provided as input
+if ~isempty(varargin) && isempty(era_prefs)
     %check if the dependability cutoff was specified 
     ind = find(strcmp('depcutoff',varargin),1);
     if ~isempty(ind)
@@ -139,7 +196,7 @@ if ~isempty(varargin)
             depcutoff = varargin{ind+1}; 
         end
     else 
-        depcutoff = .70; %default level is .70
+        depcutoff = .80; %default level is .80
     end
     
     %check if plotdep is provided
@@ -235,7 +292,7 @@ if ~isempty(varargin)
             plotwitstddev = varargin{ind+1}; 
         end
     else 
-        plotwitstddev = 0; %default is 1
+        plotwitstddev = 0; %default is 0
     end
     
     %check if plotdepline is provided
@@ -259,7 +316,7 @@ if ~isempty(varargin)
             meascutoff = varargin{ind+1}; 
         end
     else 
-        meascutoff = 1; %default is 1 (lower limit of credible interval)
+        meascutoff = 2; %default is 2 (point estimate of credible interval)
     end
     
     %check if depcentmeas is provided
@@ -274,7 +331,79 @@ if ~isempty(varargin)
         depcentmeas = 1; %default is 1 (mean)
     end
     
-elseif ~isempty(varargin)
+    %check if gcoeff is provided
+    ind = find(strcmp('gcoeff',varargin),1);
+    if ~isempty(ind)
+        if iscell(varargin{ind+1})
+            gcoeff = cell2mat(varargin{ind+1}); 
+        elseif isnumeric(varargin{ind+1})
+            gcoeff = varargin{ind+1}; 
+        end
+    else 
+        gcoeff = 1; %default is 1 (dependability)
+    end
+    
+    %check if reltype is provided
+    ind = find(strcmp('reltype',varargin),1);
+    if ~isempty(ind)
+        if iscell(varargin{ind+1})
+            reltype = cell2mat(varargin{ind+1}); 
+        elseif isnumeric(varargin{ind+1})
+            reltype = varargin{ind+1}; 
+        end
+    else 
+        reltype = 1; %default is 1 (equivalence)
+    end
+    
+    %check if relvalue is provided
+    ind = find(strcmp('relvalue',varargin),1);
+    if ~isempty(ind)
+        if iscell(varargin{ind+1})
+            relcutoff = cell2mat(varargin{ind+1}); 
+        elseif isnumeric(varargin{ind+1})
+            relcutoff = varargin{ind+1}; 
+        end
+    else 
+        relcutoff = .8; %default is .8 
+    end
+    
+    %check if plotrel is provided
+    ind = find(strcmp('plotrel',varargin),1);
+    if ~isempty(ind)
+        if iscell(varargin{ind+1})
+            plotrel = cell2mat(varargin{ind+1}); 
+        elseif isnumeric(varargin{ind+1})
+            plotrel = varargin{ind+1}; 
+        end
+    else 
+        plotrel = 1; %default is 1 
+    end
+    
+    %check if plotrelline is provided
+    ind = find(strcmp('plotrelline',varargin),1);
+    if ~isempty(ind)
+        if iscell(varargin{ind+1})
+            plotrelline = cell2mat(varargin{ind+1}); 
+        elseif isnumeric(varargin{ind+1})
+            plotrelline = varargin{ind+1}; 
+        end
+    else 
+        plotrelline = 1; %default is 2 (point estimate)
+    end
+    
+    %check if relcentmeas is provided
+    ind = find(strcmp('relcentmeas',varargin),1);
+    if ~isempty(ind)
+        if iscell(varargin{ind+1})
+            relcentmeas = cell2mat(varargin{ind+1}); 
+        elseif isnumeric(varargin{ind+1})
+            relcentmeas = varargin{ind+1}; 
+        end
+    else 
+        relcentmeas = 1; %default is 1 (mean)
+    end
+    
+elseif isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
     strcat('WARNING: Inputs are incomplete \n\n',... 
@@ -283,9 +412,60 @@ elseif ~isempty(varargin)
     
 end %if ~isempty(varargin)
 
-%calculate reliabitliy information to be used for plotting and tables
-[era_data, relerr] = era_relsummary('era_data',era_data,'depcutoff',depcutoff,...
-  'meascutoff',meascutoff,'depcentmeas',depcentmeas);
+if ~isempty(era_prefs)
+    switch analysis
+        case 'sing'
+            depcutoff = era_prefs.view.depvalue;
+            pdep = era_prefs.view.plotdep;
+            picc = era_prefs.view.ploticc;
+            showinct = era_prefs.view.inctrltable;
+            showoverallt = era_prefs.view.overalltable;
+            plotntrials = era_prefs.view.ntrials;
+            showstddevt = era_prefs.view.showstddevt;
+            plotbetstddev = era_prefs.view.showstddevf;
+            plotwitstddev = 0;
+            plotdepline = era_prefs.view.plotdepline;
+            meascutoff = era_prefs.view.meascutoff;
+            depcentmeas = era_prefs.view.depcentmeas;
+            
+        case 'trt'
+            gcoeff = era_prefs.view.gcoeff;
+            reltype = era_prefs.view.reltype;
+            relcutoff = era_prefs.view.relvalue;
+            plotrel = era_prefs.view.plotrel;
+            plotrelline = era_prefs.view.plotrelline;
+            relcentmeas = era_prefs.view.relcentmeas;
+            picc = era_prefs.view.ploticc;
+            showinct = era_prefs.view.inctrltable;
+            showoverallt = era_prefs.view.overalltable;
+            plotntrials = era_prefs.view.ntrials;
+            showstddevt = era_prefs.view.showstddevt;
+            plotbetstddev = era_prefs.view.showstddevf;
+            meascutoff = era_prefs.view.meascutoff;
+            
+    end
+end
+
+switch analysis
+    case 'sing'
+        %calculate reliabitliy information to be used for plotting and tables
+        [era_data, relerr] = era_relsummary('era_data',era_data,...
+            'analysis','sing',...
+            'depcutoff',depcutoff,...
+            'meascutoff',meascutoff,...
+            'depcentmeas',depcentmeas);
+        
+    case 'trt'
+        %calculate reliabitliy information to be used for plotting and tables
+        [era_data, relerr] = era_relsummary('era_data',era_data,...
+            'analysis','trt',...
+            'gcoeff',gcoeff,...
+            'reltype',reltype,...
+            'relcutoff',relcutoff,...
+            'meascutoff',meascutoff,...
+            'relcentmeas',relcentmeas);
+        
+end
 
 %if no good data were found then abort so you user can specify a different
 %reliability threshold
