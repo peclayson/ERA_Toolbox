@@ -85,7 +85,7 @@ function era_startproc(varargin)
 %  numerical inputs (rather than string)
 %
 %2/25/19 PC
-% adding funcionalit to look at test retest reliability
+% adding funcionality to look at test retest reliability
 %
 
 %check if era_gui is open. If the user executes era_startproc and skips

@@ -292,28 +292,7 @@ function era_view_loadnewfile(varargin)
 
 %close gui
 close(varargin{3});
-
-[filepart, pathpart] = uigetfile({'*.erat',...
-    'ERA Toolbox files (*.erat)'},'Data');
-
-if filepart == 0 
-    errordlg('No file selected','File Error');
-    era_start;
-    return;
-end
-
-fprintf('\n\nLoading Data...\n\n');
-
-%load data
-load(fullfile(pathpart,filepart),'-mat');
-
-%era_prefs needs to be redefined
-era_prefs = era_defaults;
-era_prefs.ver = era_defineversion;
-
-%create a gui to allow the user to specify what aspects of the data will be
-%viewed
-era_startview_sing('era_prefs',era_prefs,'era_data',era_data);
+era_startview;
 
 end
 
