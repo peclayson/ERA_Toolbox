@@ -177,6 +177,11 @@ while rerun ~= 0
     %check convergence of chains
     RELout = era_checkconv(REL);
     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    era_data.rel = RELout;
+    save(fullfile(era_data.proc.savepath,era_data.proc.savename),'era_data');
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     if RELout.out.conv.converged == 0
        
         era_reruncheck;

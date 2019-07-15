@@ -1260,8 +1260,8 @@ switch analysis
                     dummytable2 = dummytable(ismember(dummytable.event,...
                         char(eventnames(j))),:);
                     darray.data{end+1} = dummytable2;
-                    darray.names{end+1} = strcat(char(groupnames(j)),...
-                        '_;_',char(eventnames(i)));
+                    darray.names{end+1} = strcat(char(groupnames(i)),...
+                        '_;_',char(eventnames(j)));
                 end
             end
         end
