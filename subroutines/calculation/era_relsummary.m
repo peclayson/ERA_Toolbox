@@ -5,7 +5,7 @@ function [era_data,relerr] = era_relsummary(varargin)
 %   'depcutoff',depcutoff,'meascutoff',meascutoff,...
 %   'depcentmeas',depcentmeas)
 %
-%Last Modified 6/21/19
+%Last Modified 8/2/19
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -97,6 +97,9 @@ function [era_data,relerr] = era_relsummary(varargin)
 %
 %6/21/19 PC
 % started working on adding trt capabilities
+%
+%8/2/19 PC
+% finished adding trt capability
 
 %somersault through inputs
 if ~isempty(varargin)

@@ -441,6 +441,7 @@ if ~isempty(era_prefs)
             plotntrials = era_prefs.view.ntrials;
             showstddevt = era_prefs.view.showstddevt;
             plotbetstddev = era_prefs.view.showstddevf;
+            plotwitstddev = 0;
             meascutoff = era_prefs.view.meascutoff;
             
     end
@@ -476,11 +477,23 @@ end
 %check which figures and tables have been specified to be shown
 %prepare the figures and display them
 
-%Plot that shows the relationship between the number of trials retained 
+%Plot that shows the relationship between the number of trials retained
 %for averaging and dependability
-if pdep == 1
-    era_depvtrialsplot('era_data',era_data,'trials',[1 plotntrials],...
-        'depline',plotdepline,'depcutoff',depcutoff);
+switch analysis
+    case 'sing'
+        if pdep == 1
+            era_depvtrialsplot('era_data',era_data,...
+                'trials',[1 plotntrials],...
+                'depline',plotdepline,...
+                'depcutoff',depcutoff);
+        end
+    case 'trt'
+        if plotrel == 1
+            era_trt_relvtrialsplot('era_data',era_data,...
+                'trials',[1 plotntrials],...
+                'relline',plotrelline,...
+                'relcutoff',relcutoff);
+        end
 end
 
 %Plot that compares the intraclass correlation coefficients for each
@@ -494,19 +507,31 @@ if plotbetstddev == 1
     era_ptintervalplot('era_data',era_data,'stat','bet');
 end
 
-%plat that shows within-person standard deviation
+%plot that shows within-person standard deviation
 if plotwitstddev == 1
     era_ptintervalplot('era_data',era_data,'stat','wit');
 end
 
 %table displaying trial cutoff information
-if showinct == 1
-    era_depcutofft('era_data',era_data,'gui',1);
+switch analysis
+    case 'sing'
+        if showinct == 1
+            era_depcutofft('era_data',era_data,'gui',1);
+        end
+    case 'trt'
+        if showinct == 1
+            era_trt_relcutofft('era_data',era_data,'gui',1);
+        end
 end
 
 %table displaying overall dependability information
-if showoverallt == 1
-    era_depoverallt('era_data',era_data,'gui',1);
+switch analysis
+    case 'sing'
+        if showoverallt == 1
+            era_depoverallt('era_data',era_data,'gui',1);
+        end
+    case 'trt'
+        era_trt_reloverallt('era_data',era_data,'gui',1);
 end
 
 %table including ICCs and between- and within-person standard deviations
