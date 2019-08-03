@@ -4,7 +4,7 @@ function era_relfigures(varargin)
 %
 %era_relfigures('era_data',era_data,'analysis','sing')
 %
-%Last Modified 8/17/17
+%Last Modified 8/3/19
 %
 %Required Inputs:
 % era_data - ERA Toolbox data structure array containing outputs from
@@ -34,9 +34,9 @@ function era_relfigures(varargin)
 %  plotbetstddev - plot the between-person standard deviations stratified
 %   by group and event
 %  plotdepline - indicate whether to plot 1-lower limit of credible
-%   interval, 2-point estimate, 3-upper limit of credible interval for the  
+%   interval, 2-point estimate, 3-upper limit of credible interval for the
 %   plot of dependability v number of trials (default: 1)
-%  plotntrials - indicate the number of trials to plot (x-axis) in the 
+%  plotntrials - indicate the number of trials to plot (x-axis) in the
 %   dependability v number of trials plot (default: 50)
 %  meascutoff - which estimate to use to define cutoff for number of trials
 %   1 - lower limit of credible interval, 2 - point estimate, 3 - upper
@@ -62,9 +62,9 @@ function era_relfigures(varargin)
 %  plotbetstddev - plot the between-person standard deviations stratified
 %   by group and event
 %  plotrelline - indicate whether to plot 1-lower limit of credible
-%   interval, 2-point estimate, 3-upper limit of credible interval for the  
+%   interval, 2-point estimate, 3-upper limit of credible interval for the
 %   plot of reliability v number of trials (default: 1)
-%  plotntrials - indicate the number of trials to plot (x-axis) in the 
+%  plotntrials - indicate the number of trials to plot (x-axis) in the
 %   reliability v number of trials plot (default: 50)
 %  meascutoff - which estimate to use to define cutoff for number of trials
 %   1 - lower limit of credible interval, 2 - point estimate, 3 - upper
@@ -85,23 +85,23 @@ function era_relfigures(varargin)
 %  have a button to save the ids of participants to include and exclude.
 
 % Copyright (C) 2016-2019 Peter E. Clayson
-% 
+%
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
 %     the Free Software Foundation, either version 3 of the License, or
 %     any later version.
-% 
+%
 %     This program is distributed in the hope that it will be useful,
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 %     GNU General Public License for more details.
-% 
+%
 %     You should have received a copy of the GNU General Public License
-%     along with this program (gpl.txt). If not, see 
+%     along with this program (gpl.txt). If not, see
 %     <http://www.gnu.org/licenses/>.
 %
 
-%History 
+%History
 % by Peter Clayson (4/18/16)
 % peter.clayson@gmail.com
 %
@@ -134,7 +134,7 @@ function era_relfigures(varargin)
 %7/23/16 PC
 % updated commments (statistics and wavelet toolbox no longer required)
 % pulled out the reliability calculations and put into their own function:
-%  
+%
 %7/24/16 PC
 % finished incoporating new dependability function (era_dep)
 % incorporated new functions for displaying all figures and tables
@@ -149,6 +149,9 @@ function era_relfigures(varargin)
 %
 %6/21/19 PC
 % edits for including trt analyses
+%
+%8/3/19 PC
+% finished making trt changes
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -162,40 +165,40 @@ if isempty(era_data)
 end
 
 %somersault through inputs to find analysis type
-if ~isempty(varargin) 
-    %the optional inputs check assumes that there was an even number of 
+if ~isempty(varargin)
+    %the optional inputs check assumes that there was an even number of
     %optional inputs entered. If not, an error will displayed and the
     %script will terminate.
-    if mod(length(varargin),2)  
+    if mod(length(varargin),2)
         error('varargin:incomplete',... %Error code and associated error
-        strcat('WARNING: Inputs are incomplete \n\n',... 
-        'Make sure each variable input is paired with a value \n',...
-        'See help era_relfigures for more information on optional inputs'));
+            strcat('WARNING: Inputs are incomplete \n\n',...
+            'Make sure each variable input is paired with a value \n',...
+            'See help era_relfigures for more information on optional inputs'));
     end
     
-    %check if the dependability cutoff was specified 
+    %check if the dependability cutoff was specified
     ind = find(strcmp('analysis',varargin),1);
     if ~isempty(ind)
         analysis = varargin{ind+1};
     else
         error('varargin:noanalysistype',... %Error code and associated error
-        strcat('WARNING: analysis not specified \n\n',...
-        'Please input the analysis to be run: ''sing'' or ''trt'' \n'));
+            strcat('WARNING: analysis not specified \n\n',...
+            'Please input the analysis to be run: ''sing'' or ''trt'' \n'));
     end
 end
-   
+
 %somersault through inputs to find preferences for running data, if
 %era_prefs was not provided as input
 if ~isempty(varargin) && isempty(era_prefs)
-    %check if the dependability cutoff was specified 
+    %check if the dependability cutoff was specified
     ind = find(strcmp('depcutoff',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            depcutoff = cell2mat(varargin{ind+1}); 
+            depcutoff = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            depcutoff = varargin{ind+1}; 
+            depcutoff = varargin{ind+1};
         end
-    else 
+    else
         depcutoff = .80; %default level is .80
     end
     
@@ -203,11 +206,11 @@ if ~isempty(varargin) && isempty(era_prefs)
     ind = find(strcmp('plotdep',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            pdep = cell2mat(varargin{ind+1}); 
+            pdep = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            pdep = varargin{ind+1}; 
+            pdep = varargin{ind+1};
         end
-    else 
+    else
         pdep = 1; %default is 1
     end
     
@@ -215,23 +218,23 @@ if ~isempty(varargin) && isempty(era_prefs)
     ind = find(strcmp('ploticc',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            picc = cell2mat(varargin{ind+1}); 
+            picc = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            picc = varargin{ind+1}; 
+            picc = varargin{ind+1};
         end
-    else 
+    else
         picc = 1; %default is 1
     end
-
+    
     %check if showinct is provided
     ind = find(strcmp('showinct',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            showinct = cell2mat(varargin{ind+1}); 
+            showinct = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            showinct = varargin{ind+1}; 
+            showinct = varargin{ind+1};
         end
-    else 
+    else
         showinct = 1; %default is 1
     end
     
@@ -239,11 +242,11 @@ if ~isempty(varargin) && isempty(era_prefs)
     ind = find(strcmp('showoverallt',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            showoverallt = cell2mat(varargin{ind+1}); 
+            showoverallt = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            showoverallt = varargin{ind+1}; 
+            showoverallt = varargin{ind+1};
         end
-    else 
+    else
         showoverallt = 1; %default is 1
     end
     
@@ -251,11 +254,11 @@ if ~isempty(varargin) && isempty(era_prefs)
     ind = find(strcmp('plotntrials',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            plotntrials = cell2mat(varargin{ind+1}); 
+            plotntrials = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            plotntrials = varargin{ind+1}; 
+            plotntrials = varargin{ind+1};
         end
-    else 
+    else
         plotntrials = 50; %default is 50
     end
     
@@ -263,11 +266,11 @@ if ~isempty(varargin) && isempty(era_prefs)
     ind = find(strcmp('showstddevt',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            showstddevt = cell2mat(varargin{ind+1}); 
+            showstddevt = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            showstddevt = varargin{ind+1}; 
+            showstddevt = varargin{ind+1};
         end
-    else 
+    else
         showstddevt = 1; %default is 1
     end
     
@@ -275,23 +278,23 @@ if ~isempty(varargin) && isempty(era_prefs)
     ind = find(strcmp('plotbetstddev',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            plotbetstddev = cell2mat(varargin{ind+1}); 
+            plotbetstddev = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            plotbetstddev = varargin{ind+1}; 
+            plotbetstddev = varargin{ind+1};
         end
-    else 
+    else
         plotbetstddev = 1; %default is 1
     end
     
-   	%check if plotwitstddev is provided
+    %check if plotwitstddev is provided
     ind = find(strcmp('plotwitstddev',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            plotwitstddev = cell2mat(varargin{ind+1}); 
+            plotwitstddev = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            plotwitstddev = varargin{ind+1}; 
+            plotwitstddev = varargin{ind+1};
         end
-    else 
+    else
         plotwitstddev = 0; %default is 0
     end
     
@@ -299,11 +302,11 @@ if ~isempty(varargin) && isempty(era_prefs)
     ind = find(strcmp('plotdepline',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            plotdepline = cell2mat(varargin{ind+1}); 
+            plotdepline = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            plotdepline = varargin{ind+1}; 
+            plotdepline = varargin{ind+1};
         end
-    else 
+    else
         plotdepline = 1; %default is 1 (lower limit of credible interval)
     end
     
@@ -311,11 +314,11 @@ if ~isempty(varargin) && isempty(era_prefs)
     ind = find(strcmp('meascutoff',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            meascutoff = cell2mat(varargin{ind+1}); 
+            meascutoff = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            meascutoff = varargin{ind+1}; 
+            meascutoff = varargin{ind+1};
         end
-    else 
+    else
         meascutoff = 2; %default is 2 (point estimate of credible interval)
     end
     
@@ -323,11 +326,11 @@ if ~isempty(varargin) && isempty(era_prefs)
     ind = find(strcmp('depcentmeas',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            depcentmeas = cell2mat(varargin{ind+1}); 
+            depcentmeas = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            depcentmeas = varargin{ind+1}; 
+            depcentmeas = varargin{ind+1};
         end
-    else 
+    else
         depcentmeas = 1; %default is 1 (mean)
     end
     
@@ -335,11 +338,11 @@ if ~isempty(varargin) && isempty(era_prefs)
     ind = find(strcmp('gcoeff',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            gcoeff = cell2mat(varargin{ind+1}); 
+            gcoeff = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            gcoeff = varargin{ind+1}; 
+            gcoeff = varargin{ind+1};
         end
-    else 
+    else
         gcoeff = 1; %default is 1 (dependability)
     end
     
@@ -347,11 +350,11 @@ if ~isempty(varargin) && isempty(era_prefs)
     ind = find(strcmp('reltype',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            reltype = cell2mat(varargin{ind+1}); 
+            reltype = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            reltype = varargin{ind+1}; 
+            reltype = varargin{ind+1};
         end
-    else 
+    else
         reltype = 1; %default is 1 (equivalence)
     end
     
@@ -359,35 +362,35 @@ if ~isempty(varargin) && isempty(era_prefs)
     ind = find(strcmp('relvalue',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            relcutoff = cell2mat(varargin{ind+1}); 
+            relcutoff = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            relcutoff = varargin{ind+1}; 
+            relcutoff = varargin{ind+1};
         end
-    else 
-        relcutoff = .8; %default is .8 
+    else
+        relcutoff = .8; %default is .8
     end
     
     %check if plotrel is provided
     ind = find(strcmp('plotrel',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            plotrel = cell2mat(varargin{ind+1}); 
+            plotrel = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            plotrel = varargin{ind+1}; 
+            plotrel = varargin{ind+1};
         end
-    else 
-        plotrel = 1; %default is 1 
+    else
+        plotrel = 1; %default is 1
     end
     
     %check if plotrelline is provided
     ind = find(strcmp('plotrelline',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            plotrelline = cell2mat(varargin{ind+1}); 
+            plotrelline = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            plotrelline = varargin{ind+1}; 
+            plotrelline = varargin{ind+1};
         end
-    else 
+    else
         plotrelline = 1; %default is 2 (point estimate)
     end
     
@@ -395,20 +398,20 @@ if ~isempty(varargin) && isempty(era_prefs)
     ind = find(strcmp('relcentmeas',varargin),1);
     if ~isempty(ind)
         if iscell(varargin{ind+1})
-            relcentmeas = cell2mat(varargin{ind+1}); 
+            relcentmeas = cell2mat(varargin{ind+1});
         elseif isnumeric(varargin{ind+1})
-            relcentmeas = varargin{ind+1}; 
+            relcentmeas = varargin{ind+1};
         end
-    else 
+    else
         relcentmeas = 1; %default is 1 (mean)
     end
     
 elseif isempty(varargin)
     
     error('varargin:incomplete',... %Error code and associated error
-    strcat('WARNING: Inputs are incomplete \n\n',... 
-    'Make sure each variable input is paired with a value \n',...
-    'See help era_relfigures for more information on inputs'));
+        strcat('WARNING: Inputs are incomplete \n\n',...
+        'Make sure each variable input is paired with a value \n',...
+        'See help era_relfigures for more information on inputs'));
     
 end %if ~isempty(varargin)
 
@@ -531,7 +534,9 @@ switch analysis
             era_depoverallt('era_data',era_data,'gui',1);
         end
     case 'trt'
-        era_trt_reloverallt('era_data',era_data,'gui',1);
+        if showoverallt == 1
+            era_trt_reloverallt('era_data',era_data,'gui',1);
+        end
 end
 
 %table including ICCs and between- and within-person standard deviations
@@ -544,7 +549,7 @@ if relerr.trlcutoff == 1
     errorstr = {};
     errorstr{end+1} = 'Trial cutoffs for adequate dependability could not be calculated';
     errorstr{end+1} = 'Data are too variable or there are not enough trials';
-
+    
     errordlg(errorstr);
 end
 
