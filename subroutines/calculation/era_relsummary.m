@@ -5,7 +5,7 @@ function [era_data,relerr] = era_relsummary(varargin)
 %   'depcutoff',depcutoff,'meascutoff',meascutoff,...
 %   'depcentmeas',depcentmeas)
 %
-%Last Modified 8/2/19
+%Last Modified 8/3/19
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -100,6 +100,9 @@ function [era_data,relerr] = era_relsummary(varargin)
 %
 %8/2/19 PC
 % finished adding trt capability
+%
+%8/3/19 PC
+% now store confidence interval used for reliability estimates
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -401,6 +404,7 @@ switch relanalysis
         
         %store the cutoff in relsummary to pass to other functions more easily
         relsummary.depcutoff = depcutoff;
+        relsummary.ciperc = ciperc;
         
         %store which measure was used to specify cutoff
         switch meascutoff
@@ -1471,6 +1475,7 @@ switch relanalysis
         %store reliability info in relsummary to pass to other functions more easily
         relsummary.relcutoff = relcutoff;
         relsummary.reltype = reltype;
+        relsummary.ciperc = ciperc;
         
         if reltype == 1
             relsummary.reltype_name = 'ic';
