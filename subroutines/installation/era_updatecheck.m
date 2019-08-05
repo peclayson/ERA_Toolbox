@@ -3,7 +3,7 @@ function erainstalledver = era_updatecheck(eraver)
 %
 %era_updatecheck
 %
-%Lasted Updated 6/22/18
+%Lasted Updated 8/5/19
 %
 %Required Input:
 % eraver - ERA Toolbox version
@@ -59,20 +59,18 @@ function erainstalledver = era_updatecheck(eraver)
 % it appears that the html code changed at some point on github, so this
 %  script has not been working for a while now... I should thing of a better
 %  way to do this
+%
+%8/5/19 PC
+% script no longer relies on pulling info from github. this should work
+%  better long term
 
 try
     %pull webpage from github
-    urlstr = 'https://github.com/peclayson/ERA_Toolbox/releases/latest';
+    urlstr = 'http://peterclayson.com/wp-content/uploads/era_currentversion.txt';
     webraw = webread(urlstr,'text','html');
 
-    %pull the string that contain the version number
-    rellist = regexp(webraw,'<h1 class="release-title text-normal">.*?</h1>','match');
-    str = strrep(rellist{1},'href','HREF');
-    str = strsplit(str,'>');
-
-    verraw = strsplit(str{strncmp('Version',str,7)},'<');
-    ver = strsplit(verraw{1},'Version ');
-    ver = ver{2};
+    %trim the whitespace
+    ver = strtrim(webraw);
     
     %format version of the currently installed toolbox
     used_parts = sscanf(eraver,'%d.%d.%d')';
@@ -113,7 +111,7 @@ try
             fprintf('\n\n%s\n',str);
     end
 catch
-    fprintf('\nUnable to connect to Github to check for new releases\n');
+    fprintf('\nUnable to connect to internet to check for new releases\n');
     erainstalledver = [];
 end
 
