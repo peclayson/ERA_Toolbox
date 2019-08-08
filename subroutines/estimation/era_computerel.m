@@ -111,6 +111,10 @@ function RELout = era_computerel(varargin)
 %
 %6/17/19 PC
 % added seed to all cmdstan analyses for reproducibility of results
+%
+%8/8/19 PC
+% check whether niter is divisble by 10, fix if not and warn user
+%
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -284,6 +288,20 @@ if (ntime == 0)
     end
 elseif (ntime > 0)
     analysis = 5;
+end
+
+%check to make sure niter is evenly divisible by 10 for the refresh input
+%to cmdstan
+if (~mod(niter,10) == 0)
+    niter_old = niter;
+    niter_new = niter + (10 - rem(niter,10));
+
+    warning(...
+    ['The frequency for updating the user about cmdstan iterations',...
+    'must be divisible by 10. ', num2str(niter_old),... 
+    ' was changed to ', num2str(niter_new)]);
+
+    niter = niter_new;
 end
 
 %show a gui that indicates data are processing in cmdstan if the user
