@@ -236,7 +236,7 @@ if length(obs) == 1
     if gcoeff == 1 &&... %dependability
             reltype == 1 %coefficient of equivalence
         
-        %universe scores
+        %universe score
         uni_scor = bp + (oxp ./ nocc);
         
         %absolute error
@@ -250,7 +250,7 @@ if length(obs) == 1
     elseif gcoeff == 1 &&... %dependabilty
             reltype == 2 %coefficient of stability
         
-        %universe scores
+        %universe score
         uni_scor = bp + (txp ./ obs);
         
         %absolute error
@@ -271,16 +271,16 @@ if length(obs) == 1
         %relative error
         err_term = (txp ./ obs) + (err ./ (obs*nocc));
         
-        %generalizability coefficient
+        %generalizability estimate
         rel = uni_scor ./ (uni_scor + err_term);
         
     elseif gcoeff == 2 &&... %generalizability
             reltype == 2 %coefficient of stability
         
-        %universe scores
+        %universe score
         uni_scor = bp + (txp ./ obs);
         
-        %absolute error
+        %relative error
         err_term = (oxp ./ nocc) + (err ./ (obs*nocc));
         
         %generalizability estimate
@@ -305,7 +305,7 @@ elseif length(obs) == 2 %if obs contains two numbers calculate the
         if gcoeff == 1 &&... %dependability
                 reltype == 1 %coefficient of equivalence
             
-            %universe scores
+            %universe score
             uni_scor = bp + (oxp ./ nocc);
             
             %absolute error
@@ -319,7 +319,7 @@ elseif length(obs) == 2 %if obs contains two numbers calculate the
         elseif gcoeff == 1 &&... %dependabilty
                 reltype == 2 %coefficient of stability
             
-            %universe scores
+            %universe score
             uni_scor = bp + (txp ./ ii);
             
             %absolute error
@@ -340,16 +340,16 @@ elseif length(obs) == 2 %if obs contains two numbers calculate the
             %relative error
             err_term = (txp ./ ii) + (err ./ (ii*nocc));
             
-            %generalizability coefficient
+            %generalizability estimate
             rel = uni_scor ./ (uni_scor + err_term);
             
         elseif gcoeff == 2 &&... %generalizability
                 reltype == 2 %coefficient of stability
             
-            %universe scores
+            %universe score
             uni_scor = bp + (txp ./ ii);
             
-            %absolute error
+            %relative error
             err_term = (oxp ./ nocc) + (err ./ (ii*nocc));
             
             %generalizability estimate
