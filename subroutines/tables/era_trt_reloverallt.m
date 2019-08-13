@@ -4,7 +4,7 @@ function overalltable = era_trt_reloverallt(varargin)
 %
 %era_depoverallt('era_data',era_data,'gui',1);
 %
-%Last Modified 8/2/19
+%Last Modified 8/13/19
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. 
@@ -35,6 +35,9 @@ function overalltable = era_trt_reloverallt(varargin)
 % by Peter Clayson (8/2/19)
 % peter.clayson@gmail.com
 %
+%8/13/19 PC
+% Added option to specify the number of trials to use for computing retest
+%  reliability
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -200,7 +203,7 @@ era_overall= figure('unit','pix',...
 %Print the name of the loaded dataset
 uicontrol(era_overall,'Style','text','fontsize',16,...
     'HorizontalAlignment','center',...
-    'String','Overall Dependability',...
+    'String',sprintf('Overall %s',rel_name),...
     'Position',[0 row figwidth 25]);          
 
 %Start a table
@@ -217,15 +220,27 @@ set(t,'RowName',[]);
 uicontrol(era_overall,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Save Table',...
-    'Position', [figwidth/8 25 figwidth/4 50],...
+    'Position', [.5*figwidth/8 25 figwidth/4 50],...
     'Callback',{@era_saveoveralltable,era_data,overalltable}); 
 
 %Create button that will save good/bad ids
 uicontrol(era_overall,'Style','push','fontsize',14,...
     'HorizontalAlignment','center',...
     'String','Save IDs',...
-    'Position', [5*figwidth/8 25 figwidth/4 50],...
+    'Position', [3*figwidth/8 25 figwidth/4 50],...
     'Callback',{@era_saveids,era_data}); 
+
+str = sprintf(['Use this button to estimate the test-retest reliability\n'...
+    'for a given number of trials. This is helpful when adequate reliability\n'...
+    'is not reached but you want to estimate obtained reliability']);
+
+%Create button that will save good/bad ids
+uicontrol(era_overall,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','<html><tr><td align=center>Estimate New<br>Relability Coefficient',...
+    'Tooltip', str,...
+    'Position', [5.5*figwidth/8 25 figwidth/4 50],...
+    'Callback',{@era_newrel,era_data}); 
 
 end
 
@@ -441,6 +456,418 @@ elseif strcmp(ext,'.csv')
     fclose(fid);
     
 end
+
+
+end
+
+
+
+function era_newrel(varargin)
+%if the user pressed the button to calculate a new test-retest reliability
+%coefficient, this gui will be pulled up
+
+era_data = varargin{3};
+
+%define parameters for figure position
+figwidth = 550;
+figheight = 250;
+
+%define space between rows and first row location
+rowspace = 40;
+row = figheight - rowspace*2;
+
+%define locations of column 1 and 2
+lcol = 30;
+rcol = (figwidth/8)*5;
+
+%specify font size
+fsize = 14;
+
+%create the gui
+era_newrelgui = figure('unit','pix',...
+  'position',[400 400 figwidth figheight],...
+  'menub','no',...
+  'name','Specify Inputs',...
+  'numbertitle','off',...
+  'resize','off');
+
+%Print the name of the loaded dataset
+uicontrol(era_newrelgui,'Style','text','fontsize',fsize,...
+    'HorizontalAlignment','center',...
+    'String',['Dataset:  ' era_data.rel.filename],...
+    'Tooltip','Dataset that was used',...
+    'Position',[0 row figwidth 25]);
+
+%next row
+row = row - (rowspace*.45);
+
+%Print the name of the measurement analyzed
+uicontrol(era_newrelgui,'Style','text','fontsize',fsize,...
+    'HorizontalAlignment','center',...
+    'String',['Measurement:  ' era_data.proc.measheader],...
+    'Tooltip','Dataset that was used',...
+    'Position',[0 row figwidth 25]); 
+
+%next row
+row = row - (rowspace*1.4);
+
+str = sprintf(['Number of trials to use for recalculating reliability\n',...
+    'This should be the mean or median number of trials retained for averaging']);
+
+%Print the text for reliability cutoff with a box for the user to specify
+%the input
+uicontrol(era_newrelgui,...
+    'Style','text',...
+    'fontsize',fsize,...
+    'HorizontalAlignment','left',...
+    'String','Number of Trials:',...
+    'Tooltip',str,...
+    'Position', [lcol row figwidth/4 25]);  
+
+inputs.trls = uicontrol(era_newrelgui,...
+    'Style','edit',...
+    'fontsize',fsize,...
+    'String','',...
+    'Position', [rcol+5 row+6 figwidth/4 25]);  
+
+%next row
+row = row - rowspace*2;
+
+str = sprintf(['Use this button to estimate the new test-retest reliability\n'...
+    'information for the specified number of trials.']);
+
+%Create button that will save good/bad ids
+uicontrol(era_newrelgui,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','<html><tr><td align=center>Estimate New<br>Relability Coefficient',...
+    'Tooltip', str,...
+    'Position', [.5*figwidth/8 row figwidth/1.11 50],...
+    'Callback',{@era_shownewrel,era_data,inputs.trls}); 
+
+end
+
+function era_shownewrel(varargin)
+%estimate the new reliability estimates and show it
+
+era_data = varargin{3};
+ntrls = str2double(varargin{4}.String);
+
+%place era_data.data in REL to work with
+REL = era_data.rel;
+
+%check whether any groups exist
+if strcmpi(REL.groups,'none')
+    ngroups = 1;
+    %gnames = cellstr(REL.groups);
+    gnames ={''};
+else
+    ngroups = length(REL.groups);
+    gnames = REL.groups(:);
+end
+
+%check whether any events exist
+if strcmpi(REL.events,'none')
+    nevents = 1;
+    %enames = cellstr(REL.events);
+    enames = {''};
+else
+    nevents = length(REL.events);
+    enames = REL.events(:);
+end
+
+%figure out whether groups or events need to be considered
+%1 - no groups or event types to consider
+%2 - possible multiple groups but no event types to consider
+%3 - possible event types but no groups to consider
+%4 - possible groups and event types to consider
+
+
+if ngroups == 1 && nevents == 1
+    analysis = 1;
+elseif ngroups > 1 && nevents == 1
+    analysis = 2;
+elseif ngroups == 1 && nevents > 1
+    analysis = 3;
+elseif ngroups > 1 && nevents > 1
+    analysis = 4;
+end
+
+%extract information from REL and store in data for crunching
+switch analysis
+    case 1 %1 - no groups or event types to consider
+        
+        gloc = 1;
+        eloc = 1;
+        
+        data.g(gloc).e(eloc).label = REL.out.labels{gloc};
+        data.g(gloc).e(eloc).mu.raw = REL.out.mu(:,gloc);
+        data.g(gloc).e(eloc).sig_id.raw = REL.out.sig_id(:,gloc);
+        data.g(gloc).e(eloc).sig_occ.raw = REL.out.sig_occ(:,gloc);
+        data.g(gloc).e(eloc).sig_trl.raw = REL.out.sig_trl(:,gloc);
+        data.g(gloc).e(eloc).sig_trlxid.raw = REL.out.sig_trlxid(:,gloc);
+        data.g(gloc).e(eloc).sig_occxid.raw = REL.out.sig_occxid(:,gloc);
+        data.g(gloc).e(eloc).sig_trlxocc.raw = REL.out.sig_trlxocc(:,gloc);
+        data.g(gloc).e(eloc).sig_err.raw = REL.out.sig_err(:,gloc);
+        data.g(gloc).e(eloc).elabel = cellstr('none');
+        data.g(gloc).glabel = gnames(gloc);
+        
+    case 2 %2 - possible multiple groups but no event types to consider
+        
+        eloc = 1;
+        
+        for gloc=1:length(REL.out.labels)
+            
+            data.g(gloc).e(eloc).label = REL.out.labels{gloc};
+            data.g(gloc).e(eloc).mu.raw = REL.out.mu(:,gloc);
+            data.g(gloc).e(eloc).sig_id.raw = REL.out.sig_id(:,gloc);
+            data.g(gloc).e(eloc).sig_occ.raw = REL.out.sig_occ(:,gloc);
+            data.g(gloc).e(eloc).sig_trl.raw = REL.out.sig_trl(:,gloc);
+            data.g(gloc).e(eloc).sig_trlxid.raw = REL.out.sig_trlxid(:,gloc);
+            data.g(gloc).e(eloc).sig_occxid.raw = REL.out.sig_occxid(:,gloc);
+            data.g(gloc).e(eloc).sig_trlxocc.raw = REL.out.sig_trlxocc(:,gloc);
+            data.g(gloc).e(eloc).sig_err.raw = REL.out.sig_err(:,gloc);
+            data.g(gloc).e(eloc).elabel = cellstr('none');
+            data.g(gloc).glabel = gnames(gloc);
+            
+        end
+        
+    case 3 %3 - possible event types but no groups to consider
+        
+        gloc = 1;
+        
+        for eloc=1:length(REL.out.labels)
+            
+            data.g(gloc).e(eloc).label = REL.out.labels{eloc};
+            data.g(gloc).e(eloc).mu.raw = REL.out.mu(:,eloc);
+            data.g(gloc).e(eloc).sig_id.raw = REL.out.sig_id(:,eloc);
+            data.g(gloc).e(eloc).sig_occ.raw = REL.out.sig_occ(:,eloc);
+            data.g(gloc).e(eloc).sig_trl.raw = REL.out.sig_trl(:,eloc);
+            data.g(gloc).e(eloc).sig_trlxid.raw = REL.out.sig_trlxid(:,eloc);
+            data.g(gloc).e(eloc).sig_occxid.raw = REL.out.sig_occxid(:,eloc);
+            data.g(gloc).e(eloc).sig_trlxocc.raw = REL.out.sig_trlxocc(:,eloc);
+            data.g(gloc).e(eloc).sig_err.raw = REL.out.sig_err(:,eloc);
+            data.g(gloc).e(eloc).elabel = enames(eloc);
+            data.g(gloc).glabel = gnames(gloc);
+            
+        end
+        
+    case 4 %4 - possible groups and event types to consider
+        for ii=1:length(REL.out.labels)
+            
+            %use the underscores that were added in era_computerel to
+            %differentiate where the group and event the data are for
+            lblstr = strsplit(REL.out.labels{ii},'_;_');
+            
+            eloc = find(ismember(enames,lblstr(2)));
+            gloc = find(ismember(gnames,lblstr(1)));
+            
+            data.g(gloc).e(eloc).label = REL.out.labels{ii};
+            data.g(gloc).e(eloc).mu.raw = REL.out.mu(:,ii);
+            data.g(gloc).e(eloc).sig_id.raw = REL.out.sig_id(:,ii);
+            data.g(gloc).e(eloc).sig_occ.raw = REL.out.sig_occ(:,ii);
+            data.g(gloc).e(eloc).sig_trl.raw = REL.out.sig_trl(:,ii);
+            data.g(gloc).e(eloc).sig_trlxid.raw = REL.out.sig_trlxid(:,ii);
+            data.g(gloc).e(eloc).sig_occxid.raw = REL.out.sig_occxid(:,ii);
+            data.g(gloc).e(eloc).sig_trlxocc.raw = REL.out.sig_trlxocc(:,ii);
+            data.g(gloc).e(eloc).sig_err.raw = REL.out.sig_err(:,ii);
+            data.g(gloc).e(eloc).elabel = enames(eloc);
+            data.g(gloc).glabel = gnames(gloc);
+            
+        end
+end %switch analysis
+
+%compute reliability data for each group and event
+switch analysis
+    case 1 %no groups or event types to consider
+        
+        %the same generic structure is used for relsummary, so the event
+        %and group locations will both be 1 for the data
+        eloc = 1;
+        gloc = 1;
+        
+        %compute reliabiltiy
+        [llrel,mrel,ulrel] = era_rel_trt(...
+            'gcoeff',era_data.relsummary.gcoeff,...
+            'reltype',era_data.relsummary.reltype,...
+            'bp',data.g(gloc).e(eloc).sig_id.raw,...
+            'bo',data.g(gloc).e(eloc).sig_occ.raw,...
+            'bt',data.g(gloc).e(eloc).sig_trl.raw,...
+            'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
+            'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
+            'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
+            'err',data.g(gloc).e(eloc).sig_err.raw,...
+            'obs', ntrls,'CI',era_data.relsummary.ciperc); 
+        
+        newrelsummary.group(gloc).event(eloc).rel.m = mrel;
+        newrelsummary.group(gloc).event(eloc).rel.ll = llrel;
+        newrelsummary.group(gloc).event(eloc).rel.ul = ulrel;
+        
+    case 2 %possible multiple groups but no event types to consider
+        
+        
+        %since the same generic structure is used for relsummary, the event
+        %location will be defined as 1.
+        eloc = 1;
+        
+        for gloc=1:ngroups %loop through each group
+            
+            %compute reliabiltiy
+            [llrel,mrel,ulrel] = era_rel_trt(...
+                'gcoeff',era_data.relsummary.gcoeff,...
+                'reltype',era_data.relsummary.reltype,...
+                'bp',data.g(gloc).e(eloc).sig_id.raw,...
+                'bo',data.g(gloc).e(eloc).sig_occ.raw,...
+                'bt',data.g(gloc).e(eloc).sig_trl.raw,...
+                'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
+                'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
+                'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
+                'err',data.g(gloc).e(eloc).sig_err.raw,...
+                'obs',ntrls,'CI',era_data.relsummary.ciperc);
+            
+            newrelsummary.group(gloc).event(eloc).rel.m = mrel;
+            newrelsummary.group(gloc).event(eloc).rel.ll = llrel;
+            newrelsummary.group(gloc).event(eloc).rel.ul = ulrel;
+            
+        end
+        
+    case 3 %possible event types but no groups to consider
+        
+        %since the relsummary structure is generic for any number of groups
+        %or events, the data will count as being from 1 group.
+        gloc = 1;
+        
+        %cylce through each event
+        for eloc=1:nevents
+            
+            %compute reliabiltiy
+            [llrel,mrel,ulrel] = era_rel_trt(...
+                'gcoeff',era_data.relsummary.gcoeff,...
+                'reltype',era_data.relsummary.reltype,...
+                'bp',data.g(gloc).e(eloc).sig_id.raw,...
+                'bo',data.g(gloc).e(eloc).sig_occ.raw,...
+                'bt',data.g(gloc).e(eloc).sig_trl.raw,...
+                'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
+                'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
+                'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
+                'err',data.g(gloc).e(eloc).sig_err.raw,...
+                'obs',ntrials,'CI',era_data.relsummary.ciperc);
+            
+            newrelsummary.group(gloc).event(eloc).rel.m = mrel;
+            newrelsummary.group(gloc).event(eloc).rel.ll = llrel;
+            newrelsummary.group(gloc).event(eloc).rel.ul = ulrel;
+            
+        end
+        
+    case 4 %groups and event types to consider
+        
+        %cycle through each event
+        for eloc=1:nevents
+            
+            %cycle through each group
+            for gloc=1:ngroups
+                
+                %compute reliability
+                [llrel,mrel,ulrel] = era_rel_trt(...
+                    'gcoeff',era_data.relsummary.gcoeff,...
+                    'reltype',era_data.relsummary.reltype,...
+                    'bp',data.g(gloc).e(eloc).sig_id.raw,...
+                    'bo',data.g(gloc).e(eloc).sig_occ.raw,...
+                    'bt',data.g(gloc).e(eloc).sig_trl.raw,...
+                    'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
+                    'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
+                    'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
+                    'err',data.g(gloc).e(eloc).sig_err.raw,...
+                    'obs',ntrls,'CI',era_data.relsummary.ciperc);
+                
+                newrelsummary.group(gloc).event(eloc).rel.m = mrel;
+                newrelsummary.group(gloc).event(eloc).rel.ll = llrel;
+                newrelsummary.group(gloc).event(eloc).rel.ul = ulrel;
+                
+            end
+        end
+        
+        
+end %switch analysis
+    
+
+%create placeholders for displaying data in tables in guis
+label = {};
+overallrel = {};
+new_trls = {};
+
+%put data together to display in tables
+for gloc=1:ngroups
+    for eloc=1:nevents
+        
+        %label for group and/or event
+        switch analysis
+            case 1
+                label{end+1} = 'Measurement';
+            case 2
+                label{end+1} = gnames{gloc};
+            case 3
+                label{end+1} = enames{eloc};
+            case 4
+                label{end+1} = [gnames{gloc} ' - ' enames{eloc}];
+        end
+        
+        %create a string with the reliability point estimate and credible
+        %interval for overall data
+        overallrel{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
+            newrelsummary.group(gloc).event(eloc).rel.m,...
+            newrelsummary.group(gloc).event(eloc).rel.ll,...
+            newrelsummary.group(gloc).event(eloc).rel.ul);
+        
+        new_trls{end+1} = ntrls;
+        
+    end 
+end
+
+
+%create table to describe the data including all trials 
+overalltable = table(label',overallrel',new_trls');
+
+switch era_data.relsummary.gcoeff_name
+    case 'dep'
+        rel_name = 'Dependability';
+    case 'gen'
+        rel_name = 'Generalizability';
+end
+
+overalltable.Properties.VariableNames = {'Label', ...
+    rel_name, 'Num_Trials'};
+    
+%define parameters for figure size
+figwidth = 415;
+figheight = 350;
+
+%define space between rows and first row location
+rowspace = 25;
+row = figheight - rowspace*2;
+
+%create a gui for displaying the overall trial information
+era_overall= figure('unit','pix',...
+  'position',[1150 150 figwidth figheight],...
+  'menub','no',...
+  'name',sprintf('%s Analyses for %d Trials',...
+  rel_name,ntrls),...
+  'numbertitle','off',...
+  'resize','off');
+
+%Print the name of the loaded dataset
+uicontrol(era_overall,'Style','text','fontsize',16,...
+    'HorizontalAlignment','center',...
+    'String',sprintf('Overall %s',rel_name),...
+    'Position',[0 row figwidth 25]);          
+
+%Start a table
+t = uitable('Parent',era_overall,'Position',...
+    [25 100 figwidth-50 figheight-175],...
+    'Data',table2cell(overalltable));
+set(t,'ColumnName',{'Label' ...
+    rel_name '# of Trials'});
+set(t,'ColumnWidth',{151 110 100});
+set(t,'RowName',[]);
 
 
 end
