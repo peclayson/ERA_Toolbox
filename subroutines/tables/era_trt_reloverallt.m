@@ -7,7 +7,7 @@ function overalltable = era_trt_reloverallt(varargin)
 %Last Modified 8/13/19
 %
 %Inputs
-% era_data - ERA Toolbox data structure array. 
+% era_data - ERA Toolbox data structure array.
 % gui - 0 for off, 1 for on
 %
 %Outputs
@@ -15,51 +15,55 @@ function overalltable = era_trt_reloverallt(varargin)
 % a gui will also be shown if desired
 
 % Copyright (C) 2016-2019 Peter E. Clayson
-% 
+%
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
 %     the Free Software Foundation, either version 3 of the License, or
 %     any later version.
-% 
+%
 %     This program is distributed in the hope that it will be useful,
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 %     GNU General Public License for more details.
-% 
+%
 %     You should have received a copy of the GNU General Public License
-%     along with this program (gpl.txt). If not, see 
+%     along with this program (gpl.txt). If not, see
 %     <http://www.gnu.org/licenses/>.
 %
 
-%History 
+%History
 % by Peter Clayson (8/2/19)
 % peter.clayson@gmail.com
 %
 %8/13/19 PC
 % Added option to specify the number of trials to use for computing retest
 %  reliability
+%
+%08/20/19 PC
+% Removed button to calculate retest reliability when viewing coefficients
+%  of stability
 
 %somersault through inputs
 if ~isempty(varargin)
     
-    %the optional inputs check assumes that there was an even number of 
+    %the optional inputs check assumes that there was an even number of
     %optional inputs entered. If not, an error will displayed and the
     %script will terminate.
-    if mod(length(varargin),2)  
+    if mod(length(varargin),2)
         error('varargin:incomplete',... %Error code and associated error
-        strcat('WARNING: Inputs are incomplete \n\n',... 
-        'Make sure each variable input is paired with a value \n',...
-        'See help era_dep for more information about inputs'));
+            strcat('WARNING: Inputs are incomplete \n\n',...
+            'Make sure each variable input is paired with a value \n',...
+            'See help era_dep for more information about inputs'));
     end
     
-    %check if era_data was specified. 
+    %check if era_data was specified.
     %If it is not found, set display error.
     ind = find(strcmpi('era_data',varargin),1);
     if ~isempty(ind)
-        era_data = varargin{ind+1}; 
-    else 
+        era_data = varargin{ind+1};
+    else
         error('varargin:era_data',... %Error code and associated error
-            strcat('WARNING: era_data not specified \n\n',... 
+            strcat('WARNING: era_data not specified \n\n',...
             'Please input era_data (ERA Toolbox data structure array).\n',...
             'See help era_depvtrialsplot for more information \n'));
     end
@@ -68,10 +72,10 @@ if ~isempty(varargin)
     %If it is not found, set display error.
     ind = find(strcmpi('gui',varargin),1);
     if ~isempty(ind)
-        gui = varargin{ind+1}; 
-    else 
+        gui = varargin{ind+1};
+    else
         error('varargin:gui',... %Error code and associated error
-            strcat('WARNING: gui not specified \n\n',... 
+            strcat('WARNING: gui not specified \n\n',...
             'Please input gui specifying whether to display a gui.\n',...
             '0 for off, 1 for on\n',...
             'See help era_depvtrialsplot for more information \n'));
@@ -160,11 +164,11 @@ for gloc=1:ngroups
         goodn{end+1} = era_data.relsummary.group(gloc).event(eloc).goodn;
         badn{end+1} = length(era_data.relsummary.group(gloc).badids);
         
-    end 
+    end
 end
 
 
-%create table to describe the data including all trials 
+%create table to describe the data including all trials
 overalltable = table(label',goodn',badn',overallrel',meantrl',...
     medtrl',stdtrl',mintrl',maxtrl');
 
@@ -182,66 +186,70 @@ overalltable.Properties.VariableNames = {'Label', ...
     'Max_Num_Trials'};
 
 %display gui if desired
-if gui == 1 
+if gui == 1
     
-%define parameters for figure size
-figwidth = 815;
-figheight = 500;
-
-%define space between rows and first row location
-rowspace = 25;
-row = figheight - rowspace*2;
-
-%create a gui for displaying the overall trial information
-era_overall= figure('unit','pix',...
-  'position',[1150 150 figwidth figheight],...
-  'menub','no',...
-  'name',[rel_name ' Analyses Including All Trials'],...
-  'numbertitle','off',...
-  'resize','off');
-
-%Print the name of the loaded dataset
-uicontrol(era_overall,'Style','text','fontsize',16,...
-    'HorizontalAlignment','center',...
-    'String',sprintf('Overall %s',rel_name),...
-    'Position',[0 row figwidth 25]);          
-
-%Start a table
-t = uitable('Parent',era_overall,'Position',...
-    [25 100 figwidth-50 figheight-175],...
-    'Data',table2cell(overalltable));
-set(t,'ColumnName',{'Label' 'n Included' 'n Excluded' ...
-    rel_name 'Mean # of Trials' 'Med # of Trials'...
-    'Std Dev of Trials' 'Min # of Trials' 'Max # of Trials'});
-set(t,'ColumnWidth',{'auto' 'auto' 'auto' 110 'auto' 'auto' 'auto' 'auto'});
-set(t,'RowName',[]);
-
-%Create a save button that will take save the table
-uicontrol(era_overall,'Style','push','fontsize',14,...
-    'HorizontalAlignment','center',...
-    'String','Save Table',...
-    'Position', [.5*figwidth/8 25 figwidth/4 50],...
-    'Callback',{@era_saveoveralltable,era_data,overalltable}); 
-
-%Create button that will save good/bad ids
-uicontrol(era_overall,'Style','push','fontsize',14,...
-    'HorizontalAlignment','center',...
-    'String','Save IDs',...
-    'Position', [3*figwidth/8 25 figwidth/4 50],...
-    'Callback',{@era_saveids,era_data}); 
-
-str = sprintf(['Use this button to estimate the test-retest reliability\n'...
-    'for a given number of trials. This is helpful when adequate reliability\n'...
-    'is not reached but you want to estimate obtained reliability']);
-
-%Create button that will save good/bad ids
-uicontrol(era_overall,'Style','push','fontsize',14,...
-    'HorizontalAlignment','center',...
-    'String','<html><tr><td align=center>Estimate New<br>Relability Coefficient',...
-    'Tooltip', str,...
-    'Position', [5.5*figwidth/8 25 figwidth/4 50],...
-    'Callback',{@era_newrel,era_data}); 
-
+    %define parameters for figure size
+    figwidth = 815;
+    figheight = 500;
+    
+    %define space between rows and first row location
+    rowspace = 25;
+    row = figheight - rowspace*2;
+    
+    %create a gui for displaying the overall trial information
+    era_overall= figure('unit','pix',...
+        'position',[1150 150 figwidth figheight],...
+        'menub','no',...
+        'name',[rel_name ' Analyses Including All Trials'],...
+        'numbertitle','off',...
+        'resize','off');
+    
+    %Print the name of the loaded dataset
+    uicontrol(era_overall,'Style','text','fontsize',16,...
+        'HorizontalAlignment','center',...
+        'String',sprintf('Overall %s',rel_name),...
+        'Position',[0 row figwidth 25]);
+    
+    %Start a table
+    t = uitable('Parent',era_overall,'Position',...
+        [25 100 figwidth-50 figheight-175],...
+        'Data',table2cell(overalltable));
+    set(t,'ColumnName',{'Label' 'n Included' 'n Excluded' ...
+        rel_name 'Mean # of Trials' 'Med # of Trials'...
+        'Std Dev of Trials' 'Min # of Trials' 'Max # of Trials'});
+    set(t,'ColumnWidth',{'auto' 'auto' 'auto' 110 'auto' 'auto' 'auto' 'auto'});
+    set(t,'RowName',[]);
+    
+    %Create a save button that will take save the table
+    uicontrol(era_overall,'Style','push','fontsize',14,...
+        'HorizontalAlignment','center',...
+        'String','Save Table',...
+        'Position', [.5*figwidth/8 25 figwidth/4 50],...
+        'Callback',{@era_saveoveralltable,era_data,overalltable});
+    
+    %Create button that will save good/bad ids
+    uicontrol(era_overall,'Style','push','fontsize',14,...
+        'HorizontalAlignment','center',...
+        'String','Save IDs',...
+        'Position', [3*figwidth/8 25 figwidth/4 50],...
+        'Callback',{@era_saveids,era_data});
+    
+    str = sprintf(['Use this button to estimate the test-retest reliability\n'...
+        'for a given number of trials. This is helpful when adequate reliability\n'...
+        'is not reached but you want to estimate obtained reliability']);
+    
+    
+    if strcmp(era_data.relsummary.reltype_name,'trt')
+        %Create button that will estimate a new trt reliability coefficient if
+        %looking at retest data
+        uicontrol(era_overall,'Style','push','fontsize',14,...
+            'HorizontalAlignment','center',...
+            'String','<html><tr><td align=center>Estimate New<br>Relability Coefficient',...
+            'Tooltip', str,...
+            'Position', [5.5*figwidth/8 25 figwidth/4 50],...
+            'Callback',{@era_newrel,era_data});
+        
+    end
 end
 
 end
@@ -281,7 +289,7 @@ end
 if strcmp(ext,'.xlsx')
     
     %print header information about the dataset
-    filehead = {'Dependability Table Generated on'; datestr(clock);''}; 
+    filehead = {'Dependability Table Generated on'; datestr(clock);''};
     filehead{end+1} = sprintf('ERA Toolbox v%s',era_data.ver);
     filehead{end+1} = '';
     filehead{end+1} = sprintf('Dataset: %s',era_data.rel.filename);
@@ -327,12 +335,12 @@ elseif strcmp(ext,'.csv')
     
     %write the table information
     for i = 1:height(overalltable)
-         formatspec = '%s,%d,%d,%s,%0.2f,%d,%0.2f,%d,%d\n';
-         fprintf(fid,formatspec,char(overalltable{i,1}),...
-             cell2mat(overalltable{i,2}),cell2mat(overalltable{i,3}),...
-             char(overalltable{i,4}),cell2mat(overalltable{i,5}),...
-             cell2mat(overalltable{i,6}),cell2mat(overalltable{i,7}),...
-             cell2mat(overalltable{i,8}),cell2mat(overalltable{i,9}));
+        formatspec = '%s,%d,%d,%s,%0.2f,%d,%0.2f,%d,%d\n';
+        fprintf(fid,formatspec,char(overalltable{i,1}),...
+            cell2mat(overalltable{i,2}),cell2mat(overalltable{i,3}),...
+            char(overalltable{i,4}),cell2mat(overalltable{i,5}),...
+            cell2mat(overalltable{i,6}),cell2mat(overalltable{i,7}),...
+            cell2mat(overalltable{i,8}),cell2mat(overalltable{i,9}));
     end
     
     fclose(fid);
@@ -373,7 +381,7 @@ end
 if strcmp(ext,'.xlsx')
     
     datap{1,1} = 'Data Generated on';
-    datap{end+1,1} = datestr(clock); 
+    datap{end+1,1} = datestr(clock);
     datap{end+1,1} = sprintf('ERA Toolbox v%s',era_data.ver);
     datap{end+1,1} = '';
     datap{end+1,1} = sprintf('Dataset: %s',era_data.rel.filename);
@@ -400,11 +408,11 @@ if strcmp(ext,'.xlsx')
     for i = 1:length(gids)
         datap{i+srow,1}=char(gids(i));
     end
-
+    
     for i = 1:length(bids)
         datap{i+srow,2}=char(bids(i));
     end
-
+    
     xlswrite(fullfile(savepath,savename),datap);
     
 elseif strcmp(ext,'.csv')
@@ -433,7 +441,7 @@ elseif strcmp(ext,'.csv')
         gids = [gids;era_data.relsummary.group(j).goodids(:)];
         bids = [bids;era_data.relsummary.group(j).badids(:)];
     end
-
+    
     maxlength = max([length(gids) length(bids)]);
     minlength = min([length(gids) length(bids)]);
     
@@ -485,11 +493,11 @@ fsize = 14;
 
 %create the gui
 era_newrelgui = figure('unit','pix',...
-  'position',[400 400 figwidth figheight],...
-  'menub','no',...
-  'name','Specify Inputs',...
-  'numbertitle','off',...
-  'resize','off');
+    'position',[400 400 figwidth figheight],...
+    'menub','no',...
+    'name','Specify Inputs',...
+    'numbertitle','off',...
+    'resize','off');
 
 %Print the name of the loaded dataset
 uicontrol(era_newrelgui,'Style','text','fontsize',fsize,...
@@ -506,7 +514,7 @@ uicontrol(era_newrelgui,'Style','text','fontsize',fsize,...
     'HorizontalAlignment','center',...
     'String',['Measurement:  ' era_data.proc.measheader],...
     'Tooltip','Dataset that was used',...
-    'Position',[0 row figwidth 25]); 
+    'Position',[0 row figwidth 25]);
 
 %next row
 row = row - (rowspace*1.4);
@@ -522,13 +530,13 @@ uicontrol(era_newrelgui,...
     'HorizontalAlignment','left',...
     'String','Number of Trials:',...
     'Tooltip',str,...
-    'Position', [lcol row figwidth/4 25]);  
+    'Position', [lcol row figwidth/4 25]);
 
 inputs.trls = uicontrol(era_newrelgui,...
     'Style','edit',...
     'fontsize',fsize,...
     'String','',...
-    'Position', [rcol+5 row+6 figwidth/4 25]);  
+    'Position', [rcol+5 row+6 figwidth/4 25]);
 
 %next row
 row = row - rowspace*2;
@@ -542,7 +550,7 @@ uicontrol(era_newrelgui,'Style','push','fontsize',14,...
     'String','<html><tr><td align=center>Estimate New<br>Relability Coefficient',...
     'Tooltip', str,...
     'Position', [.5*figwidth/8 row figwidth/1.11 50],...
-    'Callback',{@era_shownewrel,era_data,inputs.trls}); 
+    'Callback',{@era_shownewrel,era_data,inputs.trls});
 
 end
 
@@ -696,7 +704,7 @@ switch analysis
             'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
             'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
             'err',data.g(gloc).e(eloc).sig_err.raw,...
-            'obs', ntrls,'CI',era_data.relsummary.ciperc); 
+            'obs', ntrls,'CI',era_data.relsummary.ciperc);
         
         newrelsummary.group(gloc).event(eloc).rel.m = mrel;
         newrelsummary.group(gloc).event(eloc).rel.ll = llrel;
@@ -750,7 +758,7 @@ switch analysis
                 'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
                 'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
                 'err',data.g(gloc).e(eloc).sig_err.raw,...
-                'obs',ntrials,'CI',era_data.relsummary.ciperc);
+                'obs',ntrls,'CI',era_data.relsummary.ciperc);
             
             newrelsummary.group(gloc).event(eloc).rel.m = mrel;
             newrelsummary.group(gloc).event(eloc).rel.ll = llrel;
@@ -788,7 +796,7 @@ switch analysis
         
         
 end %switch analysis
-    
+
 
 %create placeholders for displaying data in tables in guis
 label = {};
@@ -820,11 +828,11 @@ for gloc=1:ngroups
         
         new_trls{end+1} = ntrls;
         
-    end 
+    end
 end
 
 
-%create table to describe the data including all trials 
+%create table to describe the data including all trials
 overalltable = table(label',overallrel',new_trls');
 
 switch era_data.relsummary.gcoeff_name
@@ -836,7 +844,7 @@ end
 
 overalltable.Properties.VariableNames = {'Label', ...
     rel_name, 'Num_Trials'};
-    
+
 %define parameters for figure size
 figwidth = 415;
 figheight = 350;
@@ -847,18 +855,18 @@ row = figheight - rowspace*2;
 
 %create a gui for displaying the overall trial information
 era_overall= figure('unit','pix',...
-  'position',[1150 150 figwidth figheight],...
-  'menub','no',...
-  'name',sprintf('%s Analyses for %d Trials',...
-  rel_name,ntrls),...
-  'numbertitle','off',...
-  'resize','off');
+    'position',[1150 150 figwidth figheight],...
+    'menub','no',...
+    'name',sprintf('%s Analyses for %d Trials',...
+    rel_name,ntrls),...
+    'numbertitle','off',...
+    'resize','off');
 
 %Print the name of the loaded dataset
 uicontrol(era_overall,'Style','text','fontsize',16,...
     'HorizontalAlignment','center',...
     'String',sprintf('Overall %s',rel_name),...
-    'Position',[0 row figwidth 25]);          
+    'Position',[0 row figwidth 25]);
 
 %Start a table
 t = uitable('Parent',era_overall,'Position',...
