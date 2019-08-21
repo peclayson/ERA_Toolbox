@@ -35,7 +35,9 @@ function inctrltable = era_trt_relcutofft(varargin)
 % by Peter Clayson (8/2/19)
 % peter.clayson@gmail.com
 %
-
+%8/21/19 PC
+% changes associated with changes to relcut rather than rel field in
+%  era_relsummary
 
 
 %somersault through inputs
@@ -141,9 +143,9 @@ for gloc=1:ngroups
         %create a string with the dependability point estimate and credible
         %interval for cutoff data
         rel{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
-            era_data.relsummary.group(gloc).event(eloc).rel.m,...
-            era_data.relsummary.group(gloc).event(eloc).rel.ll,...
-            era_data.relsummary.group(gloc).event(eloc).rel.ul);
+            era_data.relsummary.group(gloc).event(eloc).relcut.m,...
+            era_data.relsummary.group(gloc).event(eloc).relcut.ll,...
+            era_data.relsummary.group(gloc).event(eloc).relcut.ul);
         
     end 
 end

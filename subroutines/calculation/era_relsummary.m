@@ -103,6 +103,10 @@ function [era_data,relerr] = era_relsummary(varargin)
 %
 %8/3/19 PC
 % now store confidence interval used for reliability estimates
+%
+%8/21/19 PC
+% bug fix: was overwriting overall reliability with trial cutoff
+%  reliability for trt data
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -731,7 +735,7 @@ switch relanalysis
                             datatrls = REL.data{1};
                         catch
                             datatrls = REL.data;
-                        end;
+                        end
                         ind = strcmp(datatrls.group,gnames{gloc});
                         datatrls = datatrls(ind,:);
                         
@@ -1560,17 +1564,17 @@ switch relanalysis
                     relerr.trlcutoff = 1;
                     trlcutoff = -1;
                     relsummary.group(gloc).event(eloc).trlcutoff = -1;
-                    relsummary.group(gloc).event(eloc).rel.m = -1;
-                    relsummary.group(gloc).event(eloc).rel.ll = -1;
-                    relsummary.group(gloc).event(eloc).rel.ul = -1;
+                    relsummary.group(gloc).event(eloc).relcut.m = -1;
+                    relsummary.group(gloc).event(eloc).relcut.ll = -1;
+                    relsummary.group(gloc).event(eloc).relcut.ul = -1;
                     
                 elseif ~isempty(trlcutoff)
                     
                     %store information about cutoffs
                     relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                    relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
-                    relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
-                    relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+                    relsummary.group(gloc).event(eloc).relcut.m = mrel(trlcutoff);
+                    relsummary.group(gloc).event(eloc).relcut.ll = llrel(trlcutoff);
+                    relsummary.group(gloc).event(eloc).relcut.ul = ulrel(trlcutoff);
                     
                 end
                 
@@ -1635,9 +1639,9 @@ switch relanalysis
                     end
                     
                     
-                    [relsummary.group(gloc).event(eloc).dep.ll,...
-                        relsummary.group(gloc).event(eloc).dep.m,...
-                        relsummary.group(gloc).event(eloc).dep.ul] = ...
+                    [relsummary.group(gloc).event(eloc).rel.ll,...
+                        relsummary.group(gloc).event(eloc).rel.m,...
+                        relsummary.group(gloc).event(eloc).rel.ul] = ...
                         era_rel_trt(...
                         'gcoeff',gcoeff,...
                         'reltype',reltype,...
@@ -1650,7 +1654,7 @@ switch relanalysis
                         'err',data.g(gloc).e(eloc).sig_err.raw,...
                         'obs',relcent,'CI',ciperc);
                     
-                    relsummary.group(gloc).event(eloc).dep.meas = relcent;
+                    relsummary.group(gloc).event(eloc).rel.meas = relcent;
                     
                     relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
                     relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
@@ -1712,9 +1716,9 @@ switch relanalysis
                             relcent = trlmed;
                     end
                     
-                    [relsummary.group(gloc).event(eloc).dep.ll,...
-                        relsummary.group(gloc).event(eloc).dep.m,...
-                        relsummary.group(gloc).event(eloc).dep.ul] = ...
+                    [relsummary.group(gloc).event(eloc).rel.ll,...
+                        relsummary.group(gloc).event(eloc).rel.m,...
+                        relsummary.group(gloc).event(eloc).rel.ul] = ...
                         era_rel_trt(...
                         'gcoeff',gcoeff,...
                         'reltype',reltype,...
@@ -1742,9 +1746,9 @@ switch relanalysis
                             relsummary.group(gloc).event(eloc).trlinfo.max
                         
                         relerr.trlmax = 1;
-                        relsummary.group(gloc).event(eloc).rel.m = -1;
-                        relsummary.group(gloc).event(eloc).rel.ll = -1;
-                        relsummary.group(gloc).event(eloc).rel.ul = -1;
+                        relsummary.group(gloc).event(eloc).relcut.m = -1;
+                        relsummary.group(gloc).event(eloc).relcut.ll = -1;
+                        relsummary.group(gloc).event(eloc).relcut.ul = -1;
                         
                     end
                     
@@ -1833,17 +1837,17 @@ switch relanalysis
                         relerr.trlcutoff = 1;
                         trlcutoff = -1;
                         relsummary.group(gloc).event(eloc).trlcutoff = -1;
-                        relsummary.group(gloc).event(eloc).rel.m = -1;
-                        relsummary.group(gloc).event(eloc).rel.ll = -1;
-                        relsummary.group(gloc).event(eloc).rel.ul = -1;
+                        relsummary.group(gloc).event(eloc).relcut.m = -1;
+                        relsummary.group(gloc).event(eloc).relcut.ll = -1;
+                        relsummary.group(gloc).event(eloc).relcut.ul = -1;
                         
                     elseif ~isempty(trlcutoff)
                         
                         %store information about cutoffs
                         relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                        relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
-                        relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
-                        relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).relcut.m = mrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).relcut.ll = llrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).relcut.ul = ulrel(trlcutoff);
                         
                     end
                     
@@ -1959,9 +1963,9 @@ switch relanalysis
                             relcent = trlmed;
                     end
                     
-                    [relsummary.group(gloc).event(eloc).dep.ll,...
-                        relsummary.group(gloc).event(eloc).dep.m,...
-                        relsummary.group(gloc).event(eloc).dep.ul] = ...
+                    [relsummary.group(gloc).event(eloc).rel.ll,...
+                        relsummary.group(gloc).event(eloc).rel.m,...
+                        relsummary.group(gloc).event(eloc).rel.ul] = ...
                         era_rel_trt(...
                         'gcoeff',gcoeff,...
                         'reltype',reltype,...
@@ -1987,9 +1991,9 @@ switch relanalysis
                             relsummary.group(gloc).event(eloc).trlinfo.max
                         
                         relerr.trlmax = 1;
-                        relsummary.group(gloc).event(eloc).rel.m = -1;
-                        relsummary.group(gloc).event(eloc).rel.ll = -1;
-                        relsummary.group(gloc).event(eloc).rel.ul = -1;
+                        relsummary.group(gloc).event(eloc).relcut.m = -1;
+                        relsummary.group(gloc).event(eloc).relcut.ll = -1;
+                        relsummary.group(gloc).event(eloc).relcut.ul = -1;
                         
                     end
                     
@@ -2079,9 +2083,9 @@ switch relanalysis
                         relerr.trlcutoff = 1;
                         trlcutoff = -1;
                         relsummary.group(gloc).event(eloc).trlcutoff = -1;
-                        relsummary.group(gloc).event(eloc).rel.m = -1;
-                        relsummary.group(gloc).event(eloc).rel.ll = -1;
-                        relsummary.group(gloc).event(eloc).rel.ul = -1;
+                        relsummary.group(gloc).event(eloc).relcut.m = -1;
+                        relsummary.group(gloc).event(eloc).relcut.ll = -1;
+                        relsummary.group(gloc).event(eloc).relcut.ul = -1;
                         
                         datatrls = REL.data(strcmp(REL.data.event,enames{eloc}),:);                        
                         
@@ -2096,9 +2100,9 @@ switch relanalysis
                         
                         %store information about cutoffs
                         relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                        relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
-                        relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
-                        relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).relcut.m = mrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).relcut.ll = llrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).relcut.ul = ulrel(trlcutoff);
                         
                         datatrls = REL.data(strcmp(REL.data.event,enames{eloc}),:);
                         
@@ -2190,9 +2194,9 @@ switch relanalysis
                             relcent = trlmed;
                     end
                     
-                    [relsummary.group(gloc).event(eloc).dep.ll,...
-                        relsummary.group(gloc).event(eloc).dep.m,...
-                        relsummary.group(gloc).event(eloc).dep.ul] = ...
+                    [relsummary.group(gloc).event(eloc).rel.ll,...
+                        relsummary.group(gloc).event(eloc).rel.m,...
+                        relsummary.group(gloc).event(eloc).rel.ul] = ...
                         era_rel_trt(...
                         'gcoeff',gcoeff,...
                         'reltype',reltype,...
@@ -2219,9 +2223,9 @@ switch relanalysis
                             relsummary.group(gloc).event(eloc).trlinfo.max
                         
                         relerr.trlmax = 1;
-                        relsummary.group(gloc).event(eloc).rel.m = -1;
-                        relsummary.group(gloc).event(eloc).rel.ll = -1;
-                        relsummary.group(gloc).event(eloc).rel.ul = -1;
+                        relsummary.group(gloc).event(eloc).relcutoff.m = -1;
+                        relsummary.group(gloc).event(eloc).relcutoff.ll = -1;
+                        relsummary.group(gloc).event(eloc).relcutoff.ul = -1;
                         
                     end
                     
@@ -2309,9 +2313,9 @@ switch relanalysis
                             relerr.trlcutoff = 1;
                             trlcutoff = -1;
                             relsummary.group(gloc).event(eloc).trlcutoff = -1;
-                            relsummary.group(gloc).event(eloc).rel.m = -1;
-                            relsummary.group(gloc).event(eloc).rel.ll = -1;
-                            relsummary.group(gloc).event(eloc).rel.ul = -1;
+                            relsummary.group(gloc).event(eloc).relcutoff.m = -1;
+                            relsummary.group(gloc).event(eloc).relcutoff.ll = -1;
+                            relsummary.group(gloc).event(eloc).relcutoff.ul = -1;
                             
                             datatrls = REL.data(all(...
                                 strcmp(REL.data.group,gnames{gloc}) &...
@@ -2332,9 +2336,9 @@ switch relanalysis
                             
                             %store information about cutoffs
                             relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                            relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
-                            relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
-                            relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).relcutoff.m = mrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).relcutoff.ll = llrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).relcutoff.ul = ulrel(trlcutoff);
                             
                             datatrls = REL.data(all(...
                                 strcmp(REL.data.group,gnames{gloc}) &...
@@ -2448,9 +2452,9 @@ switch relanalysis
                                 relcent = trlmed;
                         end
                         
-                        [relsummary.group(gloc).event(eloc).dep.ll,...
-                            relsummary.group(gloc).event(eloc).dep.m,...
-                            relsummary.group(gloc).event(eloc).dep.ul] = ...
+                        [relsummary.group(gloc).event(eloc).rel.ll,...
+                            relsummary.group(gloc).event(eloc).rel.m,...
+                            relsummary.group(gloc).event(eloc).rel.ul] = ...
                             era_rel_trt(...
                             'gcoeff',gcoeff,...
                             'reltype',reltype,...
@@ -2476,9 +2480,9 @@ switch relanalysis
                                 relsummary.group(gloc).event(eloc).trlinfo.max
                             
                             relerr.trlmax = 1;
-                            relsummary.group(gloc).event(eloc).rel.m = -1;
-                            relsummary.group(gloc).event(eloc).rel.ll = -1;
-                            relsummary.group(gloc).event(eloc).rel.ul = -1;
+                            relsummary.group(gloc).event(eloc).relcutoff.m = -1;
+                            relsummary.group(gloc).event(eloc).relcutoff.ll = -1;
+                            relsummary.group(gloc).event(eloc).relcutoff.ul = -1;
                             
                         end
                         
