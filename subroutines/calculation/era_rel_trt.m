@@ -21,7 +21,7 @@ function [ll,pt,ul] = era_rel_trt(varargin)
 % oxp - occasion x person variance components from CmdStan (sig_occxid)
 % txo - trial x occasion variance components from CmdStan (sig_trlxocc)
 % err - residual variance components from CmdStan (sig_err)
-% nobs - number of observations. Can either be 1 number or range [min max]
+% obs - number of observations. Can either be 1 number or range [min max]
 %  E.g., The overall reliability estimate will use one number (central
 %   tendency). The plot for the number of trials v reliability will use a
 %   range of numbers.
