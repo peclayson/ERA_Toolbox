@@ -58,7 +58,8 @@ function [ll,pt,ul] = era_rel_trt(varargin)
 %6/21/19 PC
 % updated copyright
 %
-
+%10/28/19 PC
+% updated formulas 
 
 %somersault through inputs
 
@@ -241,8 +242,7 @@ if length(obs) == 1
         
         %absolute error
         err_term = (txp ./ obs) + (err ./ (obs*nocc)) +...
-            (bt ./ obs) +  (bo ./ nocc) + ...
-            (txo ./ (obs*nocc));
+            (bt ./ obs) + (txo ./ (obs*nocc));
         
         %dependability estimate
         rel = uni_scor ./ (uni_scor + err_term);
@@ -255,8 +255,7 @@ if length(obs) == 1
         
         %absolute error
         err_term = (oxp ./ nocc) + (err ./ (obs*nocc)) +...
-            (bt ./ obs) +  (bo ./ nocc) + ...
-            (txo ./ (obs*nocc));
+            (bo ./ nocc) + (txo ./ (obs*nocc));
         
         %dependability estimate
         rel = uni_scor ./ (uni_scor + err_term);
@@ -310,8 +309,7 @@ elseif length(obs) == 2 %if obs contains two numbers calculate the
             
             %absolute error
             err_term = (txp ./ ii) + (err ./ (ii*nocc)) +...
-                (bt ./ ii) +  (bo ./ nocc) + ...
-                (txo ./ (ii*nocc));
+                (bt ./ ii) +  (txo ./ (ii*nocc));
             
             %dependability estimate
             rel = uni_scor ./ (uni_scor + err_term);
@@ -324,8 +322,7 @@ elseif length(obs) == 2 %if obs contains two numbers calculate the
             
             %absolute error
             err_term = (oxp ./ nocc) + (err ./ (ii*nocc)) +...
-                (bt ./ ii) +  (bo ./ nocc) + ...
-                (txo ./ (ii*nocc));
+                (bo ./ nocc) + (txo ./ (ii*nocc));
             
             %dependability estimate
             rel = uni_scor ./ (uni_scor + err_term);
