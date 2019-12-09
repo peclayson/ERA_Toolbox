@@ -3,7 +3,7 @@ function RELout = era_computerel(varargin)
 %
 %era_computerel('data',era_datatable,'chains',3,'iter',1000)
 %
-%Lasted Updated 4/18/19
+%Lasted Updated 12/9/19
 %
 %Required Inputs:
 % data - data table outputted from the era_loadfile script (see era_loadfile
@@ -115,6 +115,8 @@ function RELout = era_computerel(varargin)
 %8/8/19 PC
 % check whether niter is divisble by 10, fix if not and warn user
 %
+%12/9/19 PC
+% add .analysis filed to RELout when only examining one session
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
