@@ -196,6 +196,7 @@ while rerun ~= 0
     %check if the user wanted to see the trace plots
     if era_prefs.proc.traceplots == 2 && rerun == 0 && ...
             strcmp(RELout.analysis,'ic')
+        
         era_checktraceplots(RELout,'askuser',1);
         
         %close gui after pulling input from user
@@ -210,6 +211,7 @@ while rerun ~= 0
             close(era_tplots);
             delete(era_tplots);
         end
+        
     elseif era_prefs.proc.traceplots == 2 && rerun == 0 && ...
             strcmp(RELout.analysis,'trt')
         fprintf('\nViewing trace plots for trt analyses is not currently supported\n');

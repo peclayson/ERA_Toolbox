@@ -805,10 +805,9 @@ switch relanalysis
                     datasubset = datatable(ind,:);
                     
                     %only factor in the trial counts from those with good data
-                    
-                    if ~strcmp(relsummary.group(gloc).goodids,'none')
+                    if ~isempty(relsummary.group(gloc).goodids)
                         goodids = table(relsummary.group(gloc).goodids);
-                    elseif strcmp(relsummary.group(gloc).goodids,'none')
+                    elseif isempty(relsummary.group(gloc).goodids)
                         goodids = table(relsummary.group(gloc).badids);
                     end
                     
@@ -867,9 +866,9 @@ switch relanalysis
                         
                     end
                     
-                    if ~strcmp(relsummary.group(gloc).goodids,'none')
+                    if ~isempty(relsummary.group(gloc).goodids)
                         relsummary.group(gloc).event(eloc).goodn = height(goodids);
-                    elseif strcmp(relsummary.group(gloc).goodids,'none')
+                    elseif isempty(relsummary.group(gloc).goodids)
                         relsummary.group(gloc).event(eloc).goodn = 0;
                     end
                     
