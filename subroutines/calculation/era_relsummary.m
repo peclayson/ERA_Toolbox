@@ -115,6 +115,8 @@ function [era_data,relerr] = era_relsummary(varargin)
 % fixed bug where participants were excluded if they had too few total
 %  trials from each session combined. It should be the participant needs
 %  enough trials from each session separately.
+% if symbolic toolbox is installed, MATLAB will solve for the number of
+%  trials required to reach adequate dependability
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -455,19 +457,56 @@ switch relanalysis
                 
                 %compute dependabiltiy
                 ntrials = max(trltable.GroupCount(:)) + 1000;
-                [llrel,mrel,ulrel] = era_dep(...
-                    'bp',data.g(gloc).e(eloc).sig_u.raw,...
-                    'wp',data.g(gloc).e(eloc).sig_e.raw,...
-                    'obs',[1 ntrials],'CI',ciperc);
                 
-                %find the number of trials to reach cutoff
-                switch meascutoff
-                    case 1
-                        trlcutoff = find(llrel >= depcutoff, 1);
-                    case 2
-                        trlcutoff = find(mrel >= depcutoff, 1);
-                    case 3
-                        trlcutoff = find(ulrel >= depcutoff, 1);
+                if license('test','symbolic_toolbox')
+                    switch meascutoff
+                        case 1
+                            bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,ciperc);
+                            er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,ciperc);
+                        case 2
+                            bp = mean(data.g(gloc).e(eloc).sig_u.raw .^2);
+                            er = mean(data.g(gloc).e(eloc).sig_e.raw .^2);
+                        case 3
+                            bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,1-ciperc);
+                            er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,1-ciperc);
+                    end
+                    
+                    
+                    syms iix
+                    ntrls = vpasolve(depcutoff == ...
+                        bp / (bp + (er/iix)));
+                    trlcutoff = double(ceil(ntrls));
+                    
+                    [llrel,mrel,ulrel] = era_dep(...
+                        'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                        'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                        'obs',trlcutoff,'CI',ciperc);
+                    
+                    switch meascutoff
+                        case 1
+                            trlcutoff = find(llrel >= depcutoff, 1);
+                        case 2
+                            trlcutoff = find(mrel >= depcutoff, 1);
+                        case 3
+                            trlcutoff = find(ulrel >= depcutoff, 1);
+                    end
+                    
+                else
+                    
+                    [llrel,mrel,ulrel] = era_dep(...
+                        'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                        'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                        'obs',[1 ntrials],'CI',ciperc);
+                    
+                    %find the number of trials to reach cutoff
+                    switch meascutoff
+                        case 1
+                            trlcutoff = find(llrel >= depcutoff, 1);
+                        case 2
+                            trlcutoff = find(mrel >= depcutoff, 1);
+                        case 3
+                            trlcutoff = find(ulrel >= depcutoff, 1);
+                    end
                 end
                 
                 %see whether the trial cutoff was found. If not store all values as
@@ -698,12 +737,23 @@ switch relanalysis
                     
                     %compute dependability
                     if license('test','symbolic_toolbox')
+                        
+                        switch meascutoff
+                            case 1
+                                bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,ciperc);
+                                er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,ciperc);
+                            case 2
+                                bp = mean(data.g(gloc).e(eloc).sig_u.raw .^2);
+                                er = mean(data.g(gloc).e(eloc).sig_e.raw .^2);
+                            case 3
+                                bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,1-ciperc);
+                                er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,1-ciperc);
+                        end
+                        
+                        
                         syms iix
                         ntrls = vpasolve(depcutoff == ...
-                            mean(data.g(gloc).e(eloc).sig_u.raw .^2) ./...
-                            (mean(data.g(gloc).e(eloc).sig_u.raw .^2) +...
-                            (mean(data.g(gloc).e(eloc).sig_e.raw .^2) ./...
-                            iix)));
+                            bp / (bp + (er/iix)));
                         trlcutoff = double(ceil(ntrls));
                         
                         [llrel,mrel,ulrel] = era_dep(...
@@ -947,21 +997,49 @@ switch relanalysis
                     
                     %compute dependability
                     ntrials = max(trltable.GroupCount(:)) + 1000;
-                    [llrel,mrel,ulrel] = era_dep(...
-                        'bp',data.g(gloc).e(eloc).sig_u.raw,...
-                        'wp',data.g(gloc).e(eloc).sig_e.raw,...
-                        'obs',[1 ntrials],'CI',ciperc);
                     
-                    %find the number of trials to reach cutoffl
-                    switch meascutoff
-                        case 1
-                            trlcutoff = find(llrel >= depcutoff, 1);
-                        case 2
-                            trlcutoff = find(mrel >= depcutoff, 1);
-                        case 3
-                            trlcutoff = find(ulrel >= depcutoff, 1);
+                    
+                    if license('test','symbolic_toolbox')
+                        
+                        switch meascutoff
+                            case 1
+                                bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,ciperc);
+                                er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,ciperc);
+                            case 2
+                                bp = mean(data.g(gloc).e(eloc).sig_u.raw .^2);
+                                er = mean(data.g(gloc).e(eloc).sig_e.raw .^2);
+                            case 3
+                                bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,1-ciperc);
+                                er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,1-ciperc);
+                        end
+                        
+                        
+                        syms iix
+                        ntrls = vpasolve(depcutoff == ...
+                            bp / (bp + (er/iix)));
+                        trlcutoff = double(ceil(ntrls));
+                        
+                        [llrel,mrel,ulrel] = era_dep(...
+                            'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                            'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                            'obs',trlcutoff,'CI',ciperc);
+                    else
+                        [llrel,mrel,ulrel] = era_dep(...
+                            'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                            'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                            'obs',[1 ntrials],'CI',ciperc);
+                        
+                        %find the number of trials to reach cutoffl
+                        switch meascutoff
+                            case 1
+                                trlcutoff = find(llrel >= depcutoff, 1);
+                            case 2
+                                trlcutoff = find(mrel >= depcutoff, 1);
+                            case 3
+                                trlcutoff = find(ulrel >= depcutoff, 1);
+                        end
+                        
                     end
-                    
                     
                     if isempty(trlcutoff) %if a cutoff wasn't found
                         
@@ -1161,19 +1239,47 @@ switch relanalysis
                         
                         %compute dependability
                         ntrials = max(trltable.GroupCount(:)) + 1000;
-                        [llrel,mrel,ulrel] = era_dep(...
-                            'bp',data.g(gloc).e(eloc).sig_u.raw,...
-                            'wp',data.g(gloc).e(eloc).sig_e.raw,...
-                            'obs',[1 ntrials],'CI',ciperc);
                         
-                        %find the number of trials to reach cutoff
-                        switch meascutoff
-                            case 1
-                                trlcutoff = find(llrel >= depcutoff, 1);
-                            case 2
-                                trlcutoff = find(mrel >= depcutoff, 1);
-                            case 3
-                                trlcutoff = find(ulrel >= depcutoff, 1);
+                        
+                        if license('test','symbolic_toolbox')
+                            
+                            switch meascutoff
+                                case 1
+                                    bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,ciperc);
+                                    er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,ciperc);
+                                case 2
+                                    bp = mean(data.g(gloc).e(eloc).sig_u.raw .^2);
+                                    er = mean(data.g(gloc).e(eloc).sig_e.raw .^2);
+                                case 3
+                                    bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,1-ciperc);
+                                    er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,1-ciperc);
+                            end
+                            
+                            
+                            syms iix
+                            ntrls = vpasolve(depcutoff == ...
+                                bp / (bp + (er/iix)));
+                            trlcutoff = double(ceil(ntrls));
+                            
+                            [llrel,mrel,ulrel] = era_dep(...
+                                'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                                'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                                'obs',trlcutoff,'CI',ciperc);
+                        else
+                            [llrel,mrel,ulrel] = era_dep(...
+                                'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                                'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                                'obs',[1 ntrials],'CI',ciperc);
+                            
+                            %find the number of trials to reach cutoff
+                            switch meascutoff
+                                case 1
+                                    trlcutoff = find(llrel >= depcutoff, 1);
+                                case 2
+                                    trlcutoff = find(mrel >= depcutoff, 1);
+                                case 3
+                                    trlcutoff = find(ulrel >= depcutoff, 1);
+                            end
                         end
                         
                         %if a cutoff was not found
@@ -1562,26 +1668,131 @@ switch relanalysis
                 
                 %compute reliabiltiy
                 ntrials = max(trltable.GroupCount(:)) + 1000;
-                [llrel,mrel,ulrel] = era_rel_trt(...
-                    'gcoeff',gcoeff,...
-                    'reltype',reltype,...
-                    'bp',data.g(gloc).e(eloc).sig_id.raw,...
-                    'bo',data.g(gloc).e(eloc).sig_occ.raw,...
-                    'bt',data.g(gloc).e(eloc).sig_trl.raw,...
-                    'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
-                    'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
-                    'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
-                    'err',data.g(gloc).e(eloc).sig_err.raw,...
-                    'obs',[1 ntrials],'CI',ciperc);
                 
-                %find the number of trials to reach cutoff
-                switch meascutoff
-                    case 1
-                        trlcutoff = find(llrel >= relcutoff, 1);
-                    case 2
-                        trlcutoff = find(mrel >= relcutoff, 1);
-                    case 3
-                        trlcutoff = find(ulrel >= relcutoff, 1);
+                if license('test','symbolic_toolbox')
+                    
+                    switch meascutoff
+                        case 1
+                            bp = quantile(data.g(gloc).e(eloc).sig_id.raw .^2,ciperc);
+                            bo = quantile(data.g(gloc).e(eloc).sig_occ.raw .^ 2,ciperc);
+                            bt = quantile(data.g(gloc).e(eloc).sig_trl.raw .^ 2,ciperc);
+                            txp = quantile(data.g(gloc).e(eloc).sig_trlxid.raw .^2,ciperc);
+                            oxp = quantile(data.g(gloc).e(eloc).sig_occxid.raw .^ 2,ciperc);
+                            txo = quantile(data.g(gloc).e(eloc).sig_trlxocc.raw .^ 2,ciperc);
+                            err = quantile(data.g(gloc).e(eloc).sig_err.raw .^2,ciperc);
+                        case 2
+                            bp = mean(data.g(gloc).e(eloc).sig_id.raw .^2);
+                            bo = mean(data.g(gloc).e(eloc).sig_occ.raw .^ 2);
+                            bt = mean(data.g(gloc).e(eloc).sig_trl.raw .^ 2);
+                            txp = mean(data.g(gloc).e(eloc).sig_trlxid.raw .^2);
+                            oxp = mean(data.g(gloc).e(eloc).sig_occxid.raw .^ 2);
+                            txo = mean(data.g(gloc).e(eloc).sig_trlxocc.raw .^ 2);
+                            err = mean(data.g(gloc).e(eloc).sig_err.raw .^2);
+                        case 3
+                            bp = quantile(data.g(gloc).e(eloc).sig_id.raw .^2,1-ciperc);
+                            bo = quantile(data.g(gloc).e(eloc).sig_occ.raw .^ 2,1-ciperc);
+                            bt = quantile(data.g(gloc).e(eloc).sig_trl.raw .^ 2,1-ciperc);
+                            txp = quantile(data.g(gloc).e(eloc).sig_trlxid.raw .^2,1-ciperc);
+                            oxp = quantile(data.g(gloc).e(eloc).sig_occxid.raw .^ 2,1-ciperc);
+                            txo = quantile(data.g(gloc).e(eloc).sig_trlxocc.raw .^ 2,1-ciperc);
+                            err = quantile(data.g(gloc).e(eloc).sig_err.raw .^2,1-ciperc);
+                    end
+                    
+                    
+                    syms iix
+                    nocc = 1;
+                    
+                    if gcoeff == 1 &&... %dependability
+                            reltype == 1 %coefficient of equivalence
+                        
+                        %universe score
+                        uni_scor = bp + (oxp ./ nocc);
+                        
+                        %absolute error
+                        err_term = (txp ./ iix) + (err ./ (iix*nocc)) +...
+                            (bt ./ iix) + (txo ./ (iix*nocc));
+                        
+                        %dependability estimate
+                        rel = uni_scor ./ (uni_scor + err_term);
+                        
+                    elseif gcoeff == 1 &&... %dependabilty
+                            reltype == 2 %coefficient of stability
+                        
+                        %universe score
+                        uni_scor = bp + (txp ./ iix);
+                        
+                        %absolute error
+                        err_term = (oxp ./ nocc) + (err ./ (iix*nocc)) +...
+                            (bo ./ nocc) + (txo ./ (iix*nocc));
+                        
+                        %dependability estimate
+                        rel = uni_scor ./ (uni_scor + err_term);
+                        
+                        
+                    elseif gcoeff == 2 &&... %generalizability
+                            reltype == 1 %coefficient of equivalence
+                        
+                        %universe score
+                        uni_scor = bp + (oxp ./ nocc);
+                        
+                        %relative error
+                        err_term = (txp ./ iix) + (err ./ (iix*nocc));
+                        
+                        %generalizability estimate
+                        rel = uni_scor ./ (uni_scor + err_term);
+                        
+                    elseif gcoeff == 2 &&... %generalizability
+                            reltype == 2 %coefficient of stability
+                        
+                        %universe score
+                        uni_scor = bp + (txp ./ iix);
+                        
+                        %relative error
+                        err_term = (oxp ./ nocc) + (err ./ (iix*nocc));
+                        
+                        %generalizability estimate
+                        rel = uni_scor ./ (uni_scor + err_term);
+                        
+                    end
+                    
+                    ntrls = vpasolve(relcutoff == rel);
+                    
+                    trlcutoff = double(ceil(ntrls));
+                    
+                    [llrel,mrel,ulrel] = era_rel_trt(...
+                        'gcoeff',gcoeff,...
+                        'reltype',reltype,...
+                        'bp',data.g(gloc).e(eloc).sig_id.raw,...
+                        'bo',data.g(gloc).e(eloc).sig_occ.raw,...
+                        'bt',data.g(gloc).e(eloc).sig_trl.raw,...
+                        'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
+                        'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
+                        'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
+                        'err',data.g(gloc).e(eloc).sig_err.raw,...
+                        'obs',trlcutoff,'CI',ciperc);
+                else
+                    
+                    [llrel,mrel,ulrel] = era_rel_trt(...
+                        'gcoeff',gcoeff,...
+                        'reltype',reltype,...
+                        'bp',data.g(gloc).e(eloc).sig_id.raw,...
+                        'bo',data.g(gloc).e(eloc).sig_occ.raw,...
+                        'bt',data.g(gloc).e(eloc).sig_trl.raw,...
+                        'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
+                        'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
+                        'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
+                        'err',data.g(gloc).e(eloc).sig_err.raw,...
+                        'obs',[1 ntrials],'CI',ciperc);
+                    
+                    %find the number of trials to reach cutoff
+                    switch meascutoff
+                        case 1
+                            trlcutoff = find(llrel >= relcutoff, 1);
+                        case 2
+                            trlcutoff = find(mrel >= relcutoff, 1);
+                        case 3
+                            trlcutoff = find(ulrel >= relcutoff, 1);
+                    end
                 end
                 
                 %see whether the trial cutoff was found. If not store all values as
@@ -1842,26 +2053,132 @@ switch relanalysis
                     
                     %compute reliabiltiy
                     ntrials = max(trltable.GroupCount(:)) + 1000;
-                    [llrel,mrel,ulrel] = era_rel_trt(...
-                        'gcoeff',gcoeff,...
-                        'reltype',reltype,...
-                        'bp',data.g(gloc).e(eloc).sig_id.raw,...
-                        'bo',data.g(gloc).e(eloc).sig_occ.raw,...
-                        'bt',data.g(gloc).e(eloc).sig_trl.raw,...
-                        'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
-                        'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
-                        'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
-                        'err',data.g(gloc).e(eloc).sig_err.raw,...
-                        'obs',[1 ntrials],'CI',ciperc);
                     
-                    %find the number of trials to reach cutoff
-                    switch meascutoff
-                        case 1
-                            trlcutoff = find(llrel >= relcutoff, 1);
-                        case 2
-                            trlcutoff = find(mrel >= relcutoff, 1);
-                        case 3
-                            trlcutoff = find(ulrel >= relcutoff, 1);
+                    if license('test','symbolic_toolbox')
+                        
+                        switch meascutoff
+                            case 1
+                                bp = quantile(data.g(gloc).e(eloc).sig_id.raw .^2,ciperc);
+                                bo = quantile(data.g(gloc).e(eloc).sig_occ.raw .^ 2,ciperc);
+                                bt = quantile(data.g(gloc).e(eloc).sig_trl.raw .^ 2,ciperc);
+                                txp = quantile(data.g(gloc).e(eloc).sig_trlxid.raw .^2,ciperc);
+                                oxp = quantile(data.g(gloc).e(eloc).sig_occxid.raw .^ 2,ciperc);
+                                txo = quantile(data.g(gloc).e(eloc).sig_trlxocc.raw .^ 2,ciperc);
+                                err = quantile(data.g(gloc).e(eloc).sig_err.raw .^2,ciperc);
+                            case 2
+                                bp = mean(data.g(gloc).e(eloc).sig_id.raw .^2);
+                                bo = mean(data.g(gloc).e(eloc).sig_occ.raw .^ 2);
+                                bt = mean(data.g(gloc).e(eloc).sig_trl.raw .^ 2);
+                                txp = mean(data.g(gloc).e(eloc).sig_trlxid.raw .^2);
+                                oxp = mean(data.g(gloc).e(eloc).sig_occxid.raw .^ 2);
+                                txo = mean(data.g(gloc).e(eloc).sig_trlxocc.raw .^ 2);
+                                err = mean(data.g(gloc).e(eloc).sig_err.raw .^2);
+                            case 3
+                                bp = quantile(data.g(gloc).e(eloc).sig_id.raw .^2,1-ciperc);
+                                bo = quantile(data.g(gloc).e(eloc).sig_occ.raw .^ 2,1-ciperc);
+                                bt = quantile(data.g(gloc).e(eloc).sig_trl.raw .^ 2,1-ciperc);
+                                txp = quantile(data.g(gloc).e(eloc).sig_trlxid.raw .^2,1-ciperc);
+                                oxp = quantile(data.g(gloc).e(eloc).sig_occxid.raw .^ 2,1-ciperc);
+                                txo = quantile(data.g(gloc).e(eloc).sig_trlxocc.raw .^ 2,1-ciperc);
+                                err = quantile(data.g(gloc).e(eloc).sig_err.raw .^2,1-ciperc);
+                        end
+                        
+                        
+                        syms iix
+                        nocc = 1;
+                        
+                        if gcoeff == 1 &&... %dependability
+                                reltype == 1 %coefficient of equivalence
+                            
+                            %universe score
+                            uni_scor = bp + (oxp ./ nocc);
+                            
+                            %absolute error
+                            err_term = (txp ./ iix) + (err ./ (iix*nocc)) +...
+                                (bt ./ iix) + (txo ./ (iix*nocc));
+                            
+                            %dependability estimate
+                            rel = uni_scor ./ (uni_scor + err_term);
+                            
+                        elseif gcoeff == 1 &&... %dependabilty
+                                reltype == 2 %coefficient of stability
+                            
+                            %universe score
+                            uni_scor = bp + (txp ./ iix);
+                            
+                            %absolute error
+                            err_term = (oxp ./ nocc) + (err ./ (iix*nocc)) +...
+                                (bo ./ nocc) + (txo ./ (iix*nocc));
+                            
+                            %dependability estimate
+                            rel = uni_scor ./ (uni_scor + err_term);
+                            
+                            
+                        elseif gcoeff == 2 &&... %generalizability
+                                reltype == 1 %coefficient of equivalence
+                            
+                            %universe score
+                            uni_scor = bp + (oxp ./ nocc);
+                            
+                            %relative error
+                            err_term = (txp ./ iix) + (err ./ (iix*nocc));
+                            
+                            %generalizability estimate
+                            rel = uni_scor ./ (uni_scor + err_term);
+                            
+                        elseif gcoeff == 2 &&... %generalizability
+                                reltype == 2 %coefficient of stability
+                            
+                            %universe score
+                            uni_scor = bp + (txp ./ iix);
+                            
+                            %relative error
+                            err_term = (oxp ./ nocc) + (err ./ (iix*nocc));
+                            
+                            %generalizability estimate
+                            rel = uni_scor ./ (uni_scor + err_term);
+                            
+                        end
+                        
+                        ntrls = vpasolve(relcutoff == rel);
+                        
+                        trlcutoff = double(ceil(ntrls));
+                        
+                        [llrel,mrel,ulrel] = era_rel_trt(...
+                            'gcoeff',gcoeff,...
+                            'reltype',reltype,...
+                            'bp',data.g(gloc).e(eloc).sig_id.raw,...
+                            'bo',data.g(gloc).e(eloc).sig_occ.raw,...
+                            'bt',data.g(gloc).e(eloc).sig_trl.raw,...
+                            'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
+                            'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
+                            'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
+                            'err',data.g(gloc).e(eloc).sig_err.raw,...
+                            'obs',trlcutoff,'CI',ciperc);
+                    else
+                        
+                        [llrel,mrel,ulrel] = era_rel_trt(...
+                            'gcoeff',gcoeff,...
+                            'reltype',reltype,...
+                            'bp',data.g(gloc).e(eloc).sig_id.raw,...
+                            'bo',data.g(gloc).e(eloc).sig_occ.raw,...
+                            'bt',data.g(gloc).e(eloc).sig_trl.raw,...
+                            'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
+                            'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
+                            'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
+                            'err',data.g(gloc).e(eloc).sig_err.raw,...
+                            'obs',[1 ntrials],'CI',ciperc);
+                        
+                        %find the number of trials to reach cutoff
+                        switch meascutoff
+                            case 1
+                                trlcutoff = find(llrel >= relcutoff, 1);
+                            case 2
+                                trlcutoff = find(mrel >= relcutoff, 1);
+                            case 3
+                                trlcutoff = find(ulrel >= relcutoff, 1);
+                        end
+                        
                     end
                     
                     %see whether the trial cutoff was found. If not store all
@@ -2099,28 +2416,133 @@ switch relanalysis
                     
                     %compute reliabiltiy
                     ntrials = max(trltable.GroupCount(:)) + 1000;
-                    [llrel,mrel,ulrel] = era_rel_trt(...
-                        'gcoeff',gcoeff,...
-                        'reltype',reltype,...
-                        'bp',data.g(gloc).e(eloc).sig_id.raw,...
-                        'bo',data.g(gloc).e(eloc).sig_occ.raw,...
-                        'bt',data.g(gloc).e(eloc).sig_trl.raw,...
-                        'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
-                        'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
-                        'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
-                        'err',data.g(gloc).e(eloc).sig_err.raw,...
-                        'obs',[1 ntrials],'CI',ciperc);
                     
-                    %find the number of trials to reach cutoff
-                    switch meascutoff
-                        case 1
-                            trlcutoff = find(llrel >= relcutoff, 1);
-                        case 2
-                            trlcutoff = find(mrel >= relcutoff, 1);
-                        case 3
-                            trlcutoff = find(ulrel >= relcutoff, 1);
+                    if license('test','symbolic_toolbox')
+                        
+                        switch meascutoff
+                            case 1
+                                bp = quantile(data.g(gloc).e(eloc).sig_id.raw .^2,ciperc);
+                                bo = quantile(data.g(gloc).e(eloc).sig_occ.raw .^ 2,ciperc);
+                                bt = quantile(data.g(gloc).e(eloc).sig_trl.raw .^ 2,ciperc);
+                                txp = quantile(data.g(gloc).e(eloc).sig_trlxid.raw .^2,ciperc);
+                                oxp = quantile(data.g(gloc).e(eloc).sig_occxid.raw .^ 2,ciperc);
+                                txo = quantile(data.g(gloc).e(eloc).sig_trlxocc.raw .^ 2,ciperc);
+                                err = quantile(data.g(gloc).e(eloc).sig_err.raw .^2,ciperc);
+                            case 2
+                                bp = mean(data.g(gloc).e(eloc).sig_id.raw .^2);
+                                bo = mean(data.g(gloc).e(eloc).sig_occ.raw .^ 2);
+                                bt = mean(data.g(gloc).e(eloc).sig_trl.raw .^ 2);
+                                txp = mean(data.g(gloc).e(eloc).sig_trlxid.raw .^2);
+                                oxp = mean(data.g(gloc).e(eloc).sig_occxid.raw .^ 2);
+                                txo = mean(data.g(gloc).e(eloc).sig_trlxocc.raw .^ 2);
+                                err = mean(data.g(gloc).e(eloc).sig_err.raw .^2);
+                            case 3
+                                bp = quantile(data.g(gloc).e(eloc).sig_id.raw .^2,1-ciperc);
+                                bo = quantile(data.g(gloc).e(eloc).sig_occ.raw .^ 2,1-ciperc);
+                                bt = quantile(data.g(gloc).e(eloc).sig_trl.raw .^ 2,1-ciperc);
+                                txp = quantile(data.g(gloc).e(eloc).sig_trlxid.raw .^2,1-ciperc);
+                                oxp = quantile(data.g(gloc).e(eloc).sig_occxid.raw .^ 2,1-ciperc);
+                                txo = quantile(data.g(gloc).e(eloc).sig_trlxocc.raw .^ 2,1-ciperc);
+                                err = quantile(data.g(gloc).e(eloc).sig_err.raw .^2,1-ciperc);
+                        end
+                        
+                        
+                        syms iix
+                        nocc = 1;
+                        
+                        if gcoeff == 1 &&... %dependability
+                                reltype == 1 %coefficient of equivalence
+                            
+                            %universe score
+                            uni_scor = bp + (oxp ./ nocc);
+                            
+                            %absolute error
+                            err_term = (txp ./ iix) + (err ./ (iix*nocc)) +...
+                                (bt ./ iix) + (txo ./ (iix*nocc));
+                            
+                            %dependability estimate
+                            rel = uni_scor ./ (uni_scor + err_term);
+                            
+                        elseif gcoeff == 1 &&... %dependabilty
+                                reltype == 2 %coefficient of stability
+                            
+                            %universe score
+                            uni_scor = bp + (txp ./ iix);
+                            
+                            %absolute error
+                            err_term = (oxp ./ nocc) + (err ./ (iix*nocc)) +...
+                                (bo ./ nocc) + (txo ./ (iix*nocc));
+                            
+                            %dependability estimate
+                            rel = uni_scor ./ (uni_scor + err_term);
+                            
+                            
+                        elseif gcoeff == 2 &&... %generalizability
+                                reltype == 1 %coefficient of equivalence
+                            
+                            %universe score
+                            uni_scor = bp + (oxp ./ nocc);
+                            
+                            %relative error
+                            err_term = (txp ./ iix) + (err ./ (iix*nocc));
+                            
+                            %generalizability estimate
+                            rel = uni_scor ./ (uni_scor + err_term);
+                            
+                        elseif gcoeff == 2 &&... %generalizability
+                                reltype == 2 %coefficient of stability
+                            
+                            %universe score
+                            uni_scor = bp + (txp ./ iix);
+                            
+                            %relative error
+                            err_term = (oxp ./ nocc) + (err ./ (iix*nocc));
+                            
+                            %generalizability estimate
+                            rel = uni_scor ./ (uni_scor + err_term);
+                            
+                        end
+                        
+                        ntrls = vpasolve(relcutoff == rel);
+                        
+                        trlcutoff = double(ceil(ntrls));
+                        
+                        [llrel,mrel,ulrel] = era_rel_trt(...
+                            'gcoeff',gcoeff,...
+                            'reltype',reltype,...
+                            'bp',data.g(gloc).e(eloc).sig_id.raw,...
+                            'bo',data.g(gloc).e(eloc).sig_occ.raw,...
+                            'bt',data.g(gloc).e(eloc).sig_trl.raw,...
+                            'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
+                            'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
+                            'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
+                            'err',data.g(gloc).e(eloc).sig_err.raw,...
+                            'obs',trlcutoff,'CI',ciperc);
+                    else
+                        
+                        
+                        [llrel,mrel,ulrel] = era_rel_trt(...
+                            'gcoeff',gcoeff,...
+                            'reltype',reltype,...
+                            'bp',data.g(gloc).e(eloc).sig_id.raw,...
+                            'bo',data.g(gloc).e(eloc).sig_occ.raw,...
+                            'bt',data.g(gloc).e(eloc).sig_trl.raw,...
+                            'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
+                            'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
+                            'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
+                            'err',data.g(gloc).e(eloc).sig_err.raw,...
+                            'obs',[1 ntrials],'CI',ciperc);
+                        
+                        %find the number of trials to reach cutoff
+                        switch meascutoff
+                            case 1
+                                trlcutoff = find(llrel >= relcutoff, 1);
+                            case 2
+                                trlcutoff = find(mrel >= relcutoff, 1);
+                            case 3
+                                trlcutoff = find(ulrel >= relcutoff, 1);
+                        end
                     end
-                    
                     
                     if isempty(trlcutoff) %if a cutoff wasn't found
                         
@@ -2336,27 +2758,135 @@ switch relanalysis
                         
                         %compute reliability
                         ntrials = max(trltable.GroupCount(:)) + 1000;
-                        [llrel,mrel,ulrel] = era_rel_trt(...
-                            'gcoeff',gcoeff,...
-                            'reltype',reltype,...
-                            'bp',data.g(gloc).e(eloc).sig_id.raw,...
-                            'bo',data.g(gloc).e(eloc).sig_occ.raw,...
-                            'bt',data.g(gloc).e(eloc).sig_trl.raw,...
-                            'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
-                            'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
-                            'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
-                            'err',data.g(gloc).e(eloc).sig_err.raw,...
-                            'obs',[1 ntrials],'CI',ciperc);
                         
-                        %find the number of trials to reach cutoff
-                        switch meascutoff
-                            case 1
-                                trlcutoff = find(llrel >= relcutoff, 1);
-                            case 2
-                                trlcutoff = find(mrel >= relcutoff, 1);
-                            case 3
-                                trlcutoff = find(ulrel >= relcutoff, 1);
+                        
+                        if license('test','symbolic_toolbox')
+                            
+                            switch meascutoff
+                                case 1
+                                    bp = quantile(data.g(gloc).e(eloc).sig_id.raw .^2,ciperc);
+                                    bo = quantile(data.g(gloc).e(eloc).sig_occ.raw .^ 2,ciperc);
+                                    bt = quantile(data.g(gloc).e(eloc).sig_trl.raw .^ 2,ciperc);
+                                    txp = quantile(data.g(gloc).e(eloc).sig_trlxid.raw .^2,ciperc);
+                                    oxp = quantile(data.g(gloc).e(eloc).sig_occxid.raw .^ 2,ciperc);
+                                    txo = quantile(data.g(gloc).e(eloc).sig_trlxocc.raw .^ 2,ciperc);
+                                    err = quantile(data.g(gloc).e(eloc).sig_err.raw .^2,ciperc);
+                                case 2
+                                    bp = mean(data.g(gloc).e(eloc).sig_id.raw .^2);
+                                    bo = mean(data.g(gloc).e(eloc).sig_occ.raw .^ 2);
+                                    bt = mean(data.g(gloc).e(eloc).sig_trl.raw .^ 2);
+                                    txp = mean(data.g(gloc).e(eloc).sig_trlxid.raw .^2);
+                                    oxp = mean(data.g(gloc).e(eloc).sig_occxid.raw .^ 2);
+                                    txo = mean(data.g(gloc).e(eloc).sig_trlxocc.raw .^ 2);
+                                    err = mean(data.g(gloc).e(eloc).sig_err.raw .^2);
+                                case 3
+                                    bp = quantile(data.g(gloc).e(eloc).sig_id.raw .^2,1-ciperc);
+                                    bo = quantile(data.g(gloc).e(eloc).sig_occ.raw .^ 2,1-ciperc);
+                                    bt = quantile(data.g(gloc).e(eloc).sig_trl.raw .^ 2,1-ciperc);
+                                    txp = quantile(data.g(gloc).e(eloc).sig_trlxid.raw .^2,1-ciperc);
+                                    oxp = quantile(data.g(gloc).e(eloc).sig_occxid.raw .^ 2,1-ciperc);
+                                    txo = quantile(data.g(gloc).e(eloc).sig_trlxocc.raw .^ 2,1-ciperc);
+                                    err = quantile(data.g(gloc).e(eloc).sig_err.raw .^2,1-ciperc);
+                            end
+                            
+                            
+                            syms iix
+                            nocc = 1;
+                            
+                            if gcoeff == 1 &&... %dependability
+                                    reltype == 1 %coefficient of equivalence
+                                
+                                %universe score
+                                uni_scor = bp + (oxp ./ nocc);
+                                
+                                %absolute error
+                                err_term = (txp ./ iix) + (err ./ (iix*nocc)) +...
+                                    (bt ./ iix) + (txo ./ (iix*nocc));
+                                
+                                %dependability estimate
+                                rel = uni_scor ./ (uni_scor + err_term);
+                                
+                            elseif gcoeff == 1 &&... %dependabilty
+                                    reltype == 2 %coefficient of stability
+                                
+                                %universe score
+                                uni_scor = bp + (txp ./ iix);
+                                
+                                %absolute error
+                                err_term = (oxp ./ nocc) + (err ./ (iix*nocc)) +...
+                                    (bo ./ nocc) + (txo ./ (iix*nocc));
+                                
+                                %dependability estimate
+                                rel = uni_scor ./ (uni_scor + err_term);
+                                
+                                
+                            elseif gcoeff == 2 &&... %generalizability
+                                    reltype == 1 %coefficient of equivalence
+                                
+                                %universe score
+                                uni_scor = bp + (oxp ./ nocc);
+                                
+                                %relative error
+                                err_term = (txp ./ iix) + (err ./ (iix*nocc));
+                                
+                                %generalizability estimate
+                                rel = uni_scor ./ (uni_scor + err_term);
+                                
+                            elseif gcoeff == 2 &&... %generalizability
+                                    reltype == 2 %coefficient of stability
+                                
+                                %universe score
+                                uni_scor = bp + (txp ./ iix);
+                                
+                                %relative error
+                                err_term = (oxp ./ nocc) + (err ./ (iix*nocc));
+                                
+                                %generalizability estimate
+                                rel = uni_scor ./ (uni_scor + err_term);
+                                
+                            end
+                            
+                            ntrls = vpasolve(relcutoff == rel);
+                            
+                            trlcutoff = double(ceil(ntrls));
+                            
+                            [llrel,mrel,ulrel] = era_rel_trt(...
+                                'gcoeff',gcoeff,...
+                                'reltype',reltype,...
+                                'bp',data.g(gloc).e(eloc).sig_id.raw,...
+                                'bo',data.g(gloc).e(eloc).sig_occ.raw,...
+                                'bt',data.g(gloc).e(eloc).sig_trl.raw,...
+                                'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
+                                'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
+                                'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
+                                'err',data.g(gloc).e(eloc).sig_err.raw,...
+                                'obs',trlcutoff,'CI',ciperc);
+                        else
+                            
+                            
+                            [llrel,mrel,ulrel] = era_rel_trt(...
+                                'gcoeff',gcoeff,...
+                                'reltype',reltype,...
+                                'bp',data.g(gloc).e(eloc).sig_id.raw,...
+                                'bo',data.g(gloc).e(eloc).sig_occ.raw,...
+                                'bt',data.g(gloc).e(eloc).sig_trl.raw,...
+                                'txp',data.g(gloc).e(eloc).sig_trlxid.raw,...
+                                'oxp',data.g(gloc).e(eloc).sig_occxid.raw,...
+                                'txo',data.g(gloc).e(eloc).sig_trlxocc.raw,...
+                                'err',data.g(gloc).e(eloc).sig_err.raw,...
+                                'obs',[1 ntrials],'CI',ciperc);
+                            
+                            %find the number of trials to reach cutoff
+                            switch meascutoff
+                                case 1
+                                    trlcutoff = find(llrel >= relcutoff, 1);
+                                case 2
+                                    trlcutoff = find(mrel >= relcutoff, 1);
+                                case 3
+                                    trlcutoff = find(ulrel >= relcutoff, 1);
+                            end
                         end
+                        
                         
                         %if a cutoff was not found
                         if isempty(trlcutoff)
