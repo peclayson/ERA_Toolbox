@@ -524,10 +524,17 @@ switch relanalysis
                 elseif ~isempty(trlcutoff)
                     
                     %store information about cutoffs
-                    relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                    relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
-                    relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
-                    relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+                    if license('test','symbolic_toolbox')
+                        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                        relsummary.group(gloc).event(eloc).rel.m = mrel;
+                        relsummary.group(gloc).event(eloc).rel.ll = llrel;
+                        relsummary.group(gloc).event(eloc).rel.ul = ulrel;
+                    else
+                        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                        relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+                    end
                     
                 end
                 
@@ -1063,13 +1070,18 @@ switch relanalysis
                             trltable.id;
                         
                     elseif ~isempty(trlcutoff) %if a cutoff was found
-                        
-                        %store information about cutoffs
-                        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                        relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
-                        relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
-                        relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
-                        
+                        if license('test','symbolic_toolbox')
+                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                            relsummary.group(gloc).event(eloc).rel.m = mrel;
+                            relsummary.group(gloc).event(eloc).rel.ll = llrel;
+                            relsummary.group(gloc).event(eloc).rel.ul = ulrel;
+                        else
+                            %store information about cutoffs
+                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                            relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+                        end
                         datatrls = REL.data{eloc};
                         
                         trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
@@ -1307,11 +1319,17 @@ switch relanalysis
                         elseif ~isempty(trlcutoff) %if a cutoff was found
                             
                             %store information about cutoffs
-                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                            relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
-                            relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
-                            relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
-                            
+                            if license('test','symbolic_toolbox')
+                                relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                                relsummary.group(gloc).event(eloc).rel.m = mrel;
+                                relsummary.group(gloc).event(eloc).rel.ll = llrel;
+                                relsummary.group(gloc).event(eloc).rel.ul = ulrel;
+                            else
+                                relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                                relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
+                                relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
+                                relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+                            end
                             datatrls = REL.data{eloc};
                             ind = strcmp(datatrls.group,gnames{gloc});
                             datatrls = datatrls(ind,:);
@@ -1810,11 +1828,17 @@ switch relanalysis
                 elseif ~isempty(trlcutoff)
                     
                     %store information about cutoffs
-                    relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                    relsummary.group(gloc).event(eloc).relcutoff.m = mrel(trlcutoff);
-                    relsummary.group(gloc).event(eloc).relcutoff.ll = llrel(trlcutoff);
-                    relsummary.group(gloc).event(eloc).relcutoff.ul = ulrel(trlcutoff);
-                    
+                    if license('test','symbolic_toolbox')
+                        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                        relsummary.group(gloc).event(eloc).relcutoff.m = mrel;
+                        relsummary.group(gloc).event(eloc).relcutoff.ll = llrel;
+                        relsummary.group(gloc).event(eloc).relcutoff.ul = ulrel;
+                    else
+                        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                        relsummary.group(gloc).event(eloc).relcutoff.m = mrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).relcutoff.ll = llrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).relcutoff.ul = ulrel(trlcutoff);
+                    end
                 end
                 
                 %find the participants without enough trials based on the cutoffs
@@ -2197,11 +2221,17 @@ switch relanalysis
                     elseif ~isempty(trlcutoff)
                         
                         %store information about cutoffs
-                        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                        relsummary.group(gloc).event(eloc).relcutoff.m = mrel(trlcutoff);
-                        relsummary.group(gloc).event(eloc).relcutoff.ll = llrel(trlcutoff);
-                        relsummary.group(gloc).event(eloc).relcutoff.ul = ulrel(trlcutoff);
-                        
+                        if license('test','symbolic_toolbox')
+                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                            relsummary.group(gloc).event(eloc).relcutoff.m = mrel;
+                            relsummary.group(gloc).event(eloc).relcutoff.ll = llrel;
+                            relsummary.group(gloc).event(eloc).relcutoff.ul = ulrel;
+                        else
+                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                            relsummary.group(gloc).event(eloc).relcutoff.m = mrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).relcutoff.ll = llrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).relcutoff.ul = ulrel(trlcutoff);
+                        end
                     end
                     
                     %if the trial cutoff was not found in the specified data
@@ -2565,11 +2595,17 @@ switch relanalysis
                     elseif ~isempty(trlcutoff) %if a cutoff was found
                         
                         %store information about cutoffs
-                        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                        relsummary.group(gloc).event(eloc).relcutoff.m = mrel(trlcutoff);
-                        relsummary.group(gloc).event(eloc).relcutoff.ll = llrel(trlcutoff);
-                        relsummary.group(gloc).event(eloc).relcutoff.ul = ulrel(trlcutoff);
-                        
+                        if license('test','symbolic_toolbox')
+                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                            relsummary.group(gloc).event(eloc).relcutoff.m = mrel;
+                            relsummary.group(gloc).event(eloc).relcutoff.ll = llrel;
+                            relsummary.group(gloc).event(eloc).relcutoff.ul = ulrel;
+                        else
+                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                            relsummary.group(gloc).event(eloc).relcutoff.m = mrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).relcutoff.ll = llrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).relcutoff.ul = ulrel(trlcutoff);
+                        end
                         datatrls = REL.data(strcmp(REL.data.event,enames{eloc}),:);
                         
                         trltable = varfun(@length,datatrls,'GroupingVariables',{'id','time'});
@@ -2917,11 +2953,17 @@ switch relanalysis
                         elseif ~isempty(trlcutoff) %if a cutoff was found
                             
                             %store information about cutoffs
-                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                            relsummary.group(gloc).event(eloc).relcutoff.m = mrel(trlcutoff);
-                            relsummary.group(gloc).event(eloc).relcutoff.ll = llrel(trlcutoff);
-                            relsummary.group(gloc).event(eloc).relcutoff.ul = ulrel(trlcutoff);
-                            
+                            if license('test','symbolic_toolbox')
+                                relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                                relsummary.group(gloc).event(eloc).relcutoff.m = mrel;
+                                relsummary.group(gloc).event(eloc).relcutoff.ll = llrel;
+                                relsummary.group(gloc).event(eloc).relcutoff.ul = ulrel;
+                            else
+                                relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                                relsummary.group(gloc).event(eloc).relcutoff.m = mrel(trlcutoff);
+                                relsummary.group(gloc).event(eloc).relcutoff.ll = llrel(trlcutoff);
+                                relsummary.group(gloc).event(eloc).relcutoff.ul = ulrel(trlcutoff);
+                            end
                             datatrls = REL.data(all(...
                                 strcmp(REL.data.group,gnames{gloc}) &...
                                 strcmp(REL.data.event,enames{eloc})...
