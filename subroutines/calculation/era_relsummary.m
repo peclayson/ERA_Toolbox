@@ -111,6 +111,10 @@ function [era_data,relerr] = era_relsummary(varargin)
 %11/12/19 PC
 % fixed inconsistency in relsummary (relcut to relcutoff)
 %
+%4/7/20 PC
+% fixed bug where participants were excluded if they had too few total 
+%  trials from each session combined. It should be the participant needs 
+%  enough trials from each session separately.
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -690,24 +694,39 @@ switch relanalysis
                             'GroupingVariables',{'id'});
                     end
                     
+                    ntrials = max(trltable.GroupCount(:)) + 1000; 
                     
                     %compute dependability
-                    ntrials = max(trltable.GroupCount(:)) + 1000;
-                    [llrel,mrel,ulrel] = era_dep(...
-                        'bp',data.g(gloc).e(eloc).sig_u.raw,...
-                        'wp',data.g(gloc).e(eloc).sig_e.raw,...
-                        'obs',[1 ntrials],'CI',ciperc);
-                    
-                    %find the number of trials to reach cutoff
-                    switch meascutoff
-                        case 1
-                            trlcutoff = find(llrel >= depcutoff, 1);
-                        case 2
-                            trlcutoff = find(mrel >= depcutoff, 1);
-                        case 3
-                            trlcutoff = find(ulrel >= depcutoff, 1);
+                    if license('test','symbolic_toolbox')
+                        syms iix
+                        ntrls = vpasolve(depcutoff == ...
+                            mean(data.g(gloc).e(eloc).sig_u.raw .^2) ./...
+                            (mean(data.g(gloc).e(eloc).sig_u.raw .^2) +...
+                            (mean(data.g(gloc).e(eloc).sig_e.raw .^2) ./...
+                            iix)));
+                        trlcutoff = double(ceil(ntrls));
+                        
+                        [llrel,mrel,ulrel] = era_dep(...
+                            'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                            'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                            'obs',trlcutoff,'CI',ciperc);
+                    else
+                        
+                        [llrel,mrel,ulrel] = era_dep(...
+                            'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                            'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                            'obs',[1 ntrials],'CI',ciperc);
+                        
+                        %find the number of trials to reach cutoff
+                        switch meascutoff
+                            case 1
+                                trlcutoff = find(llrel >= depcutoff, 1);
+                            case 2
+                                trlcutoff = find(mrel >= depcutoff, 1);
+                            case 3
+                                trlcutoff = find(ulrel >= depcutoff, 1);
+                        end
                     end
-                    
                     %see whether the trial cutoff was found. If not store all
                     %values as -1. If it is found, store the dependability
                     %information about the cutoffs.
@@ -722,12 +741,18 @@ switch relanalysis
                         relsummary.group(gloc).event(eloc).rel.ul = -1;
                         
                     elseif ~isempty(trlcutoff)
-                        
-                        %store information about cutoffs
-                        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                        relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
-                        relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
-                        relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+                        if license('test','symbolic_toolbox')
+                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                            relsummary.group(gloc).event(eloc).rel.m = mrel;
+                            relsummary.group(gloc).event(eloc).rel.ll = llrel;
+                            relsummary.group(gloc).event(eloc).rel.ul = ulrel;
+                        else
+                            %store information about cutoffs
+                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                            relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+                        end
                         
                     end
                     
@@ -1529,10 +1554,10 @@ switch relanalysis
                 
                 try
                     %create empty arrays for storing reliability information
-                    trltable = varfun(@length,REL.data{1},'GroupingVariables',{'id'});
+                    trltable = varfun(@length,REL.data{1},'GroupingVariables',{'id','time'});
                 catch
                     %create empty arrays for storing reliability information
-                    trltable = varfun(@length,REL.data,'GroupingVariables',{'id'});
+                    trltable = varfun(@length,REL.data,'GroupingVariables',{'id','time'});
                 end
                 
                 %compute reliabiltiy
@@ -1591,7 +1616,7 @@ switch relanalysis
                         datatrls = REL.data{1};
                     end
                     
-                    trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+                    trltable = varfun(@length,datatrls,'GroupingVariables',{'id','time'});
                     
                     %define all of the data as bad, because the cutoff wasn't even
                     %found
@@ -1610,7 +1635,7 @@ switch relanalysis
                         datatable = REL.data{1};
                     end
                     
-                    badids = table(relsummary.group(gloc).badids);
+                    badids = table(unique(relsummary.group(gloc).badids));
                     
                     %check whether there are not enough good data after applying
                     %reliability threshold and extrapolating
@@ -1622,12 +1647,12 @@ switch relanalysis
                         return;
                     end
                     
-                    trlcdata = innerjoin(datatable, badids,...
-                        'LeftKeys', 'id', 'RightKeys', 'Var1',...
-                        'LeftVariables', {'id' 'meas'});
+                     trlcdata = varfun(@length,datatrls,...
+                        'GroupingVariables',{'id' 'time'});
                     
-                    trltable = varfun(@length,trlcdata,...
-                        'GroupingVariables',{'id'});
+                    trltable = innerjoin(trlcdata, badids,...
+                        'LeftKeys', {'id'}, 'RightKeys', 'Var1',...
+                        'LeftVariables', {'id' 'time' 'GroupCount'});
                     
                     trlmean = mean(trltable.GroupCount);
                     trlmed = median(trltable.GroupCount);
@@ -1672,13 +1697,21 @@ switch relanalysis
                     datatrls = REL.data;
                     
                     try
-                        trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+                        trltable = varfun(@length,datatrls,'GroupingVariables',{'id','time'});
                     catch
-                        trltable = varfun(@length,datatrls{:},'GroupingVariables',{'id'});
+                        trltable = varfun(@length,datatrls{:},'GroupingVariables',{'id','time'});
                     end
                     
                     ind2include = trltable.GroupCount >= trlcutoff;
                     ind2exclude = trltable.GroupCount < trlcutoff;
+                    
+                    prelim_bad = unique(trltable.id(ind2exclude));
+                    
+                    for jpbad = 1:length(prelim_bad)
+                        ind_id = find(strcmp(trltable.id,prelim_bad(jpbad)));
+                        ind2include(ind_id) = 0;
+                        ind2exclude(ind_id) = 1;
+                    end
                     
                     %store the good ids and the bad ids (ids that don't meet the
                     %cutoff)
@@ -1698,14 +1731,14 @@ switch relanalysis
                         datatable = REL.data{1};
                     end
                     
-                    goodids = table(relsummary.group(gloc).goodids);
+                    goodids = table(unique(relsummary.group(gloc).goodids));
                     
-                    trlcdata = innerjoin(datatable, goodids,...
-                        'LeftKeys', 'id', 'RightKeys', 'Var1',...
-                        'LeftVariables', {'id' 'meas'});
+                    trlcdata = varfun(@length,datatable,...
+                        'GroupingVariables',{'id' 'time'});
                     
-                    trltable = varfun(@length,trlcdata,...
-                        'GroupingVariables',{'id'});
+                    trltable = innerjoin(trlcdata, goodids,...
+                        'LeftKeys', {'id'}, 'RightKeys', 'Var1',...
+                        'LeftVariables', {'id' 'time' 'GroupCount'});
                     
                     trlmean = mean(trltable.GroupCount);
                     trlmed = median(trltable.GroupCount);
@@ -1799,11 +1832,11 @@ switch relanalysis
                     try
                         %create empty arrays for storing reliability information
                         trltable = varfun(@length,REL.data{1},...
-                            'GroupingVariables',{'id'});
+                            'GroupingVariables',{'id','time'});
                     catch
                         %create empty arrays for storing reliability information
                         trltable = varfun(@length,REL.data,...
-                            'GroupingVariables',{'id'});
+                            'GroupingVariables',{'id','time'});
                     end
                     
                     
@@ -1868,7 +1901,7 @@ switch relanalysis
                         datatrls = datatrls(ind,:);
                         
                         trltable = varfun(@length,datatrls,...
-                            'GroupingVariables',{'id'});
+                            'GroupingVariables',{'id' 'time'});
                         
                         relsummary.group(gloc).event(eloc).eventgoodids = 'none';
                         relsummary.group(gloc).event(eloc).eventbadids =...
@@ -1888,10 +1921,18 @@ switch relanalysis
                         datatrls = datatrls(ind,:);
                         
                         trltable = varfun(@length,datatrls,...
-                            'GroupingVariables',{'id'});
+                            'GroupingVariables',{'id' 'time'});
                         
                         ind2include = trltable.GroupCount >= trlcutoff;
                         ind2exclude = trltable.GroupCount < trlcutoff;
+                        
+                        prelim_bad = unique(trltable.id(ind2exclude));
+                        
+                        for jpbad = 1:length(prelim_bad)
+                            ind_id = find(strcmp(trltable.id,prelim_bad(jpbad)));
+                            ind2include(ind_id) = 0;
+                            ind2exclude(ind_id) = 1;
+                        end
                         
                         relsummary.group(gloc).event(eloc).eventgoodids =...
                             trltable.id(ind2include);
@@ -1932,9 +1973,9 @@ switch relanalysis
                     %only factor in the trial counts from those with good data
                     
                     if ~strcmp(relsummary.group(gloc).goodids,'none')
-                        goodids = table(relsummary.group(gloc).goodids);
+                        goodids = table(unique(relsummary.group(gloc).goodids));
                     elseif strcmp(relsummary.group(gloc).goodids,'none')
-                        goodids = table(relsummary.group(gloc).badids);
+                        goodids = table(unique(relsummary.group(gloc).badids));
                     end
                     
                     %check whether there are not enough good data after applying
@@ -1947,12 +1988,12 @@ switch relanalysis
                         return;
                     end
                     
-                    trlcdata = innerjoin(datasubset, goodids,...
-                        'LeftKeys', 'id', 'RightKeys', 'Var1',...
-                        'LeftVariables', {'id' 'meas'});
+                     trlcdata = varfun(@length,datasubset,...
+                        'GroupingVariables',{'id' 'time'});
                     
-                    trltable = varfun(@length,trlcdata,...
-                        'GroupingVariables',{'id'});
+                    trltable = innerjoin(trlcdata, goodids,...
+                        'LeftKeys', {'id'}, 'RightKeys', 'Var1',...
+                        'LeftVariables', {'id' 'time' 'GroupCount'});
                     
                     trlmean = mean(trltable.GroupCount);
                     trlmed = median(trltable.GroupCount);
@@ -2053,7 +2094,7 @@ switch relanalysis
                     %create empty arrays for storing reliability information
                     trltable = varfun(@length,...
                         REL.data(strcmp(REL.data.event,enames{eloc}),:),...
-                        'GroupingVariables',{'id'});
+                        'GroupingVariables',{'id','time'});
                     
                     
                     %compute reliabiltiy
@@ -2109,10 +2150,18 @@ switch relanalysis
                         
                         datatrls = REL.data(strcmp(REL.data.event,enames{eloc}),:);
                         
-                        trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+                        trltable = varfun(@length,datatrls,'GroupingVariables',{'id','time'});
                         
                         ind2include = trltable.GroupCount >= trlcutoff;
                         ind2exclude = trltable.GroupCount < trlcutoff;
+                        
+                        prelim_bad = unique(trltable.id(ind2exclude));
+                        
+                        for jpbad = 1:length(prelim_bad)
+                            ind_id = find(strcmp(trltable.id,prelim_bad(jpbad)));
+                            ind2include(ind_id) = 0;
+                            ind2exclude(ind_id) = 1;
+                        end
                         
                         %store which participants had enough trials to meet cutoff
                         relsummary.group(gloc).event(eloc).eventgoodids =...
@@ -2163,9 +2212,9 @@ switch relanalysis
                     datatable = REL.data(strcmp(REL.data.event,enames{eloc}),:);
                     
                     if ~strcmp(relsummary.group(gloc).goodids,'none')
-                        goodids = table(relsummary.group(gloc).goodids);
+                        goodids = table(unique(relsummary.group(gloc).goodids));
                     else
-                        goodids = table(relsummary.group(gloc).badids);
+                        goodids = table(unique(relsummary.group(gloc).badids));
                     end
                     
                     %check whether there are not enough good data after applying
@@ -2178,12 +2227,12 @@ switch relanalysis
                         return;
                     end
                     
-                    trlcdata = innerjoin(datatable, goodids,...
-                        'LeftKeys', 'id', 'RightKeys', 'Var1',...
-                        'LeftVariables', {'id' 'meas'});
+                    trlcdata = varfun(@length,datatable,...
+                        'GroupingVariables',{'id' 'time'});
                     
-                    trltable = varfun(@length,trlcdata,...
-                        'GroupingVariables',{'id'});
+                    trltable = innerjoin(trlcdata, goodids,...
+                        'LeftKeys', {'id'}, 'RightKeys', 'Var1',...
+                        'LeftVariables', {'id' 'time' 'GroupCount'});
                     
                     trlmean = mean(trltable.GroupCount);
                     trlmed = median(trltable.GroupCount);
@@ -2283,7 +2332,7 @@ switch relanalysis
                             strcmp(REL.data.group,gnames{gloc}) &... 
                             strcmp(REL.data.event,enames{eloc})...
                             ,2),:),...
-                            'GroupingVariables',{'id'});
+                            'GroupingVariables',{'id','time'});
                         
                         %compute reliability
                         ntrials = max(trltable.GroupCount(:)) + 1000;
@@ -2328,7 +2377,7 @@ switch relanalysis
                             ind = strcmp(datatrls.group,gnames{gloc});
                             datatrls = datatrls(ind,:);
                             
-                            trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+                            trltable = varfun(@length,datatrls,'GroupingVariables',{'id','time'});
                             
                             relsummary.group(gloc).event(eloc).eventgoodids =...
                                 'none';
@@ -2352,10 +2401,18 @@ switch relanalysis
                             datatrls = datatrls(ind,:);
                             
                             %find ids with enough trials based on cutoff
-                            trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+                            trltable = varfun(@length,datatrls,'GroupingVariables',{'id','time'});
                             
                             ind2include = trltable.GroupCount >= trlcutoff;
                             ind2exclude = trltable.GroupCount < trlcutoff;
+                            
+                            prelim_bad = unique(trltable.id(ind2exclude));
+                            
+                            for jpbad = 1:length(prelim_bad)
+                                ind_id = find(strcmp(trltable.id,prelim_bad(jpbad)));
+                                ind2include(ind_id) = 0;
+                                ind2exclude(ind_id) = 1;
+                            end
                             
                             relsummary.group(gloc).event(eloc).eventgoodids =...
                                 trltable.id(ind2include);
@@ -2436,12 +2493,12 @@ switch relanalysis
                             return;
                         end
                         
-                        trlcdata = innerjoin(datasubset, goodids,...
-                            'LeftKeys', 'id', 'RightKeys', 'Var1',...
-                            'LeftVariables', {'id' 'meas'});
+                        trlcdata = varfun(@length,datasubset,...
+                            'GroupingVariables',{'id' 'time'});
                         
-                        trltable = varfun(@length,trlcdata,...
-                            'GroupingVariables',{'id'});
+                        trltable = innerjoin(trlcdata, goodids,...
+                            'LeftKeys', {'id'}, 'RightKeys', 'Var1',...
+                            'LeftVariables', {'id' 'time' 'GroupCount'});
                         
                         trlmean = mean(trltable.GroupCount);
                         trlmed = median(trltable.GroupCount);
