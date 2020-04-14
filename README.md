@@ -12,6 +12,10 @@ Clayson, P. E., & Miller, G. A. (2017). [ERP Reliability Analysis (ERA) Toolbox:
 
 &nbsp;
 
+Clayson, P. E., Carbine, K. A., Baldwin, S. A., Olsen, J. A., & Larson, M. J. (under review). Using generalizability theory and the ERP Reliability Analysis (ERA) Toolbox for assessing test-retest reliability of ERP scores: Algorithms, Framework, and Implementation.
+
+&nbsp;
+
 ***
 
 Copyright (C) 2016-2020 Peter E. Clayson
