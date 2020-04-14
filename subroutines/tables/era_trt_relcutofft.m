@@ -1,18 +1,18 @@
-function vartable = era_variancet(varargin)
-%Table of ICCs and between- and within-person standard deviations
+function inctrltable = era_trt_relcutofft(varargin)
+%Display a table with the information for the cutoffs stratified by group
+% and condition
 %
-%era_depvartable('era_data',era_data,'gui',1);
+%era_depcutofft('era_data',era_data,'gui',1);
 %
-%Last Modified 1/19/17
+%Last Modified 8/2/19
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. 
 % gui - 0 for off, 1 for on
 %
 %Outputs
-% vartable - table displaying information for ICCs and between- and
-%  within-person standard deviations
-% a gui will also be shown if desired
+% inctrltable - table displaying the trial cutoff information
+%  a gui will also be shown if desired
 
 % Copyright (C) 2016-2019 Peter E. Clayson
 % 
@@ -32,11 +32,17 @@ function vartable = era_variancet(varargin)
 %
 
 %History 
-% by Peter Clayson (7/24/16)
+% by Peter Clayson (8/2/19)
 % peter.clayson@gmail.com
 %
-%1/19/17 PC
-% updated copyright
+%8/21/19 PC
+% changes associated with changes to relcut rather than rel field in
+%  era_relsummary
+%
+%11/12/19 PC
+% fixed inconsistency in era_relsummary field (relcut to relcutoff)
+%
+
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -114,12 +120,10 @@ elseif ngroups > 1 && nevents > 1
     analysis = 4;
 end
 
-
 %create placeholders for displaying data in tables in guis
 label = {};
-icc = {};
-betsd = {};
-witsd = {};
+trlcutoff = {};
+rel = {};
 
 %put data together to display in tables
 for gloc=1:ngroups
@@ -137,90 +141,96 @@ for gloc=1:ngroups
                 label{end+1} = [gnames{gloc} ' - ' enames{eloc}];
         end
         
-        %create a string with the icc point estimate and credible interval
-        icc{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
-            era_data.relsummary.group(gloc).event(eloc).icc.m,...
-            era_data.relsummary.group(gloc).event(eloc).icc.ll,...
-            era_data.relsummary.group(gloc).event(eloc).icc.ul);
+        %pull the trial cutoff
+        trlcutoff{end+1} = era_data.relsummary.group(gloc).event(eloc).trlcutoff;
         
-        %create a string with the between-person standard devation point 
-        %estimate and credible interval
-        betsd{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
-            era_data.relsummary.group(gloc).event(eloc).betsd.m,...
-            era_data.relsummary.group(gloc).event(eloc).betsd.ll,...
-            era_data.relsummary.group(gloc).event(eloc).betsd.ul);
-        
-        %create a string with the within-person standard devation point 
-        %estimate and credible interval
-        witsd{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
-            era_data.relsummary.group(gloc).event(eloc).witsd.m,...
-            era_data.relsummary.group(gloc).event(eloc).witsd.ll,...
-            era_data.relsummary.group(gloc).event(eloc).witsd.ul);
+        %create a string with the dependability point estimate and credible
+        %interval for cutoff data
+        rel{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
+            era_data.relsummary.group(gloc).event(eloc).relcutoff.m,...
+            era_data.relsummary.group(gloc).event(eloc).relcutoff.ll,...
+            era_data.relsummary.group(gloc).event(eloc).relcutoff.ul);
         
     end 
 end
 
-%create table for displaying between-person and within-person standard
-%deviation information
-vartable = table(label',betsd',witsd',icc');
+%create table to display the cutoff information with its associated
+%dependability info
+inctrltable = table(label',trlcutoff',rel');
 
-vartable.Properties.VariableNames = {'Label',...
-    'Between_StdDev','Within_StdDev','ICC'};
+switch era_data.relsummary.gcoeff_name
+    case 'dep'
+        rel_name = 'Dependability';
+    case 'gen'
+        rel_name = 'Generalizability';
+end
 
+inctrltable.Properties.VariableNames = {'Label','Trial_Cutoff',...
+    rel_name};
 
+%only display gui if desired
+if gui == 1
 
-%define parameters for figure size
-figwidth = 674;
-figheight = 400;
+    %define parameters for figure size
+    figwidth = 500;
+    figheight = 400;
 
-%define space between rows and first row location
-rowspace = 25;
-row = figheight - rowspace*2;
-name = ['Point and 95% Interval Estimates for the Between-'...
-    'and Within-Person Standard Deviations and ICCs'];
+    %define space between rows and first row location
+    rowspace = 25;
+    row = figheight - rowspace*1.6;
 
-%create gui for standard-deviation table
-var_gui= figure('unit','pix',...
-  'position',[1250 600 figwidth figheight],...
-  'menub','no',...
-  'name',name,...
-  'numbertitle','off',...
-  'resize','off');
+    %create a gui to display the cutoff information table
+    era_inctrl= figure('unit','pix',...
+      'position',[1150 700 figwidth figheight],...
+      'menub','no',...
+      'name',...
+      ['Results of Increasing Trials the Number of Trials on '...
+      rel_name],...
+      'numbertitle','off',...
+      'resize','off');
 
-%Print the name of the loaded dataset
-uicontrol(var_gui,'Style','text','fontsize',16,...
-    'HorizontalAlignment','center',...
-    'String',...
-    'Between- and Within-Person Standard Deviations and ICCs',...
-    'Position',[0 row figwidth 25]);          
+    %Add table title
+    uicontrol(era_inctrl,'Style','text','fontsize',16,...
+        'HorizontalAlignment','center',...
+        'String',...
+        sprintf('%s Analyses, %0.2f Cutoff\n',...
+        rel_name,...
+        era_data.relsummary.relcutoff),...
+        'Position',[0 row figwidth 20]);   
 
-%Start a table
-t = uitable('Parent',var_gui,'Position',...
-    [25 100 figwidth-50 figheight-175],...
-    'Data',table2cell(vartable));
-set(t,'ColumnName',{'Label' 'Between Std Dev'...
-    'Within Std Dev' 'ICC'});
-set(t,'ColumnWidth',{200 140 140 140});
-set(t,'RowName',[]);
+    uicontrol(era_inctrl,'Style','text','fontsize',16,...
+        'HorizontalAlignment','center',...
+        'String',...
+        sprintf('Cutoff Used the %s',...
+        era_data.relsummary.meascutoff),...
+        'Position',[0 row-20 figwidth 20]); 
 
-%Create a save button that will take save the table
-uicontrol(var_gui,'Style','push','fontsize',14,...
-    'HorizontalAlignment','center',...
-    'String','Save Table',...
-    'Position', [figwidth/8 25 figwidth/4 50],...
-    'Callback',{@era_savevartable,era_data,vartable}); 
+    %Start a table
+    t = uitable('Parent',era_inctrl,'Position',...
+        [25 100 figwidth-50 figheight-175],...
+        'Data',table2cell(inctrltable));
+    set(t,'ColumnName',{'Label' 'Trial Cutoff' rel_name});
+    set(t,'ColumnWidth',{200 'auto' 170});
+    set(t,'RowName',[]);
+
+    %Create a save button that will take save the table
+    uicontrol(era_inctrl,'Style','push','fontsize',14,...
+        'HorizontalAlignment','center',...
+        'String','Save Table',...
+        'Position', [figwidth/8 25 figwidth/4 50],...
+        'Callback',{@era_saveinctrltable,era_data,inctrltable}); 
+end
 
 end
 
 
-
-function era_savevartable(varargin)
+function era_saveinctrltable(varargin)
 %if the user pressed the button to save the table with the information
-%about between- and within-person standard deviations
+%about the cutoffs
 
 %parse inputs
 era_data = varargin{3};
-vartable = varargin{4};
+incltrltable = varargin{4};
 
 %ask the user where the file should be saved
 if ~ismac %macs can't use xlswrite
@@ -237,6 +247,13 @@ end
 
 [~,~,ext] = fileparts(fullfile(savepath,savename));
 
+switch era_data.relsummary.gcoeff_name
+    case 'dep'
+        rel_name = 'Dependability';
+    case 'gen'
+        rel_name = 'Generalizability';
+end
+
 %save as either excel or csv file
 if strcmp(ext,'.xlsx')
     
@@ -244,13 +261,18 @@ if strcmp(ext,'.xlsx')
     filehead{end+1} = sprintf('ERA Toolbox v%s',era_data.ver);
     filehead{end+1} = '';
     filehead{end+1} = sprintf('Dataset: %s',era_data.rel.filename);
+    filehead{end+1} = sprintf('%s Cutoff: %0.2f',...
+        rel_name,...
+        era_data.relsummary.depcutoff);
+    filehead{end+1} = sprintf('Cutoff Threshold used the %s',...
+        era_data.relsummary.meascutoff);
     filehead{end+1} = sprintf('Chains: %d, Iterations: %d',...
         era_data.rel.nchains,era_data.rel.niter);
     filehead{end+1}='';
     filehead{end+1}='';
     
     xlswrite(fullfile(savepath,savename),filehead);
-    writetable(vartable,fullfile(savepath,savename),...
+    writetable(incltrltable,fullfile(savepath,savename),...
         'Range',strcat('A',num2str(length(filehead))));
     
 elseif strcmp(ext,'.csv')
@@ -261,20 +283,23 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,'ERA Toolbox v%s\n',era_data.ver);
     fprintf(fid,' \n');
     fprintf(fid,'Dataset: %s\n',era_data.rel.filename);
+    fprintf(fid,'%s Cutoff: %0.2f\n',...
+        rel_name,...
+        era_data.relsummary.depcutoff);
+    fprintf(fid,'Cutoff Threshold used the %s\n',...
+        era_data.relsummary.meascutoff);
     fprintf(fid,'Chains: %d, Iterations: %d',...
         era_data.rel.nchains,era_data.rel.niter);
     fprintf(fid,' \n');
     fprintf(fid,' \n');
     
-    fprintf(fid,'%s', strcat('Label,Beteen-Person Std Dev',...
-        ',Within-Person Std Dev,ICC'));
+    fprintf(fid,'%s', strcat('Label,Trial Cutoff,Dependability'));
     fprintf(fid,' \n');
     
-    for i = 1:height(vartable)
-         formatspec = '%s,%s,%s,%s\n';
-         fprintf(fid,formatspec,char(vartable{i,1}),...
-             char(vartable{i,2}), char(vartable{i,3}),...
-             char(vartable{i,4}));
+    for i = 1:height(incltrltable)
+         formatspec = '%s,%d,%s\n';
+         fprintf(fid,formatspec,char(incltrltable{i,1}),...
+             cell2mat(incltrltable{i,2}),char(incltrltable{i,3}));
     end
     
     fclose(fid);
@@ -283,3 +308,4 @@ end
 
 
 end
+

@@ -46,6 +46,9 @@ function ptintplot = era_ptintervalplot(varargin)
 %
 %1/19/17 PC
 % updated copyright
+%
+%8/2/19 PCA
+% fixed typo
 
 
 %somersault through inputs
@@ -73,7 +76,7 @@ if ~isempty(varargin)
             'See help era_depvtrialsplot for more information \n'));
     end
     
-    %check if depline was specified. 
+    %check if stat was specified. 
     %If it is not found, set as default: 2.
     ind = find(strcmpi('stat',varargin),1);
     if ~isempty(ind)
@@ -81,7 +84,7 @@ if ~isempty(varargin)
         %make sure depline is 1, 2, or 3
         if ~strcmpi('ICC',stat) && ~strcmpi('Bet',stat) &&...
                 ~strcmpi('Wit',stat)
-            error('varargin:depline',... %Error code and associated error
+            error('varargin:stat',... %Error code and associated error
                 strcat('WARNING: stat not properly specified \n\n',... 
                 'Please input the stat for the plot\n',...
                 'ICC - to plot ICC estimates\n',...

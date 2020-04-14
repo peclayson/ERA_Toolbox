@@ -5,7 +5,7 @@ function era_updateera
 %
 %era_updateera
 %
-%Last Updated 10/20/17
+%Last Updated 6/17/17
 %
 %Required Inputs:
 % No inputs are required.

@@ -1,23 +1,20 @@
-function era_startview(varargin)
-%Prepares the data for viewing and lets user specify which tables and
-%figures to present
+function era_startview_trt(varargin)
+%Prepares the data from multiple occasions for viewing and lets user 
+% specify which tables and figures to present
 %
-%era_startview('file','/Users/REL/SomeERAData.mat')
+%era_startview_trt('era_prefs',era_prefs,'era_data',era_data)
 %
-%Last Updated 6/22/18
+%Last Updated 6/21/19
 %
-%Required Inputs:
-% No inputs are required.
+%Required Input
+% era_data - ERA Toolbox data structure array
+% era_prefs - ERA Toolbox preferences structure array
 %
-%Optional Inputs:
-% file - file of data processed using era_computerel. This optional input
-%  is used by era_startproc to provide an easy transition from processing
-%  to viewing without the user having to re-select a file.
-%
-%Output:
-% No data are outputted to the Matlab command window. However, the user
-%  will have the option of saving various figures and plots that will be 
-%  created by era_relfigures, which is executed by this gui 
+%Output
+% No variables will be outputted to the Matlab workspace. Based on the
+%  inputs from this gui, era_relfigures will be executed to display various
+%  figures and tables (for more information about the tables and figures
+%  see the user manual for the ERA toolbox)
 
 % Copyright (C) 2016-2019 Peter E. Clayson
 % 
@@ -37,117 +34,9 @@ function era_startview(varargin)
 %
 
 %History 
-% by Peter Clayson (4/18/16)
+% by Peter Clayson (6/21/19)
 % peter.clayson@gmail.com
 %
-%4/20/16 PC
-% changes consistent with ERA Toolbox file format (extension: .erat)
-%
-%4/27/16 PC
-% add check to ensure that dependability estimate provided by user is
-%  numeric and between 0 and 1
-%
-%7/20/16 PC
-% consolidate option for requesting tables for ICCs and stddevs
-%
-%7/21/16 PC
-% changes associated with adding era_prefs and era_data
-%
-%7/24/16 PC
-% use era_data as input into era_relfigures
-%
-%7/26/16 PC
-% added check to make sure that at least 2 trials were requested for the
-%  number of trials and dependability plot
-%
-%7/27/16 PC
-% got rid of some code that was no longer used
-%
-%9/18/16 PC
-% added tooltips (text that appears when you hover over a gui
-%  property)
-% changed the text that is displayed in the gui to be more concise, since
-%  additional explanation is provided in tooltip
-% added a button to close all open figures other than Specify Inputs gui
-%
-%1/19/17 PC
-% updated copyright
-%
-%8/16/17 Pc
-% fixed bug with era_startview not working correctly unless 
-%  era_prefs.guis.fsize had already been defined
-%
-%8/23/17 PC
-% added a button for loading a new file from the gui
-%
-%6/22/18 PC
-% added which measurement was processed
-
-%somersault through varargin inputs to check for era_prefs and era_data
-[era_prefs, era_data] = era_findprefsdata(varargin);
-
-%see if the file for the figures and tables has been specified in
-%varargin
-if ~isempty(varargin) && (isempty(era_data) && isempty(era_prefs))
-    
-    %check if data file has been provided
-    ind = find(strcmp('file',varargin),1);
-    if ~isempty(ind)
-        file = varargin{ind+1};
-        [pathpart,filepart] = fileparts(file);
-    end
-
-end %if ~isempty(varargin)
-
-%check if era_gui is open. If the user executes era_startproc and skips
-%era_start then there will be no gui to close.
-era_gui = findobj('Tag','era_gui');
-if ~isempty(era_gui)
-    close(era_gui);
-end
-
-%if the file was not specified, prompt the user to indicate where the file
-%is located.
-if ~exist('file','var') && isempty(era_data)
-    [filepart, pathpart] = uigetfile({'*.erat',...
-        'ERA Toolbox files (*.erat)'},'Data');
-
-    if filepart == 0 
-        errordlg('No file selected','File Error');
-        era_start;
-        return;
-    end
-
-    fprintf('\n\nLoading Data...\n\n');
-    
-    %load data
-    load(fullfile(pathpart,filepart),'-mat');
-   
-end
-
-%if era_prefs does not exist, load the default preferences. If this window
-%was not gotten to using era_start, era_prefs will need to be defined
-if isempty(era_prefs)
-    era_prefs = era_defaults;
-    era_prefs.ver = era_defineversion;
-end
-
-%create a gui to allow the user to specify what aspects of the data will be
-%viewed
-era_startview_fig('era_prefs',era_prefs,'era_data',era_data);
-
-end
-
-function era_startview_fig(varargin)
-%Input
-% era_data - ERA Toolbox data structure array
-% era_prefs - ERA Toolbox preferences structure array
-%
-%Output
-% No variables will be outputted to the Matlab workspace. Based on the
-%  inputs from this gui, era_relfigures will be executed to display various
-%  figures and tables (for more information about the tables and figures
-%  see the user manual for the ERA toolbox)
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -160,7 +49,7 @@ end
 
 %define parameters for figure position
 figwidth = 550;
-figheight = 550;
+figheight = 650;
 
 %define space between rows and first row location
 rowspace = 35;
@@ -193,7 +82,7 @@ uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
 %next row
 row = row - (rowspace*.45);
 
-%Print the name of the loaded dataset
+%Print the name of the measurement analyzed
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String',['Measurement:  ' era_data.proc.measheader],...
@@ -203,24 +92,73 @@ uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
 %next row
 row = row - (rowspace*1.4);
 
-str = sprintf(['The dependability threshold to use for retaining data\n'...
+str = sprintf(['The reliability threshold to use for retaining data\n'...
     'Participants that do not have enough trials to meet this reliability\n'...
     'threshold will be recommended for exclusion']);
 
-%Print the text for dependability cutoff with a box for the user to specify
+%Print the text for reliability cutoff with a box for the user to specify
 %the input
-uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
+uicontrol(era_gui,...
+    'Style','text',...
+    'fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
-    'String','Dependability Cutoff:',...
+    'String','Reliability Cutoff:',...
     'Tooltip',str,...
     'Position', [lcol row figwidth/4 25]);  
 
-inputs.h(1) = uicontrol(era_gui,'Style','edit','fontsize',era_prefs.guis.fsize,...
-    'String',era_prefs.view.depvalue,...
+inputs.relcutoff = uicontrol(era_gui,...
+    'Style','edit',...
+    'fontsize',era_prefs.guis.fsize,...
+    'String',era_prefs.view.relvalue,...
     'Position', [rcol+5 row+6 figwidth/4 25]);  
 
 %next row
+row = row - rowspace-5;
+
+str = sprintf(['Choose dependability to use the absolute error variance\n'...
+    'Choose generalizability to use the relative error variance\n'...
+    'See user manual for more information about coefficients']);
+
+%Provide the user with the option to choose between dependability and
+%generalizability coefficients
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
+    'HorizontalAlignment','left',...
+    'String','Type of G-Theory Coefficient:',...
+    'Tooltip',str,...
+    'Position', [lcol row figwidth/4 25]);  
+
+inputs.depgen = uicontrol(era_gui,...
+    'Style','pop',...
+    'fontsize',era_prefs.guis.fsize,...
+    'String',{'Dependability' 'Generalizability'},...
+    'Value',era_prefs.view.gcoeff,...
+    'Position', [rcol row figwidth/4 25]);  
+
+%next row
 row = row - rowspace-10;
+
+str = sprintf(['For internal consistency, use a coefficient of equivalence\n'...
+    'For test-retest reliability, use a coefficient of stability\n'...
+    'See user manual for more information about coefficients']);
+
+%Provide the user with the option to choose between coefficients of 
+%equivalence and coefficients of stability
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
+    'HorizontalAlignment','left',...
+    'String','Type of Reliability Coefficient:',...
+    'Tooltip',str,...
+    'Position', [lcol row figwidth/4 25]);  
+
+inputs.equistab = uicontrol(era_gui,...
+    'Style','pop',...
+    'fontsize',era_prefs.guis.fsize,...
+    'String',{'Equivalence' 'Stability'},...
+    'Value',era_prefs.view.reltype,...
+    'Position', [rcol row figwidth/4 25]);  
+
+%next row
+row = row - rowspace-10;
+
 
 %indicate that a checked box means yes
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
@@ -238,17 +176,17 @@ rcol = (figwidth/4)*3;
 
 chckstr = 'Checked = Yes; Unchecked = No';
 str = sprintf(['Display a plot that shows the impact of the number of\n'...
-    'trials retained for averaging on dependability estimates']);
+    'trials retained for averaging on reliability estimates']);
 
-%dependability with increasing trials
+%reliability with increasing trials
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
-    'String','Plot: Number of Trials v Dependability',...
+    'String','Plot: Number of Trials v Reliability',...
     'Tooltip',str,...
     'Position', [lcol row figwidth/2 40]);  
 
-inputs.h(2) = uicontrol(era_gui,'Style','checkbox',...
-    'Value',era_prefs.view.plotdep,...
+inputs.plotrel = uicontrol(era_gui,'Style','checkbox',...
+    'Value',era_prefs.view.plotrel,...
     'Tooltip',chckstr,...
     'Position', [rcol row+20 figwidth/2 25]); 
 
@@ -262,7 +200,7 @@ uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'Tooltip','Display a plot of the intraclass correlation coefficients',...
     'Position', [lcol row figwidth/2 40]);  
 
-inputs.h(3) = uicontrol(era_gui,'Style','checkbox',...
+inputs.ploticc = uicontrol(era_gui,'Style','checkbox',...
     'Value',era_prefs.view.ploticc,...
     'Tooltip',chckstr,...
     'Position', [rcol row+20 figwidth/2 25]); 
@@ -270,13 +208,14 @@ inputs.h(3) = uicontrol(era_gui,'Style','checkbox',...
 %next row
 row = row - rowspace;
 
+%plot between-person standard deviations
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String','Plot: Between-Person Standard Deviations',...
     'Tooltip','Display a plot showing the between-person standard deviations',...
     'Position', [lcol row figwidth/2 40]);  
 
-inputs.h(7) = uicontrol(era_gui,'Style','checkbox',...
+inputs.plotbetsd = uicontrol(era_gui,'Style','checkbox',...
     'Value',era_prefs.view.showstddevf,...
     'Tooltip',chckstr,...
     'Position', [rcol row+20 figwidth/2 25]);
@@ -285,17 +224,17 @@ inputs.h(7) = uicontrol(era_gui,'Style','checkbox',...
 row = row - rowspace;
 
 str = sprintf(['Display a table showing the number of trials needed\n',...
-    'to obtain the specified dependability threshold and the\n',...
-    'dependability point estimate and credible interval for the trial cutoff']);
+    'to obtain the specified reliability threshold and the\n',...
+    'reliability point estimate and credible interval for the trial cutoff']);
     
-%dependability cutoff table
+%reliability cutoff table
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
-    'String','Table: Trial Cutoffs for Specified Dependability Threshold',...
+    'String','Table: Trial Cutoffs for Specified Reliability Threshold',...
     'Tooltip',str,...
     'Position', [lcol row figwidth/2 40]);  
 
-inputs.h(4) = uicontrol(era_gui,'Style','checkbox',...
+inputs.relcutt = uicontrol(era_gui,'Style','checkbox',...
     'Value',era_prefs.view.inctrltable,...
     'Tooltip',chckstr,...
     'Position', [rcol row+20 figwidth/2 25]); 
@@ -304,20 +243,20 @@ inputs.h(4) = uicontrol(era_gui,'Style','checkbox',...
 row = row - rowspace;
 
 str = sprintf(['Display a table that summarizes the number of participants\n'...
-    'with data that satisfy the dependability threshold, the number of\n'...
-    'participants without data the satisfy the dependability threshold\n',...
-    'the overall dependability point estimate and credible interval,\n'...
+    'with data that satisfy the reliability threshold, the number of\n'...
+    'participants without data the satisfy the reliability threshold\n',...
+    'the overall reliability point estimate and credible interval,\n'...
     'and the trial summary information (min, mean, median, max)']);
 
 
-%overall dependability table
+%overall reliability table
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
-    'String','Table: Overall Dependability and Summary Information',...
+    'String','Table: Overall Reliability and Summary Information',...
     'Tooltip',str,...
     'Position', [lcol row figwidth/2 40]);  
 
-inputs.h(5) = uicontrol(era_gui,'Style','checkbox',...
+inputs.overallt = uicontrol(era_gui,'Style','checkbox',...
     'Value',era_prefs.view.overalltable,...
     'Tooltip',chckstr,...
     'Position', [rcol row+20 figwidth/2 25]); 
@@ -335,7 +274,7 @@ uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'Tooltip',str,...
     'Position', [lcol row figwidth/2 40]);  
 
-inputs.h(6) = uicontrol(era_gui,'Style','checkbox',...
+inputs.sdt = uicontrol(era_gui,'Style','checkbox',...
     'Value',era_prefs.view.showstddevt,...
     'Tooltip',chckstr,...
     'Position', [rcol row+20 figwidth/2 25]);
@@ -402,28 +341,7 @@ function era_view_loadnewfile(varargin)
 
 %close gui
 close(varargin{3});
-
-[filepart, pathpart] = uigetfile({'*.erat',...
-    'ERA Toolbox files (*.erat)'},'Data');
-
-if filepart == 0 
-    errordlg('No file selected','File Error');
-    era_start;
-    return;
-end
-
-fprintf('\n\nLoading Data...\n\n');
-
-%load data
-load(fullfile(pathpart,filepart),'-mat');
-
-%era_prefs needs to be redefined
-era_prefs = era_defaults;
-era_prefs.ver = era_defineversion;
-
-%create a gui to allow the user to specify what aspects of the data will be
-%viewed
-era_startview_fig('era_prefs',era_prefs,'era_data',era_data);
+era_startview;
 
 end
 
@@ -458,21 +376,23 @@ function era_svh(varargin)
 ind = find(strcmp('inputs',varargin),1);
 inputs = varargin{ind+1};
 
-%check whether the dependability estimate provided is numeric and between 0
+%check whether the reliability estimate provided is numeric and between 0
 %and 1
-depeval = depcheck(str2double(inputs.h(1).String));
+releval = relcheck(str2double(inputs.relcutoff.String));
 
-era_prefs.view.depvalue = str2double(inputs.h(1).String);
-era_prefs.view.plotdep = inputs.h(2).Value;
-era_prefs.view.ploticc = inputs.h(3).Value;
-era_prefs.view.inctrltable = inputs.h(4).Value;
-era_prefs.view.overalltable = inputs.h(5).Value;
-era_prefs.view.showstddevt = inputs.h(6).Value;
-era_prefs.view.showstddevf = inputs.h(7).Value;
+era_prefs.view.relvalue = str2double(inputs.relcutoff.String);
+era_prefs.view.gcoeff = inputs.depgen.Value;
+era_prefs.view.reltype = inputs.equistab.Value;
+era_prefs.view.plotrel = inputs.plotrel.Value;
+era_prefs.view.ploticc = inputs.ploticc.Value;
+era_prefs.view.inctrltable = inputs.relcutt.Value;
+era_prefs.view.overalltable = inputs.overallt.Value;
+era_prefs.view.showstddevt = inputs.sdt.Value;
+era_prefs.view.showstddevf = inputs.plotbetsd.Value;
 
-%if the dependability estimate was not numeric or between 0 and 1, give the
+%if the reliability estimate was not numeric or between 0 and 1, give the
 %user an error and take the user back.
-if depeval ~= 0 
+if releval ~= 0 
     
     %check if era_gui is open.
     era_gui = findobj('Tag','era_gui');
@@ -482,31 +402,22 @@ if depeval ~= 0
     
     %create error text
     errorstr = {};
-    errorstr{end+1} = 'The dependability estimate must be numeric';
+    errorstr{end+1} = 'The reliability estimate must be numeric';
     errorstr{end+1} = 'and between 0 and 1 (inclusive)';
     
     %display error prompt
     errordlg(errorstr);
     
-    %execute era_startview_fig with the new preferences
-    era_startview_fig('era_prefs',era_prefs,'era_data',era_data);
+    %execute era_startview_sing with the new preferences
+    era_startview_trt('era_prefs',era_prefs,'era_data',era_data);
     
     return;
 end
 
 %pass inputs from gui to era_relfigures
 era_relfigures('era_data',era_data,...
-    'depcutoff',era_prefs.view.depvalue,...
-    'plotdep',era_prefs.view.plotdep,...
-    'ploticc',era_prefs.view.ploticc,...
-    'showinct',era_prefs.view.inctrltable,...
-    'showoverallt',era_prefs.view.overalltable,...
-    'showstddevt',era_prefs.view.showstddevt,...
-    'plotbetstddev',era_prefs.view.showstddevf,...
-    'plotdepline',era_prefs.view.plotdepline,...
-    'plotntrials',era_prefs.view.ntrials,...
-    'meascutoff',era_prefs.view.meascutoff,...
-    'depcentmeas',era_prefs.view.depcentmeas);
+    'era_prefs',era_prefs,...
+    'analysis','trt');
 
 end
 
@@ -527,35 +438,37 @@ ind = find(strcmp('inputs',varargin),1);
 if ~isempty(ind)
     inputs = varargin{ind+1};
 
-    %check whether the dependability estimate provided is numeric and between 0
+    %check whether the reliability estimate provided is numeric and between 0
     %and 1
-    depeval = depcheck(str2double(inputs.h(1).String));
+    releval = relcheck(str2double(inputs.relcutoff.String));
 
-    %if the dependability estimate was not numeric or between 0 and 1, give the
+    %if the reliability estimate was not numeric or between 0 and 1, give the
     %user an error and take the user back.
-    if depeval ~= 0 
+    if releval ~= 0 
         %create error text
         errorstr = {};
-        errorstr{end+1} = 'The dependability estimate must be numeric';
+        errorstr{end+1} = 'The reliability estimate must be numeric';
         errorstr{end+1} = 'and between 0 and 1 (inclusive)';
 
         %display error prompt
         errordlg(errorstr);
 
-        %execute era_startview_fig with the new preferences
-        era_startview_fig(h_view_gui.filename,h_view_gui.pathname,'inputs',...
+        %execute era_startview_sing with the new preferences
+        era_startview_sing(h_view_gui.filename,h_view_gui.pathname,'inputs',...
             h_view_gui.inputs,'viewprefs',initialprefs);
-
+        
         return;
     end
-
-    era_prefs.view.depvalue = str2double(inputs.h(1).String);
-    era_prefs.view.plotdep = inputs.h(2).Value;
-    era_prefs.view.ploticc = inputs.h(3).Value;
-    era_prefs.view.inctrltable = inputs.h(4).Value;
-    era_prefs.view.overalltable = inputs.h(5).Value;
-    era_prefs.view.showstddevt = inputs.h(6).Value;
-    era_prefs.view.showstddevf = inputs.h(7).Value;
+    
+    era_prefs.view.relvalue = str2double(inputs.relcutoff.String);
+    era_prefs.view.gcoeff = inputs.depgen.Value;
+    era_prefs.view.reltype = inputs.equistab.Value;
+    era_prefs.view.plotrel = inputs.plotrel.Value;
+    era_prefs.view.ploticc = inputs.ploticc.Value;
+    era_prefs.view.inctrltable = inputs.relcutt.Value;
+    era_prefs.view.overalltable = inputs.overallt.Value;
+    era_prefs.view.showstddevt = inputs.sdt.Value;
+    era_prefs.view.showstddevf = inputs.plotbetsd.Value;
 end
 
 %check if era_gui is open.
@@ -564,11 +477,11 @@ if ~isempty(era_gui)
     pos = era_gui.Position;
     close(era_gui);
 else
-    pos=[400 400 550 550];
+    pos=[400 400 550 650];
 end
 
-%define list for plotting dependability against number of trials
-deplist = {'Lower Limit' 'Point Estimate' 'Upper Limit'};
+%define list for plotting reliability against number of trials
+rellist = {'Lower Limit' 'Point Estimate' 'Upper Limit'};
 
 %define list for central tendency measures
 centlist = {'Mean' 'Median'};
@@ -579,7 +492,7 @@ row = pos(4) - rowspace*2;
 
 %define locations of column 1 and 2 for the gui
 lcol = 30;
-rcol = (pos(3)/2+20);
+rcol = (pos(3)/1.5);
 
 %create the basic era_prefs
 era_gui = figure('unit','pix',...
@@ -593,43 +506,43 @@ era_gui = figure('unit','pix',...
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize+2,...
     'HorizontalAlignment','center',...
     'String','Preferences',...
-    'Position', [pos(4)/8 row pos(4)/3 25]);  
+    'Position', [lcol row pos(4)/4 25]);  
 
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize+2,...
     'HorizontalAlignment','center',...
     'String','Input',...
-    'Position',[4.4*pos(4)/8 row pos(4)/3 25]);
+    'Position',[rcol row pos(4)/4 25]);
 
 %next row
 row = row - rowspace*2;
 
 str = sprintf(['Indicate the estimate that should be plotted in the\n',...
     'figure that shows the relationship between the number of trials\n',...
-    'retained for averaging and dependability']);
+    'retained for averaging and reliability']);
 
-%which lines should be plotted on depplot
+%which lines should be plotted on relplot
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
-    'String','Line to plot for dependability',...
+    'String','Line to plot for reliability',...
     'Tooltip',str,...
-    'Position', [lcol row pos(4)/2 35]);  
+    'Position', [lcol row pos(4)/4 35]);  
 
 str = sprintf(['Lower Limit of Credible Interval\n',...
-    'Dependability Point Estimate\n',...
+    'Reliability Point Estimate\n',...
     'Upper Limit of Credible Interval']);
 
-newprefs.plotdepline = uicontrol(era_gui,'Style','listbox',...
+newprefs.plotrelline = uicontrol(era_gui,'Style','listbox',...
     'fontsize',era_prefs.guis.fsize,...
-    'String',deplist,'Min',1,'Max',1,'Value',era_prefs.view.plotdepline,...
+    'String',rellist,'Min',1,'Max',1,'Value',era_prefs.view.plotrelline,...
     'Tooltip',str,... 
-    'Position', [rcol row pos(4)/3 50]);  
+    'Position', [rcol row pos(4)/4 50]);  
 
 %next row
 row = row - rowspace*2;
 
 str = sprintf(['Indicate the number of trials that should be plotted in the\n',...
     'figure that shows the relationship between the number of trials\n',...
-    'retained for averaging and dependability']);
+    'retained for averaging and reliability']);
 
 %number of trials to plot
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
@@ -641,13 +554,13 @@ uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
 newprefs.ntrials = uicontrol(era_gui,...
     'Style','edit','fontsize',era_prefs.guis.fsize,...
     'String',era_prefs.view.ntrials,... 
-    'Position', [rcol row+21 pos(4)/3 25]);  
+    'Position', [rcol row+21 pos(4)/4 25]);  
 
 %next row
 row = row - rowspace*2.2;
 
-str = sprintf(['Indicate which dependability estimate should be used\n',...
-    'for the dependability threshold that deems data as dependable']);
+str = sprintf(['Indicate which reliability estimate should be used\n',...
+    'for the reliability threshold that deems data as reliable']);
 
 %how to determine cutoff
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
@@ -657,44 +570,41 @@ uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'Position', [lcol row pos(4)/2 35]);  
 
 str = sprintf(['Lower Limit of Credible Interval\n',...
-    'Dependability Point Estimate\n',...
+    'Reliability Point Estimate\n',...
     'Upper Limit of Credible Interval']);
 
 newprefs.meascutoff = uicontrol(era_gui,...
     'Style','listbox','fontsize',era_prefs.guis.fsize,...
-    'String',deplist,'Min',1,'Max',1,...
+    'String',rellist,'Min',1,'Max',1,...
     'Value',era_prefs.view.meascutoff,...
     'Tooltip',str,...
-    'Position', [rcol row pos(4)/3 50]);  
+    'Position', [rcol row pos(4)/4 50]);  
 
 %next row
 row = row - rowspace*2.2;
 
 str = sprintf(['Indicate the measure of central tendency to use for the\n',...
-    'estimation of the overall dependability of the dataset']);
+    'estimation of the overall reliability of the dataset']);
 
-%measure of central tendendcy for overall dependability
+%measure of central tendendcy for overall reliability
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
     'String',...
-    'Measure of central tendency for overall dependability calculations',...
+    'Measure of central tendency for overall reliability calculations',...
     'Tooltip',str,...
     'Position', [lcol row pos(4)/2 35]);  
 
-newprefs.depcentmeas = uicontrol(era_gui,'Style','listbox',...
+newprefs.relcentmeas = uicontrol(era_gui,'Style','listbox',...
     'fontsize',era_prefs.guis.fsize,...
     'String',centlist,'Min',1,'Max',1,...
-    'Value',era_prefs.view.depcentmeas,...
-    'Position', [rcol row pos(4)/3 40]);  
-
-%next row with extra space
-row = row - rowspace*2.5;
+    'Value',era_prefs.view.relcentmeas,...
+    'Position', [rcol row pos(4)/4 40]);  
 
 %Create a back button that will save inputs for preferences
 uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String','Save',...
-    'Position', [pos(4)/8 row pos(4)/3 40],...
+    'Position', [pos(4)/8 50 pos(4)/4 40],...
     'Callback',{@era_prefs_save,'era_prefs',era_prefs,'era_data',...
     era_data,'newprefs',newprefs}); 
 
@@ -702,7 +612,7 @@ uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
 uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String','Back',...
-    'Position', [4.4*pos(4)/8 row pos(4)/3 40],...
+    'Position', [4.4*pos(4)/8 50 pos(4)/4 40],...
     'Callback',{@era_prefs_back,'era_prefs',era_prefs,'era_data',...
     era_data});
 
@@ -723,8 +633,8 @@ if ~isempty(era_gui)
     close(era_gui);
 end
 
-%execute era_startview_fig with the old preferences
-era_startview_fig('era_prefs',era_prefs,'era_data',era_data);
+%execute era_startview_trt with the old preferences
+era_startview_trt('era_prefs',era_prefs,'era_data',era_data);
 
 end
 
@@ -739,10 +649,10 @@ ind = find(strcmp('newprefs',varargin),1);
 newprefs = varargin{ind+1};
 
 %pull new preferences
-era_prefs.view.plotdepline = newprefs.plotdepline.Value;
+era_prefs.view.plotrelline = newprefs.plotrelline.Value;
 era_prefs.view.ntrials = str2double(newprefs.ntrials.String);
 era_prefs.view.meascutoff = newprefs.meascutoff.Value;
-era_prefs.view.depcentmeas = newprefs.depcentmeas.Value;
+era_prefs.view.relcentmeas = newprefs.relcentmeas.Value;
 
 %check if era_gui is open
 era_gui = findobj('Tag','era_gui');
@@ -751,14 +661,14 @@ if ~isempty(era_gui)
 end
 
 if era_prefs.view.ntrials > 1
-    %execute era_startview_fig with the new preferences
-    era_startview_fig('era_prefs',era_prefs,'era_data',era_data);
+    %execute era_startview_trt with the new preferences
+    era_startview_trt('era_prefs',era_prefs,'era_data',era_data);
 end
 
 %make sure the user has defined at least 2 trials to plot for the figure
 if era_prefs.view.ntrials <= 1 
     errordlg(['Please specify at least two trials to plot ', ...
-        'for dependability estimates']);
+        'for reliability estimates']);
     era_prefs.view.ntrials = 50;
 
     era_viewprefs('era_prefs',era_prefs,'era_data',era_data);
@@ -767,25 +677,25 @@ end
 
 end
 
-function checkout = depcheck(depvalue)
-%ensure that the provided dependability estimate is numeric and between 0
+function checkout = relcheck(relvalue)
+%ensure that the provided reliability estimate is numeric and between 0
 %and 1
 %
 %Input
-% depvalue - dependability threshold estimate from era_startview_fig
+% relvalue - reliability threshold estimate from era_startview_sing
 %
 %Output
 % checkout
-%   0: dependability estimate is numeric and between 0 and 1
-%   1: dependability is string
-%   2: dependability is not between 0 and 1
+%   0: reliability estimate is numeric and between 0 and 1
+%   1: reliability is string
+%   2: reliability is not between 0 and 1
 
-%check whether depvalue is numeric
-if isnan(depvalue)
+%check whether relvalue is numeric
+if isnan(relvalue)
     checkout = 1;
 else
-    %check whether depvalue is between 0 and 1
-    if depvalue > 0 && depvalue < 1
+    %check whether relvalue is between 0 and 1
+    if relvalue > 0 && relvalue < 1
         checkout = 0;
     else
         checkout = 2;

@@ -3,7 +3,7 @@ function RELout = era_computerel(varargin)
 %
 %era_computerel('data',era_datatable,'chains',3,'iter',1000)
 %
-%Lasted Updated 6/25/17
+%Lasted Updated 12/9/19
 %
 %Required Inputs:
 % data - data table outputted from the era_loadfile script (see era_loadfile
@@ -100,6 +100,23 @@ function RELout = era_computerel(varargin)
 %
 %6/25/17 PC
 % added error check for missing cells in dataset
+%
+%2/28/19 PC
+% added functionality for computing test-retest reliability
+%
+%4/18/19 PC
+% computing all facets simultaneously for trt analyses took much too long,
+%  so I broke it up by task and event which cut down processing
+%  substantially (from ~36 hours to ~12 hours)
+%
+%6/17/19 PC
+% added seed to all cmdstan analyses for reproducibility of results
+%
+%8/8/19 PC
+% check whether niter is divisble by 10, fix if not and warn user
+%
+%12/9/19 PC
+% add .analysis filed to RELout when only examining one session
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -222,16 +239,28 @@ elseif verbose == 2
     verbosity = true;
 end
 
-%check whether groups or events are in the table
-if sum(strcmpi(colnames,'group'))
+%check whether groups, events, or occasions are in the table
+if any(strcmpi(colnames,'group'))
     groupnames = unique(datatable.group(:));
     ngroup = length(groupnames);
+else
+    ngroup = 0;
 end
 
-if sum(strcmpi(colnames,'event'))
+if any(strcmpi(colnames,'event'))
     eventnames = unique(datatable.event(:));
     nevent = length(eventnames);
+else
+    nevent = 0;
 end
+
+if any(strcmpi(colnames,'time'))
+    timenames = unique(datatable.time(:));
+    ntime = length(timenames);
+else 
+    ntime = 0;
+end
+
 
 %create a structure array to store information that will later be outputted
 REL = struct;
@@ -247,20 +276,43 @@ REL.nchains = nchains;
 %2 - possible multiple groups but no event types to consider
 %3 - possible event types but no groups to consider
 %4 - possible groups and event types to consider
+%5 - possible occasions to consider
 
-if ~exist('ngroup','var') && ~exist('nevent','var')
-    analysis = 1;
-elseif exist('ngroup','var') && ~exist('nevent','var')
-    analysis = 2;
-elseif ~exist('ngroup','var') && exist('nevent','var')
-    analysis = 3;
-elseif exist('ngroup','var') && exist('nevent','var')
-    analysis = 4;
+if (ntime == 0)
+    if (ngroup == 0) && (nevent == 0)
+        analysis = 1;
+    elseif (ngroup > 0) && (nevent == 0)
+        analysis = 2;
+    elseif (ngroup == 0) && (nevent > 0)
+        analysis = 3;
+    elseif (ngroup > 0) && (nevent > 0)
+        analysis = 4;
+    end
+elseif (ntime > 0)
+    analysis = 5;
+end
+
+%check to make sure niter is evenly divisible by 10 for the refresh input
+%to cmdstan
+if (~mod(niter,10) == 0)
+    niter_old = niter;
+    niter_new = niter + (10 - rem(niter,10));
+
+    warning(...
+    ['The frequency for updating the user about cmdstan iterations',...
+    'must be divisible by 10. ', num2str(niter_old),... 
+    ' was changed to ', num2str(niter_new)]);
+
+    niter = niter_new;
 end
 
 %show a gui that indicates data are processing in cmdstan if the user
 %specified to do so
 if showgui == 2
+    era_relgui = findobj('Tag','era_relgui');
+    if ~isempty(era_relgui)
+        close(era_relgui);
+    end
     %define parameters for figure position
     figwidth = 400;
     figheight = 150;
@@ -321,6 +373,7 @@ switch analysis
         
         %store the datatable used in REL
         REL.data = datatable;
+        REL.analysis = 'ic';
         
         %groups and events were not considered
         REL.groups = 'none';
@@ -368,9 +421,14 @@ switch analysis
         modelname = strcat('cmdstan',char(date));
         
         %fit model in cmdstan
-        fit = stan('model_code', stan_in, 'model_name', modelname,...
-            'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-            niter/10, 'verbose', verbosity, 'file_overwrite', true);
+        fit = stan('model_code', stan_in,... 
+            'model_name', modelname,...
+            'data', data,... 
+            'iter', niter,...
+            'chains', nchains,... 
+            'refresh', niter/10,... 
+            'verbose', verbosity,... 
+            'file_overwrite', true);
         
         %don't let the user continue to use the Matlab command window
         fit.block();
@@ -423,8 +481,9 @@ switch analysis
 
         datatable.id2 = id2(:);
         
-        %create labels for the gorups
+        %create labels for the groups
         REL.data = datatable;
+        REL.analysis = 'ic';
         groupnames = unique(datatable.group(:));
         ngroup = length(groupnames);
         
@@ -573,9 +632,15 @@ switch analysis
         fprintf('\nThis may take a while depending on the amount of data\n');
         
         %run cmdstan
-        fit = stan('model_code', stan_in, 'model_name', modelname,...
-            'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-            niter/10, 'verbose', verbosity, 'file_overwrite', true);
+        fit = stan('model_code', stan_in,... 
+            'model_name', modelname,...
+            'data', data,...
+            'iter', niter,...
+            'chains', nchains,...
+            'refresh', niter/10,...
+            'verbose', verbosity,...
+            'file_overwrite', true,...
+            'seed', 12345);
         
         %block user from using Matlab command window
         fit.block();
@@ -635,6 +700,7 @@ switch analysis
         
         %no groups to consider
         REL.groups = 'none';
+        REL.analysis = 'ic';
         
         %create data structure for storing measurements for each event
         eventarray = struct;
@@ -806,9 +872,15 @@ switch analysis
         fprintf('\nThis may take a while depending on the amount of data\n');
         
         %run in cmdstan
-        fit = stan('model_code', stan_in, 'model_name', modelname,...
-            'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-            niter/10, 'verbose', verbosity, 'file_overwrite', true);
+        fit = stan('model_code', stan_in,...
+            'model_name', modelname,...
+            'data', data,... 
+            'iter', niter,...
+            'chains', nchains,...
+            'refresh', niter/10,...
+            'verbose', verbosity,...
+            'file_overwrite', true,...
+            'seed', 12345);
         
         %block user from using Matlab command window 
         fit.block();
@@ -929,6 +1001,7 @@ switch analysis
         
         %put the compiled data into REL structure
         REL.data = eventarray.data;
+        REL.analysis = 'ic';
         
         %create the fields for storing the parsed cmdstan outputs 
         REL.out = [];
@@ -1105,9 +1178,15 @@ switch analysis
             fprintf('\nThis may take a while depending on the amount of data\n');
             
             %run cmdstan
-            fit = stan('model_code', stan_in, 'model_name', modelname,...
-                'data', data, 'iter', niter,'chains', nchains, 'refresh',... 
-                niter/10, 'verbose', verbosity, 'file_overwrite', true);
+            fit = stan('model_code', stan_in,... 
+                'model_name', modelname,...
+                'data', data,... 
+                'iter', niter,...
+                'chains', nchains,...
+                'refresh', niter/10,...
+                'verbose', verbosity,...
+                'file_overwrite', true,...
+                'seed', 12345);
             
             %block user from using Matlab command window
             fit.block();
@@ -1141,7 +1220,493 @@ switch analysis
             REL.out.conv.data{end+1} = era_storeconv(fit);
             
         end %for j=1:nevent
-
+        
+    case 5
+        
+        fprintf('\nPreparing data for analysis...\n');
+        
+        if (ngroup == 0) && (nevent == 0)
+            datatable = sortrows(datatable,{'id','time'});
+        elseif (ngroup > 0) && (nevent == 0)
+            datatable = sortrows(datatable,{'group','id','time'});
+        elseif (ngroup == 0) && (nevent > 0)
+            datatable = sortrows(datatable,{'id','time','event'});
+        elseif (ngroup > 0) && (nevent > 0)
+            datatable = sortrows(datatable,{'group','id','time','event'});
+        end
+        
+        if nevent > 0
+            REL.events = eventnames;
+        elseif nevent == 0
+            REL.events = 'none';
+        end
+        
+        if ngroup > 0
+            REL.groups = groupnames;
+        elseif ngroup == 0
+            REL.groups = 'none';
+        end
+       
+        REL.time = timenames;
+  
+        %parse data based on number of events and groups
+        %create structure for storing data
+        darray = struct;
+        darray.data = [];
+        darray.names = [];
+        
+        if (ngroup == 0) && (nevent == 0)
+            darray.data{end+1} = datatable; 
+            darray.names{end+1} = 'none';
+        elseif (ngroup > 0) && (nevent == 0)
+            for i = 1:ngroup
+                dummytable = datatable(ismember(datatable.group,...
+                    char(groupnames(i))),:);
+                darray.data{end+1} = dummytable;
+                darray.names{end+1} = char(groupnames(i));
+            end
+        elseif (ngroup == 0) && (nevent > 0)
+            for i = 1:nevent
+                dummytable = datatable(ismember(datatable.event,...
+                    char(eventnames(i))),:);
+                darray.data{end+1} = dummytable;
+                darray.names{end+1} = char(eventnames(i));
+            end
+        elseif (ngroup > 0) && (nevent > 0)
+            for i = 1:ngroup
+                dummytable = datatable(ismember(datatable.group,...
+                    char(groupnames(i))),:);
+                for j = 1:nevent
+                    dummytable2 = dummytable(ismember(dummytable.event,...
+                        char(eventnames(j))),:);
+                    darray.data{end+1} = dummytable2;
+                    darray.names{end+1} = strcat(char(groupnames(i)),...
+                        '_;_',char(eventnames(j)));
+                end
+            end
+        end
+        
+        
+        %cmdstan requires the id variable to be numeric and sequential. 
+        %an id2 variable is created to satisfy this requirement. 
+        
+        for da = 1:length(darray.names)
+            warray = darray.data{da};
+            id2 = zeros(0,height(warray));
+            time2 = zeros(0,height(warray));
+            trl2 = zeros(0,height(warray));
+            for i = 1:height(warray)
+                %recode ids
+                if i == 1
+                    id2(1) = 1;
+                    count = 1;
+                elseif i > 1 && strcmp(char(warray.id(i)),...
+                        char(warray.id(i-1)))
+                    id2(i) = count;
+                elseif i > 1 && ~strcmp(char(warray.id(i)),...
+                        char(warray.id(i-1)))
+                    count = count+1;
+                    id2(i) = count;
+                end
+                
+                %recode time
+                time2(i) = find(strcmp(timenames,warray.time(i)));
+                
+                %recode trials
+                if i == 1
+                    trl2(1) = 1;
+                    trlcount = 2;
+                elseif i > 1 && strcmp(char(warray.id(i)),...
+                        char(warray.id(i-1))) && ...
+                        strcmp(char(warray.time(i)),...
+                        char(warray.time(i-1)))
+                    trl2(i) = trlcount;
+                    trlcount = trlcount + 1;
+                elseif i > 1 && strcmp(char(warray.id(i)),...
+                        char(warray.id(i-1))) && ...
+                        ~strcmp(char(warray.time(i)),...
+                        char(warray.time(i-1)))
+                    trl2(i) = 1;
+                    trlcount = 2;
+                elseif i > 1 && ~strcmp(char(warray.id(i)),...
+                        char(warray.id(i-1)))
+                    trl2(i) = 1;
+                    trlcount = 2;
+                end
+            end
+            warray.id2 = id2';
+            warray.time2 = time2';
+            warray.trl2 = trl2';
+            darray.data{da} = warray;
+        end
+        
+        for da = 1:length(darray.names)
+            warray = darray.data{da};
+             for i = 1:height(warray)
+                if i == 1
+                    idxtrl_count = 1;
+                    idxtrl_count_base = 1;
+                    
+                    idxtrl = idxtrl_count;
+                    poss_idxtrl = idxtrl_count;
+                    idxtrl_count = idxtrl_count + 1;
+                elseif i > 1 
+                    if warray.id2(i) == warray.id2(i-1)
+                        if warray.trl2(i) == (warray.trl2(i-1)+1)
+                            poss_idxtrl(end+1) = idxtrl_count;
+                            idxtrl(end+1) = idxtrl_count;                            
+                            idxtrl_count = idxtrl_count + 1;
+                        elseif warray.trl2(i) ~= (warray.trl2(i-1)+1)
+                            idxtrl_count = idxtrl_count_base;
+                            poss_idxtrl(end+1) = idxtrl_count;
+                            idxtrl(end+1) = idxtrl_count;
+                            idxtrl_count = idxtrl_count + 1;
+                        end
+                    elseif warray.id2(i) ~= warray.id2(i-1)
+                        idxtrl_count_base = max(poss_idxtrl) + 1;
+                        idxtrl_count = idxtrl_count_base;
+                        poss_idxtrl = idxtrl_count;
+                        idxtrl(end+1) = idxtrl_count;
+                        idxtrl_count = idxtrl_count + 1;
+                    end
+                end
+            end
+            
+            for i = 1:height(warray)
+                if i == 1
+                    idxtim_count = 1;
+                    idxtim = idxtim_count;
+                elseif i > 1 
+                    if warray.id2(i) == warray.id2(i-1)
+                        if warray.time2(i) == (warray.time2(i-1))
+                            idxtim(end+1) = idxtim_count;    
+                        elseif warray.time2(i) ~= (warray.time2(i-1))
+                            idxtim_count = idxtim_count + 1;
+                            idxtim(end+1) = idxtim_count;
+                        end
+                    elseif warray.id2(i) ~= warray.id2(i-1)
+                        idxtim_count = idxtim_count + 1;
+                        idxtim(end+1) = idxtim_count;
+                    end
+                end
+            end
+            
+            for i = 1:height(warray)
+                if i == 1
+                    trlxtim_count = 1;
+                    ind_trlxtim = [unique(warray.time2) ...
+                        zeros(1,length(unique(warray.time2)))'];
+                    
+                    for j = 1:length(unique(warray.time2))
+                        if j == 1
+                            ind_trlxtim(j,2) = 1;
+                            maxprev = max(warray{warray.time2 == 1,'trl2'});
+                        elseif j > 1
+                            ind_trlxtim(j,2) = maxprev + 1;
+                            maxprev = maxprev + 1 +... 
+                                max(warray{warray.time2 == 1,'trl2'});
+                        end                      
+                    end
+                    
+                    trlxtim = trlxtim_count;
+                    trlxtim_count = trlxtim_count + 1;
+                elseif i > 1 
+                    if warray.time2(i) == warray.time2(i-1)
+                        if warray.trl2(i) == (warray.trl2(i-1)+1)                           
+                            trlxtim(end+1) = trlxtim_count;                            
+                            trlxtim_count = trlxtim_count + 1;
+                        elseif warray.trl2(i) ~= (warray.trl2(i-1)+1)
+                            trlxtim_count = ind_trlxtim(warray.time2(i),2);
+                            trlxtim(end+1) = trlxtim_count;
+                            trlxtim_count = trlxtim_count + 1;
+                        end
+                    elseif warray.time2(i) ~= warray.time2(i-1)
+                        trlxtim_count = ind_trlxtim(warray.time2(i),2);
+                        trlxtim(end+1) = trlxtim_count;
+                        trlxtim_count = trlxtim_count + 1;
+                    end
+                end
+            end
+            warray.idxtrl = idxtrl';
+            warray.idxtim = idxtim';
+            warray.trlxtim = trlxtim';
+            darray.data{da} = warray;
+        end
+        
+        %put the compiled data into REL structure
+        REL.data = datatable;
+        REL.analysis = 'trt';
+        
+        if showgui == 2
+            
+            %find whether gui exists (the user may have closed it)
+            era_relgui = findobj('Tag','era_relgui');
+            
+            if ~isempty(era_relgui)
+                
+                %Write text
+                uicontrol(era_relgui,'Style','text',...
+                    'fontsize',fsize+6,...
+                    'HorizontalAlignment','center',...
+                    'String','Data are crunching. This will take a long time!',...
+                    'Position',[0 row-rowspace*1.5 figwidth 25]);
+                
+                %pause a moment so the gui will be displayed
+                pause(.02)
+            end
+        end
+        
+        %define number of data chunks to crunch through
+        ndchunks = length(darray.names);
+        
+        REL.stan_in = [];
+        
+        for i = 1:ndchunks
+            
+            %create string to be printed and potentially viewed in gui
+            str = ['Working on event/group ' num2str(i) ' of ' num2str(ndchunks)];
+            
+            %print to screen to notify user of progress
+            fprintf(strcat('\n\n',str,'\n\n'));
+            
+            if showgui == 2
+                
+                %find whether gui exists (the user may have closed it)
+                era_relgui = findobj('Tag','era_relgui');
+                
+                if ~isempty(era_relgui)
+                    
+                    %Write text
+                    uicontrol(era_relgui,'Style','text',...
+                        'fontsize',fsize+6,...
+                        'HorizontalAlignment','center',...
+                        'String',str,...
+                        'Position',[0 row-rowspace*1.5 figwidth 25]);
+                    
+                    %pause a moment so the gui will be displayed
+                    pause(.02)
+                end
+            end
+            
+            stan_in = {
+                'data { '
+                '  int<lower=1> NOBS; //total number of observations '
+                '  int<lower=1> NSUB; //total number of subjects'
+                '  int<lower=1> NOCC; //total number of occasions'
+                '  int<lower=1> NTRL; //total number of trials'
+                '  int<lower=1> NTID; // total unique for trial*id'
+                '  int<lower=1> NOID; // total unique for occ*id'
+                '  int<lower=1> NTO; // total unique for trial*occ'
+                '  int<lower=1, upper=NSUB> id[NOBS]; //id variable'
+                '  int<lower=1, upper=NOCC> occ[NOBS]; //occ variable'
+                '  int<lower=1, upper=NTRL> trl[NOBS]; //trl variable'
+                '  int<lower=1, upper=NTID> trlxid[NOBS]; //trlxid variable'
+                '  int<lower=1, upper=NOID> occxid[NOBS]; //occxid variable'
+                '  int<lower=1, upper=NTO> trlxocc[NOBS]; //trlxocc variable'
+                '  vector[NOBS] meas; //measurements'
+                '}'
+                'parameters {'
+                '  real pop_int; //population intercept'
+                '  real<lower=0> sig_id; //id-level std dev'
+                '  real<lower=0> sig_occ; //occ-level std dev'
+                '  real<lower=0> sig_trl; //trl-level std dev'
+                '  real<lower=0> sig_err; //residual std dev'
+                '  real<lower=0> sig_trlxid; //trlxid std dev'
+                '  real<lower=0> sig_occxid; //occxid std dev'
+                '  real<lower=0> sig_trlxocc; //trlxocc std dev'
+                '  vector[NSUB] id_raw; //id means'
+                '  vector[NOCC] occ_raw; //occ means'
+                '  vector[NTRL] trl_raw; //trl means'
+                '  vector[NTID] trlxid_raw; //trlxid means'
+                '  vector[NOID] occxid_raw; //occxid means'
+                '  vector[NTO] trlxocc_raw; //trlxocc means'
+                '}'
+                'transformed parameters {'
+                '  vector[NSUB] id_terms; //id-level terms'
+                '  vector[NOCC] occ_terms; //occ-level terms'
+                '  vector[NTRL] trl_terms; //trl-level terms'
+                '  vector[NTID] trlxid_terms; //trlxid terms'
+                '  vector[NOID] occxid_terms; //trlxocc terms'
+                '  vector[NTO] trlxocc_terms; //trlxocc terms'
+                '  id_terms = sig_id * id_raw;'
+                '  occ_terms = sig_occ * occ_raw;'
+                '  trl_terms = sig_trl * trl_raw;'
+                '  trlxid_terms = sig_trlxid * trlxid_raw;'
+                '  occxid_terms = sig_occxid * occxid_raw;'
+                '  trlxocc_terms = sig_trlxocc * trlxocc_raw;'
+                '}'
+                'model {'
+                '  vector[NOBS] y_hat;'
+                '    y_hat = pop_int + id_terms[id] + '
+                '    occ_terms[occ] + trl_terms[trl] +'
+                '    trlxid_terms[trlxid] + occxid_terms[occxid] + '
+                '    trlxocc_terms[trlxocc];'
+                '  meas ~ normal(y_hat,sig_err);'
+                '  id_raw ~ normal(0,1);'
+                '  occ_raw ~ normal(0,1);'
+                '  trl_raw ~ normal(0,1);'
+                '  trlxid_raw ~ normal(0,1);'
+                '  occxid_raw ~ normal(0,1);'
+                '  trlxocc_raw ~ normal(0,1);'
+                '  sig_id ~ cauchy(0,10);'
+                '  sig_occ ~ cauchy(0,.05);'
+                '  sig_trl ~ cauchy(0,10);'
+                '  sig_err ~ cauchy(0,20);'
+                '  sig_trlxid ~ cauchy(0,5);'
+                '  sig_occxid ~ cauchy(0,5);'
+                '  sig_trlxocc ~ cauchy(0,.05);'
+                '}'
+                };
+            
+            
+            %store the cmdstan syntax
+            REL.stan_in{end+1} = stan_in;
+            
+            %create structure for the data to be sent to cmdstan
+            data = struct;
+            
+            %prep data structure for cmdstan
+            
+            fieldname = 'NOBS';
+            fieldvalue = height(darray.data{i});
+            data.(fieldname) = fieldvalue;
+            
+            fieldname = 'NOCC';
+            fieldvalue = length(unique(darray.data{i}.time));
+            data.(fieldname) = fieldvalue;
+            
+            
+            fieldname = 'NSUB';
+            fieldvalue = length(unique(darray.data{i}.id2));
+            data.(fieldname) = fieldvalue;
+            
+            
+            fieldname = 'NTRL';
+            fieldvalue = length(unique(darray.data{i}.trl2));
+            data.(fieldname) = fieldvalue;
+            
+            fieldname = 'occ';
+            fieldvalue = darray.data{i}.time2;
+            data.(fieldname) = fieldvalue;
+            
+            fieldname = 'id';
+            fieldvalue = darray.data{i}.id2;
+            data.(fieldname) = fieldvalue;
+            
+            fieldname = 'trl';
+            fieldvalue = darray.data{i}.trl2;
+            data.(fieldname) = fieldvalue;
+            
+            fieldname = 'meas';
+            fieldvalue = darray.data{i}.meas;
+            data.(fieldname) = fieldvalue;
+            
+            fieldname = 'trlxid';
+            fieldvalue = darray.data{i}.idxtrl;
+            data.(fieldname) = fieldvalue;
+            
+            fieldname = 'occxid';
+            fieldvalue = darray.data{i}.idxtim;
+            data.(fieldname) = fieldvalue;
+            
+            fieldname = 'trlxocc';
+            fieldvalue = darray.data{i}.trlxtim;
+            data.(fieldname) = fieldvalue;
+            
+            fieldname = 'NTID';
+            fieldvalue = length(unique(darray.data{i}.idxtrl));
+            data.(fieldname) = fieldvalue;
+            
+            fieldname = 'NOID';
+            fieldvalue = length(unique(darray.data{i}.idxtim));
+            data.(fieldname) = fieldvalue;
+            
+            fieldname = 'NTO';
+            fieldvalue = length(unique(darray.data{i}.trlxtim));
+            data.(fieldname) = fieldvalue;
+            
+            %execute model code
+            
+            modelname = strcat('cmdstan',char(date));
+            
+            fprintf('\nModel is being run in cmdstan\n');
+            fprintf('\nThis may take a while depending on the amount of data\n');
+            
+            stan_control = struct;
+            stan_control.delta = .98;
+            stan_control.t0 = 15;
+            
+            %run cmdstan
+            fit = stan('model_code', stan_in,...
+                'model_name', modelname,...
+                'data', data,...
+                'iter', niter,...
+                'chains', nchains,...
+                'refresh', niter/20,...
+                'verbose', verbosity,...
+                'file_overwrite', true,...
+                'control', stan_control,...
+                'seed', 12345);
+            
+            %block user from using Matlab command window
+            fit.block();
+            
+            %what happens if niter/20 is not an evenly divisly number of niter
+            %or decimal number?
+            
+            if i == 1
+                %create the fields for storing the parsed cmdstan outputs
+                REL.out = [];
+                REL.out.mu = [];
+                REL.out.sig_id = [];
+                REL.out.sig_occ = [];
+                REL.out.sig_trl = [];
+                REL.out.sig_trlxid = [];
+                REL.out.sig_occxid = [];
+                REL.out.sig_trlxocc =[];
+                REL.out.sig_err = [];
+                REL.out.labels = {};
+                REL.out.conv.data = {};
+            end
+            
+            measname ='pop_int';
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.mu(:,end+1) = measvalue;
+            
+            measname = 'sig_id';
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.sig_id(:,end+1) = measvalue;
+            
+            measname = 'sig_occ';
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.sig_occ(:,end+1) = measvalue;
+            
+            measname = 'sig_trl';
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.sig_trl(:,end+1) = measvalue;
+            
+            measname = 'sig_trlxid';
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.sig_trlxid(:,end+1) = measvalue;
+            
+            measname = 'sig_occxid';
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.sig_occxid(:,end+1) = measvalue;
+            
+            measname = 'sig_trlxocc';
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.sig_trlxocc(:,end+1) = measvalue;
+            
+            measname = 'sig_err';
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.sig_err(:,end+1) = measvalue;
+            
+            REL.out.conv.data{end+1} = era_storeconv(fit,1);
+            
+        end
+        
+        REL.out.labels = darray.names;
+        
 end %switch analysis
 
 %close the gui if one was shown
@@ -1157,8 +1722,12 @@ RELout = REL;
 
 end
 
-function convstats = era_storeconv(fit)
+function convstats = era_storeconv(fit,trt)
 %pull out r_hats from Stanfit model
+
+if nargin < 2
+    trt = 0;
+end
 
 %pull summary using the print function
 %there's no other way to get at the r_hat values, so output will also be
@@ -1171,23 +1740,49 @@ convstats{1,1} = 'name';
 convstats{1,2} = 'n_eff';
 convstats{1,3} = 'r_hat';
 
-%cycle through the important inputs
-%depending on whether there are multiple events/groups there may be 
-%multiple mu_, sig_u_, and sig_e_
-inp2check = {'lp__' 'mu_' 'sig_u_' 'sig_e_'}; 
-
-for j = 1:length(inp2check)
-    check = strncmp(output,inp2check{j},length(inp2check{j}));
-    ind2check = find(check == 1);
-    for i = 1:length(ind2check)
-        pullrow = strsplit(output{ind2check(i),:},' ');
-        label = pullrow{1};
-        neff = str2num(pullrow{end-2});
-        rhat = str2num(pullrow{end});
-        convstats{end+1,1} = label;
-        convstats{end,2} = neff;
-        convstats{end,3} = rhat;
+if trt == 0
+    %cycle through the important inputs
+    %depending on whether there are multiple events/groups there may be
+    %multiple mu_, sig_u_, and sig_e_
+    inp2check = {'lp__' 'mu_' 'sig_u_' 'sig_e_'};
+    
+    for j = 1:length(inp2check)
+        check = strncmp(output,inp2check{j},length(inp2check{j}));
+        ind2check = find(check == 1);
+        for i = 1:length(ind2check)
+            pullrow = strsplit(output{ind2check(i),:},' ');
+            label = pullrow{1};
+            neff = str2num(pullrow{end-2});
+            rhat = str2num(pullrow{end});
+            convstats{end+1,1} = label;
+            convstats{end,2} = neff;
+            convstats{end,3} = rhat;
+        end
+    end
+elseif trt == 1
+    inp2check = {'lp__'};
+    
+    inp2check{end+1} = 'pop_int';
+    inp2check{end+1} = 'sig_id';
+    inp2check{end+1} = 'sig_occ';
+    inp2check{end+1} = 'sig_trl';
+    inp2check{end+1} = 'sig_trlxid';
+    inp2check{end+1} = 'sig_occxid';
+    inp2check{end+1} = 'sig_trlxocc';
+    inp2check{end+1} = 'sig_err';
+    
+    for j = 1:length(inp2check)
+        check = strncmp(output,inp2check{j},length(inp2check{j}));
+        ind2check = find(check == 1);
+        for i = 1:length(ind2check)
+            pullrow = strsplit(output{ind2check(i),:},' ');
+            label = pullrow{1};
+            neff = str2num(pullrow{end-2});
+            rhat = str2num(pullrow{end});
+            convstats{end+1,1} = label;
+            convstats{end,2} = neff;
+            convstats{end,3} = rhat;
+        end
     end
 end
-
 end

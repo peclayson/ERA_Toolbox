@@ -2,7 +2,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 9/25/17
+%Last Updated 2/25/19
 %
 %
 %Input
@@ -79,9 +79,14 @@ function era_startproc(varargin)
 %8/25/17 PC
 % new changes to allow user to select a subset of groups and/or events to
 %  process
+%
 %9/25/17 PC
 % fixed bug when trying to select a subset of gropus and/or events based on
 %  numerical inputs (rather than string)
+%
+%2/25/19 PC
+% adding funcionality to look at test retest reliability
+%
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -205,7 +210,7 @@ function era_startproc_gui(varargin)
 
 %define parameters for figure position
 figwidth = 600;
-figheight = 400;
+figheight = 425;
 
 %if the assignment of which columns belong to which category has already
 %been made, then use those choices. Otherwise, load the defaults and try to
@@ -218,10 +223,13 @@ if ~isfield(era_prefs.proc,'inp')
     era_prefs.proc.inp.meas = 2;
     era_prefs.proc.inp.group = length(era_data.proc.collist);
     era_prefs.proc.inp.event = length(era_data.proc.collist);
+    era_prefs.proc.inp.time = length(era_data.proc.collist);
     era_prefs.proc.inp.whichgroups = '';
     era_prefs.proc.inp.whichgroupscol = [];
     era_prefs.proc.inp.whichevents = '';
     era_prefs.proc.inp.whicheventscol = [];
+    era_prefs.proc.inp.whichtimes = '';
+    era_prefs.proc.inp.whichtimescol = [];
 
     %check for a participant header
     poss = {'Subject' 'ID' 'Participant' 'SubjID' 'Subj'};
@@ -250,7 +258,7 @@ if ~isfield(era_prefs.proc,'inp')
         end
     end
 
-    %check for a event type header
+    %check for an event type header
     poss = {'Event' 'Type'};
     for i = 1:length(era_data.proc.collist)
         ind = strcmpi(era_data.proc.collist(i),poss);
@@ -259,6 +267,14 @@ if ~isfield(era_prefs.proc,'inp')
         end
     end
 
+    %check for a occasion header
+    poss = {'Time' 'Occasion' ' Session'};
+    for i = 1:length(era_data.proc.collist)
+        ind = strcmpi(era_data.proc.collist(i),poss);
+        if any(ind)
+            era_prefs.proc.inp.time = i;
+        end
+    end
 end
 
 %define space between rows and first row location
@@ -326,6 +342,7 @@ inplists(2) = uicontrol(era_gui,'Style','pop','fontsize',era_prefs.guis.fsize,..
 
 %next row
 row = row - rowspace;
+grouprow = row;
 
 %group row
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
@@ -346,6 +363,7 @@ uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
 
 %next row
 row = row - rowspace;
+eventrow = row;
 
 %event row
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
@@ -357,23 +375,45 @@ inplists(4) = uicontrol(era_gui,'Style','pop','fontsize',era_prefs.guis.fsize,..
     'String',era_data.proc.collist,'Value',era_prefs.proc.inp.event,...
     'Position', [rcol row figwidth/2.25 25]); 
 
-uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
-    'HorizontalAlignment','center',...
-    'String','...',...
-    'TooltipString','Select a subset of events to process',...
-    'Position', [14*figwidth/15 row+2 figwidth/15 27],...
-    'Callback',{@selectevents_call,'era_prefs',era_prefs,...
-    'era_data',era_data,'inplists',inplists}); 
+%next row
+row = row - rowspace;
+timerow = row;
 
-%Since this button uses inplists as an input, it needed to be specified 
+%time row
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
+    'HorizontalAlignment','left',...
+    'String','Occasion ID:',...
+    'Position', [lcol row figwidth/4 25]);  
+
+inplists(5) = uicontrol(era_gui,'Style','pop','fontsize',era_prefs.guis.fsize,...
+    'String',era_data.proc.collist,'Value',era_prefs.proc.inp.time,...
+    'Position', [rcol row figwidth/2.25 25]); 
+
+%Since these buttons use inplists as an input, it needed to be specified 
 %after all of inputs had been placed in inplists
 uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','center',...
     'String','...',...
     'TooltipString','Select a subset of groups to process',...
-    'Position', [14*figwidth/15 (row+2)+rowspace figwidth/15 27],...
+    'Position', [14*figwidth/15 (grouprow+2) figwidth/15 27],...
     'Callback',{@selectgroups_call,'era_prefs',era_prefs,...
     'era_data',era_data,'inplists',inplists});
+
+uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
+    'HorizontalAlignment','center',...
+    'String','...',...
+    'TooltipString','Select a subset of events to process',...
+    'Position', [14*figwidth/15 eventrow+2 figwidth/15 27],...
+    'Callback',{@selectevents_call,'era_prefs',era_prefs,...
+    'era_data',era_data,'inplists',inplists}); 
+
+uicontrol(era_gui,'Style','push','fontsize',era_prefs.guis.fsize,...
+    'HorizontalAlignment','center',...
+    'String','...',...
+    'TooltipString','Select a subset of occasions to process',...
+    'Position', [14*figwidth/15 timerow+2 figwidth/15 27],...
+    'Callback',{@selecttime_call,'era_prefs',era_prefs,...
+    'era_data',era_data,'inplists',inplists}); 
 
 %next row with extra space
 row = row - rowspace*2.5;
@@ -442,6 +482,7 @@ if ~isempty(ind)
     era_prefs.proc.inp.meas = choices(2);
     era_prefs.proc.inp.group = choices(3);
     era_prefs.proc.inp.event = choices(4);
+    era_prefs.proc.inp.time = choices(5);
 end
 
 %check if era_gui is open.
@@ -451,6 +492,17 @@ if ~isempty(era_gui)
     close(era_gui);
 else
     era_prefs.guis.pos=[400 400 600 400];
+end
+
+%recommend that the user use at least 10k iterations if running retest
+%reliability anlayses
+if era_prefs.proc.inp.time ~= length(era_data.proc.collist)
+    str = {'WARNING: It is recommended to run at least 10,000 iterations'};
+    str{end+1} = ' if you are conducting test-retest reliability';
+    str{end+1} = ' analyses. This will take a very long time, but it is ';
+    str{end+1} = 'unlikely that your model will converge with fewer ';
+    str{end+1} = 'iterations.';
+    errordlg(str,'WARNING: Need more iterations');
 end
 
 %define space between rows and first row location
@@ -652,6 +704,7 @@ if ~isempty(ind)
     era_prefs.proc.inp.meas = choices(2);
     era_prefs.proc.inp.group = choices(3);
     era_prefs.proc.inp.event = choices(4);
+    era_prefs.proc.inp.time = choices(5);
 end
 
 %check if era_gui is open.
@@ -834,6 +887,7 @@ if ~isempty(ind)
     era_prefs.proc.inp.meas = choices(2);
     era_prefs.proc.inp.group = choices(3);
     era_prefs.proc.inp.event = choices(4);
+    era_prefs.proc.inp.time = choices(5);
 end
 
 %check if era_gui is open.
@@ -962,7 +1016,7 @@ function era_whichevents_save_call(varargin)
 %pull era_prefs and era_data from varargin
 [era_prefs, era_data] = era_findprefsdata(varargin);
 
-%find glist and gnames
+%find elist and enames
 ind = find(strcmp('elist',varargin),1);
 elist = varargin{ind+1}.Value; 
 ind = find(strcmp('enames',varargin),1);
@@ -992,6 +1046,188 @@ close(era_gui_whichevents);
 era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
 end
 
+function selecttime_call(varargin)
+%select occasions to be processed in the dataset
+%
+%Input 
+% era_prefs - toolbox preferences
+% era_data - toolbox data
+%
+%Output
+% There are no direct outputs to the Matlab workspace. The inputs will be
+%  stored for later processing
+%
+
+%pull era_prefs and era_data from varargin
+[era_prefs, era_data] = era_findprefsdata(varargin);
+
+%find inplists
+ind = find(strcmp('inplists',varargin),1);
+if ~isempty(ind)
+    inplists = varargin{ind+1}; 
+    choices = cell2mat(get(inplists(:),'value'));
+    era_prefs.proc.inp.id = choices(1);
+    era_prefs.proc.inp.meas = choices(2);
+    era_prefs.proc.inp.group = choices(3);
+    era_prefs.proc.inp.event = choices(4);
+    era_prefs.proc.inp.time = choices(5);
+end
+
+%check if era_gui is open.
+era_gui = findobj('Tag','era_gui');
+if ~isempty(era_gui)
+    era_prefs.guis.pos = era_gui.Position;
+    close(era_gui);
+else
+    era_prefs.guis.pos=[400 400 600 400];
+end
+
+%ensure that 'none' is not selected. If it is, spit out an error and go
+%back to era_startproc_gui
+if strcmpi(era_data.proc.collist{era_prefs.proc.inp.time},'none')
+    era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+    errordlg('No occasion column selected. Select a column for occasion',...
+        'Occasion Column Not Defined');
+    return;
+end
+
+%pull a list of occasions from the file based on the input from era_gui
+tnames = unique(era_data.raw.data.(era_data.proc.collist{...
+    era_prefs.proc.inp.time}));
+
+%check whether this function has been called before and whether the column
+%assigned to event has changed
+if isempty(era_prefs.proc.inp.whichtimescol) || ...
+        (~isempty(era_prefs.proc.inp.whichtimescol) && ...
+        era_prefs.proc.inp.whichtimescol ~= era_prefs.proc.inp.time)
+    era_prefs.proc.inp.whichtimescol = era_prefs.proc.inp.time;
+    era_prefs.proc.inp.whichtimes = tnames;
+    tind = 1:length(tnames);
+    
+%if the column assigned to occasion is the same, then pull the previous inputs
+elseif (~isempty(era_prefs.proc.inp.whichtimescol) && ...
+        era_prefs.proc.inp.whichtimescol == era_prefs.proc.inp.time)   
+    tind = zeros(1,length(era_prefs.proc.inp.whichtimes));
+    for ii = 1:length(era_prefs.proc.inp.whichtimes)
+        if ~isnumeric(tnames)
+            tind(ii) = find(strcmp(era_prefs.proc.inp.whichtimes{ii},...
+                tnames));
+        elseif isnumeric(tnames)
+            tind(ii) = find(tnames(:) == ...
+                era_prefs.proc.inp.whichtimes{ii});
+        end
+    end
+end
+
+%define parameters for figure position
+figwidth = 500;
+figheight = 400;
+
+%define space between rows and first row location
+rowspace = 25;
+row = figheight - rowspace*2;
+
+era_gui_whichtimes = figure('unit','pix','Visible','off',...
+  'position',[400 400 figwidth figheight],...
+  'menub','no',...
+  'name','Specify Which Occasions to Process',...
+  'numbertitle','off',...
+  'resize','off');  
+
+movegui(era_gui_whichtimes,'center');
+
+str = {'Select which events you would like to be processed:'};
+
+%Write text
+uicontrol(era_gui_whichtimes,'Style','text','fontsize',16,...
+    'HorizontalAlignment','center',...
+    'String',str,...
+    'Position',[0 row figwidth 25]);     
+
+%bump down to next row
+row = row - rowspace*8.5;
+
+tlist = uicontrol(era_gui_whichtimes,'style','list',...
+     'min',0,'max',length(tnames),...
+     'Value',tind,...
+     'Position',[.5*figwidth/4 row 3*figwidth/4 figheight/2],...
+     'string',tnames);
+
+%Create a button that will go back to era_proc without saving
+uicontrol(era_gui_whichtimes,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','Back',...
+    'Position', [figwidth/8 25 figwidth/3 75],...
+    'Callback',{@era_whichtimes_back_call,'era_prefs',era_prefs,...
+    'era_data',era_data}); 
+
+%Create button that will save events inputs
+uicontrol(era_gui_whichtimes,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','Save',...
+    'Position', [4.5*figwidth/8 25 figwidth/3 75],...
+    'Callback',{@era_whichtimes_save_call,'era_prefs',era_prefs,...
+    'era_data',era_data,'tlist',tlist,'tnames',tnames});  
+ 
+%display gui
+set(era_gui_whichtimes,'Visible','on');
+
+%tag the gui
+era_gui_whichtimes.Tag = 'era_gui_whichtimes';
+end
+
+function era_whichtimes_back_call(varargin)
+%go back to era_startproc and do not save which occasions should be processed
+
+%pull era_prefs and era_data from varargin
+[era_prefs, era_data] = era_findprefsdata(varargin);
+
+%find era_gui_whichevents
+era_gui_whichtimes = findobj('Tag','era_gui_whichtimes');
+
+%close era_gui
+close(era_gui_whichtimes);
+
+%execute era_startproc_gui with the old preferences
+era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+
+end
+
+function era_whichtimes_save_call(varargin)
+%go back to era_startproc and save which events should be processed
+
+%pull era_prefs and era_data from varargin
+[era_prefs, era_data] = era_findprefsdata(varargin);
+
+%find tlist and tnames
+ind = find(strcmp('tlist',varargin),1);
+tlist = varargin{ind+1}.Value; 
+ind = find(strcmp('tnames',varargin),1);
+tnames = varargin{ind+1};
+
+times = cell(1,length(tlist));
+
+if ~isnumeric(tnames)
+    for ii = 1:length(tlist)
+        times{ii} = tnames{tlist(ii)};
+    end  
+elseif isnumeric(tnames)
+    for ii = 1:length(tlist)
+        times{ii} = tnames(tlist(ii));
+    end
+end
+
+era_prefs.proc.inp.whichtimes = times;
+
+%find era_gui_whichevents
+era_gui_whichtimes = findobj('Tag','era_gui_whichtimes');
+
+%close era_gui
+close(era_gui_whichtimes);
+
+%execute era_startproc_gui with the new preferences
+era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+end
 
 function era_exec(varargin)
 %if execute button is pushed, parse input to run in era_relwrap
@@ -1023,6 +1259,7 @@ era_prefs.proc.inp.id = choices(1);
 era_prefs.proc.inp.meas = choices(2);
 era_prefs.proc.inp.group = choices(3);
 era_prefs.proc.inp.event = choices(4);
+era_prefs.proc.inp.time = choices(5);
 
 %parse inputs
 era_data.proc.idheader = char(era_data.proc.collist(choices(1)));
@@ -1038,6 +1275,12 @@ if choices(4) ~= length(era_data.proc.collist)
     era_data.proc.eventheader = char(era_data.proc.collist(choices(4)));
 elseif choices(4) == length(era_data.proc.collist)
     era_data.proc.eventheader = '';
+end
+
+if choices(5) ~= length(era_data.proc.collist)
+    era_data.proc.timeheader = char(era_data.proc.collist(choices(5)));
+elseif choices(5) == length(era_data.proc.collist)
+    era_data.proc.timeheader = '';
 end
 
 %check whether particular events were specified to process. If not, process
@@ -1074,7 +1317,25 @@ if (isempty(era_prefs.proc.inp.whichgroupscol) &&...
     
 end
 
-%put the information about which events and groups to process in era_data
+%check whether particular occasions were specified to process. If not, process
+%all occasions. Also, if occasion was changed, overwrite the old and replace
+%with all the new occasion types.
+if (isempty(era_prefs.proc.inp.whichtimescol) &&...
+        ~strcmpi(era_data.proc.collist{era_prefs.proc.inp.time},'none')) || ...
+        (~isempty(era_prefs.proc.inp.whichtimescol) && ...
+        era_prefs.proc.inp.whichtimescol ~= era_prefs.proc.inp.time)
+    
+    %pull a list of occasions from the file based on the input from era_gui
+    tnames = unique(era_data.raw.data.(era_data.proc.collist{...
+        era_prefs.proc.inp.time}));
+    
+    era_prefs.proc.inp.whichtimescol = era_prefs.proc.inp.time;
+    era_prefs.proc.inp.whichtimes = tnames;  
+    
+end
+
+%put the information about which events, groups, and occasions to process 
+%in era_data
 if ~strcmpi(era_data.proc.collist{era_prefs.proc.inp.event},'none')
     era_data.proc.whichevents = era_prefs.proc.inp.whichevents;
 else
@@ -1084,6 +1345,11 @@ if ~strcmpi(era_data.proc.collist{era_prefs.proc.inp.group},'none')
     era_data.proc.whichgroups = era_prefs.proc.inp.whichgroups;
 else
     era_data.proc.whichgroups = '';
+end
+if ~strcmpi(era_data.proc.collist{era_prefs.proc.inp.time},'none')
+    era_data.proc.whichtimes = era_prefs.proc.inp.whichtimes;
+else
+    era_data.proc.whichtimes = '';
 end
 
 %find era_gui
@@ -1101,13 +1367,13 @@ if ~isempty(ind)
     probcol = {};
     for i = 1:length(ind)
         if choices(ind(i)) ~= length(era_data.proc.collist)
-            probcol(end+1) = era_data.proc.collist(ind(i));
+            probcol(end+1) = era_data.proc.collist(ind(i)); %#ok<AGROW>
         end
     end
     if ~isempty(probcol)
         dlg = {'Duplicate variable names were not provided for '};
         for i = 1:length(probcol)
-            dlg{end+1} = probcol{i};
+            dlg{end+1} = probcol{i}; %#ok<AGROW>
         end
         dlg{end+1} = 'When selecting column headers, please select unique names';
         errordlg(dlg, 'Unique variable names not provided');
