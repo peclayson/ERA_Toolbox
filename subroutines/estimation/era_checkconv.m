@@ -13,7 +13,7 @@ function RELout = era_checkconv(REL)
 % RELout - structure array with the following added fields
 %  out.conv.converged - 1 data converged, 0 data did not converge
 
-% Copyright (C) 2016-2019 Peter E. Clayson
+% Copyright (C) 2016-2020 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by

@@ -16,7 +16,7 @@ function era_startview_trt(varargin)
 %  figures and tables (for more information about the tables and figures
 %  see the user manual for the ERA toolbox)
 
-% Copyright (C) 2016-2019 Peter E. Clayson
+% Copyright (C) 2016-2020 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by

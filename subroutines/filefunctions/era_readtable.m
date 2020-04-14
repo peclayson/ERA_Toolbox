@@ -18,7 +18,7 @@ function dataout = era_readtable(varargin)
 % dataout - data in table format
 %
 
-% Copyright (C) 2016-2019 Peter E. Clayson
+% Copyright (C) 2016-2020 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by

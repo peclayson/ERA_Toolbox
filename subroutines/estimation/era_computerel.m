@@ -54,13 +54,18 @@ function RELout = era_computerel(varargin)
 % clinical sample: A generalizability and decision analysis of the ERN and 
 % Pe. Psychophysiology, 52(6), 790-800. http://doi.org/10.1111/psyp.12401
 %
+% Clayson, P. E., Carbine, K. A., Baldwin, S. A., Olsen, J. A., & 
+% Larson, M. J. (under review). Using generalizability theory and the ERP 
+% Reliability Analysis (ERA) Toolbox for assessing test-retest reliability 
+% of ERP scores: Algorithms, framework, and implementation. 
+%
 %It would be terribly remiss of me not thank Dr. Scott Baldwin for
 %conceptualizing and developing the formulas that are implemented in this
 %toolbox. Dr. Baldwin also wrote the original Stan syntax in R and 
 %graciously provided me with all of his code. This Matlab code is based
 %off of his R code. 
 
-% Copyright (C) 2016-2019 Peter E. Clayson
+% Copyright (C) 2016-2020 Peter E. Clayson
 % 
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
