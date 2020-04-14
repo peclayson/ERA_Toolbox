@@ -2232,7 +2232,7 @@ switch relanalysis
                     
                     
                     %compute reliabiltiy
-                    ntrials = max(trltable.GroupCount(:)) + 100000;
+                    ntrials = max(trltable.GroupCount(:)) + 1000;
                     
                     
                     [llrel,mrel,ulrel] = era_rel_trt(...
