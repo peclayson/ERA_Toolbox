@@ -3,7 +3,7 @@ function RELout = era_computerel(varargin)
 %
 %era_computerel('data',era_datatable,'chains',3,'iter',1000)
 %
-%Lasted Updated 12/9/19
+%Lasted Updated 8/21/20
 %
 %Required Inputs:
 % data - data table outputted from the era_loadfile script (see era_loadfile
@@ -17,6 +17,9 @@ function RELout = era_computerel(varargin)
 % verbose - 1: Do not print iterations, 2: Print iterations (default: 1)
 % showgui - 1: Do not show a gui while computations are running, 2: show a 
 %  gui while the computations are running (default: 1)
+% sserrvar - 1: Do not estimate single-subject error variances; 2: estimate
+%  single subject erorr variances, which is not currently supported for
+%  test-retest reliability metrics
 %
 %Outputs:
 % RELout - structure array with the following fields.
@@ -122,6 +125,10 @@ function RELout = era_computerel(varargin)
 %
 %12/9/19 PC
 % add .analysis filed to RELout when only examining one session
+%
+%8/21/20 PC
+% add capability estimate single-subject error variances for non
+%  test-retest metrics
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -167,6 +174,14 @@ if ~isempty(varargin)
         strcat('WARNING: Number of iterations not specified \n\n',... 
         'Please input the number of iterations for stan\n',...
         'See help era_computerel for more information on inputs'));
+    end
+    
+    %check whether sserrvar is specified
+    ind = find(strcmp('sserrvar',varargin),1);
+    if ~isempty(ind)
+        sserrvar = varargin{ind+1}; 
+    else 
+        sserrvar = 1; %default is not to estimate
     end
     
     %check whether verbose is specified
@@ -237,6 +252,18 @@ if any(any(ismissing(datatable)))
     'See ''Preparing Data'' section of UserManual.pdf for more information'));
 end
 
+if (any(strcmpi(colnames,'time')) && sserrvar == 2)
+    dlg = {'Estimation of single-subject error variance is not currently';...
+        'supported for test-retest reliability metrics'; ...
+        '(i.e., when the occasion input is anything but none';...
+        'Please change setting in the preferences'};
+    errordlg(dlg, 'Measurement data not numeric');
+
+    %take the user back to era_startproc_gui
+    era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+    return;
+end
+
 %change verbosity to match true or false
 if verbose == 1
     verbosity = false;
@@ -272,6 +299,7 @@ REL = struct;
 REL.filename = datatable.Properties.Description;
 REL.niter = niter;
 REL.nchains = nchains;
+REL.sserrvar = sserrvar;
 
 %determine how cmdstan will be set up
 %analysis variable will indicate whether group or events need to be
@@ -283,7 +311,9 @@ REL.nchains = nchains;
 %4 - possible groups and event types to consider
 %5 - possible occasions to consider
 
-if (ntime == 0)
+if sserrvar == 2
+    analysis = 6;
+elseif sserrvar == 1 && (ntime == 0)
     if (ngroup == 0) && (nevent == 0)
         analysis = 1;
     elseif (ngroup > 0) && (nevent == 0)
@@ -293,7 +323,7 @@ if (ntime == 0)
     elseif (ngroup > 0) && (nevent > 0)
         analysis = 4;
     end
-elseif (ntime > 0)
+elseif sserrvar == 1 && (ntime > 0)
     analysis = 5;
 end
 
@@ -1712,6 +1742,269 @@ switch analysis
         
         REL.out.labels = darray.names;
         
+    case 6 %estimate single subject error variances, this will be done 
+        %serially for each group and event
+        
+        %cmdstan requires the id variable to be numeric and sequential.
+        %an id2 variable is created to satisfy this requirement.
+        
+        fprintf('\nPreparing data for analysis...\n');
+        
+        if (ngroup == 0) && (nevent == 0)
+            datatable = sortrows(datatable,{'id'});
+        elseif (ngroup > 0) && (nevent == 0)
+            datatable = sortrows(datatable,{'group','id'});
+        elseif (ngroup == 0) && (nevent > 0)
+            datatable = sortrows(datatable,{'id','event'});
+        elseif (ngroup > 0) && (nevent > 0)
+            datatable = sortrows(datatable,{'group','id','event'});
+        end
+        
+        if nevent > 0
+            REL.events = eventnames;
+        elseif nevent == 0
+            REL.events = 'none';
+        end
+        
+        if ngroup > 0
+            REL.groups = groupnames;
+        elseif ngroup == 0
+            REL.groups = 'none';
+        end
+  
+        %parse data based on number of events and groups
+        %create structure for storing data
+        darray = struct;
+        darray.data = [];
+        darray.names = [];
+        
+        if (ngroup == 0) && (nevent == 0)
+            darray.data{end+1} = datatable; 
+            darray.names{end+1} = 'none';
+        elseif (ngroup > 0) && (nevent == 0)
+            for i = 1:ngroup
+                dummytable = datatable(ismember(datatable.group,...
+                    char(groupnames(i))),:);
+                darray.data{end+1} = dummytable;
+                darray.names{end+1} = char(groupnames(i));
+            end
+        elseif (ngroup == 0) && (nevent > 0)
+            for i = 1:nevent
+                dummytable = datatable(ismember(datatable.event,...
+                    char(eventnames(i))),:);
+                darray.data{end+1} = dummytable;
+                darray.names{end+1} = char(eventnames(i));
+            end
+        elseif (ngroup > 0) && (nevent > 0)
+            for i = 1:ngroup
+                dummytable = datatable(ismember(datatable.group,...
+                    char(groupnames(i))),:);
+                for j = 1:nevent
+                    dummytable2 = dummytable(ismember(dummytable.event,...
+                        char(eventnames(j))),:);
+                    darray.data{end+1} = dummytable2;
+                    darray.names{end+1} = strcat(char(groupnames(i)),...
+                        '_;_',char(eventnames(j)));
+                end
+            end
+        end
+        
+        
+        %cmdstan requires the id variable to be numeric and sequential. 
+        %an id2 variable is created to satisfy this requirement. 
+        
+        for da = 1:length(darray.names)
+            warray = darray.data{da};
+            warray = sortrows(warray,'id');
+            id2 = zeros(0,height(warray));
+            
+            for i = 1:length(warray.id)
+                if i == 1
+                    id2(1) = 1;
+                    count = 1;
+                elseif i > 1 && strcmp(char(warray.id(i)), char(warray.id(i-1)))
+                    id2(i) = count;
+                elseif i > 1 && ~strcmp(warray.id(i), warray.id(i-1))
+                    count = count+1;
+                    id2(i) = count;
+                end
+            end
+            
+            warray.id2 = id2(:);
+            darray.data{da} = warray;
+        end
+        
+        %put the compiled data into REL structure
+        REL.data = datatable;
+        REL.analysis = 'ic_sserrvar';
+        
+        if showgui == 2
+            
+            %find whether gui exists (the user may have closed it)
+            era_relgui = findobj('Tag','era_relgui');
+            
+            if ~isempty(era_relgui)
+                
+                %Write text
+                uicontrol(era_relgui,'Style','text',...
+                    'fontsize',fsize+6,...
+                    'HorizontalAlignment','center',...
+                    'String','Data are crunching. This will take a long time!',...
+                    'Position',[0 row-rowspace*1.5 figwidth 25]);
+                
+                %pause a moment so the gui will be displayed
+                pause(.02)
+            end
+        end
+        
+        %define number of data chunks to crunch through
+        ndchunks = length(darray.names);
+        
+        REL.stan_in = [];
+        
+        for i = 1:ndchunks
+            
+            %create string to be printed and potentially viewed in gui
+            str = ['Working on event/group ' num2str(i) ' of ' num2str(ndchunks)];
+            
+            %print to screen to notify user of progress
+            fprintf(strcat('\n\n',str,'\n\n'));
+            
+            if showgui == 2
+                
+                %find whether gui exists (the user may have closed it)
+                era_relgui = findobj('Tag','era_relgui');
+                
+                if ~isempty(era_relgui)
+                    
+                    %Write text
+                    uicontrol(era_relgui,'Style','text',...
+                        'fontsize',fsize+6,...
+                        'HorizontalAlignment','center',...
+                        'String',str,...
+                        'Position',[0 row-rowspace*1.5 figwidth 25]);
+                    
+                    %pause a moment so the gui will be displayed
+                    pause(.02)
+                end
+            end
+            
+            stan_in = {
+                'data {'
+                'int<lower=1> NOBS;  //number of observations'
+                'int<lower=1> NSUB;  //number of subjects'
+                'int<lower=1> id[NOBS];  //id variable'
+                'vector[NOBS] meas;  // response variable'
+                '}'
+                'parameters {'
+                'real Intercept;  // population intercept'
+                'real Intercept_sigma;  // population sigma intercept'
+                'vector<lower=0>[2] gro_sds;  // group-level standard deviations'
+                'matrix[2, NSUB] gro_effs_stndzd;  // standardized group-level effects'
+                'cholesky_factor_corr[2] chol_corrmat;  // cholesky factor of correlation matrix'
+                '}'
+                'transformed parameters {'
+                'matrix[NSUB, 2] gro_effs_actual;  // actual group-level effects'
+                '// using vectors speeds up indexing in loops'
+                'vector[NSUB] ind_bs;'
+                'vector[NSUB] ind_sd;'
+                '// compute actual group-level effects'
+                'gro_effs_actual = (diag_pre_multiply(gro_sds, chol_corrmat) * gro_effs_stndzd)'';'
+                'ind_bs = gro_effs_actual[, 1];'
+                'ind_sd = gro_effs_actual[, 2];'
+                '}'
+                'model {'
+                '// initialize linear predictor term'
+                'vector[NOBS] mu = Intercept + rep_vector(0, NOBS);'
+                '// initialize linear predictor term'
+                'vector[NOBS] sigma = Intercept_sigma + rep_vector(0, NOBS);'
+                'mu += ind_bs[id];'
+                'sigma += ind_sd[id];'
+                'sigma = exp(sigma);'
+                '// priors including all constants'
+                'target += student_t_lpdf(Intercept | 3, 15.7, 12.4);'
+                'target += student_t_lpdf(Intercept_sigma | 3, 0, 2.5);'
+                'target += student_t_lpdf(gro_sds | 3, 0, 12.4)'
+                '  - 2 * student_t_lccdf(0 | 3, 0, 12.4);'
+                'target += std_normal_lpdf(to_vector(gro_effs_stndzd));'
+                'target += lkj_corr_cholesky_lpdf(chol_corrmat | 1);'
+                '// likelihood including all constants'
+                'target += normal_lpdf(meas | mu, sigma);'
+                '}'
+                };
+            
+            
+            %store the cmdstan syntax
+            REL.stan_in{end+1} = stan_in;
+            
+            %prep data structure for cmdstan
+            %create data structure to pass to cmdstan
+            data = struct(...
+                'NOBS', height(darray.data{i}), ... %number of observations
+                'NSUB', length(unique(darray.data{i}.id2)),... %number of participants
+                'id', darray.data{i}.id2,... %id variable
+                'meas', darray.data{i}.meas); %measurement variable
+         
+            %execute model code
+            
+            modelname = strcat('cmdstan',char(date));
+            
+            fprintf('\nModel is being run in cmdstan\n');
+            fprintf('\nThis may take a while depending on the amount of data\n');
+            
+            %run cmdstan
+            fit = stan('model_code', stan_in,...
+                'model_name', modelname,...
+                'data', data,...
+                'iter', niter,...
+                'chains', nchains,...
+                'refresh', niter/20,...
+                'verbose', verbosity,...
+                'file_overwrite', true,...
+                'seed', 12345);
+            
+            %block user from using Matlab command window
+            fit.block();
+            
+            
+            if i == 1
+                %create the fields for storing the parsed cmdstan outputs
+                REL.out = [];
+                REL.out.mu = [];
+                REL.out.ind_bs = {};
+                REL.out.gro_sds = {};
+                REL.out.pop_sdlog = [];
+                REL.out.ind_sdlog = {};
+                REL.out.labels = {};
+                REL.out.conv.data = {};
+            end
+            
+            measname ='Intercept'; %population intercept
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.mu(:,end+1) = measvalue;
+            
+            measname ='ind_bs'; %single-subject intercepts
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.ind_bs(:,end+1) = {num2cell(measvalue)};
+            
+            measname ='gro_sds'; %group sds (sd(ind_bs), sd(ind_sd))
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.gro_sds(:,end+1) = {num2cell(measvalue)};
+            
+            measname = 'Intercept_sigma'; %population error (log scale)
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.pop_sdlog(:,end+1) = measvalue;                        
+            
+            measname = 'ind_sd'; %single-subject participant error (log scale)
+            measvalue = fit.extract('pars',measname).(measname);
+            REL.out.ind_sdlog(:,end+1) = {num2cell(measvalue)};
+            
+            REL.out.conv.data{end+1} = era_storeconv(fit,3);
+            
+        end
+        
+        REL.out.labels = darray.names;
+        
 end %switch analysis
 
 %close the gui if one was shown
@@ -1789,5 +2082,31 @@ elseif trt == 1
             convstats{end,3} = rhat;
         end
     end
+elseif trt == 3
+    inp2check = {'lp__'};
+    
+    inp2check{end+1} = 'Intercept';
+    inp2check{end+1} = 'ind_bs';
+    inp2check{end+1} = 'gro_sds';
+    inp2check{end+1} = 'Intercept_sigma';
+    inp2check{end+1} = 'ind_sd';
+    
+    for j = 1:length(inp2check)
+        check = strncmp(output,inp2check{j},length(inp2check{j}));
+        ind2check = find(check == 1);
+        for i = 1:length(ind2check)
+            pullrow = strsplit(output{ind2check(i),:},' ');
+            label = pullrow{1};
+            neff = str2num(pullrow{end-2});
+            rhat = str2num(pullrow{end});
+            convstats{end+1,1} = label;
+            convstats{end,2} = neff;
+            convstats{end,3} = rhat;
+        end
+    end
 end
+
+
+
+
 end

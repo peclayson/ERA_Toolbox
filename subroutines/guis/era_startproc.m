@@ -2,7 +2,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 2/25/19
+%Last Updated 8/21/20
 %
 %
 %Input
@@ -87,6 +87,8 @@ function era_startproc(varargin)
 %2/25/19 PC
 % adding funcionality to look at test retest reliability
 %
+%8/21/20 PC
+% add functionality to specify estimatin of single-subject erorr variance
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -566,7 +568,7 @@ row = row - rowspace;
 %input for specifying whether to use verbose stan output
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
-    'String','Verbose Stan output (print each iteration):',...
+    'String','Verbose Stan output (print each iteration)',...
     'Tooltip','Displays Stan output in the Matlab command window',...
     'Position', [lcol row era_prefs.guis.pos(4)/2 30]);  
 
@@ -588,6 +590,25 @@ uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
 newprefs.traceplots = uicontrol(era_gui,'Style','pop',...
     'fontsize',era_prefs.guis.fsize,'String',{'No';'Yes'},...
     'Value',era_prefs.proc.traceplots,...
+    'Position', [rcol row+5 era_prefs.guis.pos(4)/2 30]);  
+
+%next row
+row = row - rowspace;
+
+%input for specifying whether to estimate subject-specific error variance
+expl_str = ['Subject-specific error variances can be used to calculate'...
+    ' subject-level reliabiltiy estimates. This does not work for test-'...
+    'retest reliability estimates.'];
+
+uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
+    'HorizontalAlignment','left',...
+    'String','Estimate subject-specific error variances',...
+    'Tooltip',expl_str,...
+    'Position', [lcol row era_prefs.guis.pos(4)/2 30]);  
+
+newprefs.sserrvar = uicontrol(era_gui,'Style','pop',...
+    'fontsize',era_prefs.guis.fsize,'String',{'No';'Yes'},...
+    'Value',era_prefs.proc.sserrvar,...
     'Position', [rcol row+5 era_prefs.guis.pos(4)/2 30]);  
 
 %next row with extra space
@@ -629,6 +650,7 @@ era_prefs.proc.nchains = str2double(newprefs.nchains.String);
 era_prefs.proc.niter = str2double(newprefs.niter.String);
 era_prefs.proc.verbose = newprefs.verbose.Value;
 era_prefs.proc.traceplots = newprefs.traceplots.Value;
+era_prefs.proc.sserrvar = newprefs.sserrvar.Value;
 
 %find era_gui
 era_gui = findobj('Tag','era_gui');
@@ -1393,6 +1415,21 @@ if ~isnumeric(era_data.raw.data.(era_data.proc.measheader))
         'Only numeric data are allowed in the Measurement variable';...
         'Please select a different column in the dataset for Measurement'};
     errordlg(dlg, 'Measurement data not numeric');
+
+    %take the user back to era_startproc_gui
+    era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
+    return;
+end
+
+%make sure that if the user asked to estimate subject specific error 
+%variances, then the occasion facet was not provided.
+if (~strcmpi(era_data.proc.collist{era_prefs.proc.inp.time},'none') && ...
+        era_prefs.proc.sserrvar == 2)
+    dlg = {'Estimation of single-subject error variance is not currently';...
+        'supported for test-retest reliability metrics'; ...
+        '(i.e., when the occasion input is anything but none';...
+        'Please change setting in the preferences'};
+    errordlg(dlg, 'Single-subject error variance not supported for retest');
 
     %take the user back to era_startproc_gui
     era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
