@@ -3,7 +3,7 @@ function RELout = era_computerel(varargin)
 %
 %era_computerel('data',era_datatable,'chains',3,'iter',1000)
 %
-%Lasted Updated 8/21/20
+%Lasted Updated 8/26/20
 %
 %Required Inputs:
 % data - data table outputted from the era_loadfile script (see era_loadfile
@@ -1976,6 +1976,7 @@ switch analysis
                 REL.out.pop_sdlog = [];
                 REL.out.ind_sdlog = {};
                 REL.out.labels = {};
+                REL.out.id_matches = {};
                 REL.out.conv.data = {};
             end
             
@@ -1998,6 +1999,13 @@ switch analysis
             measname = 'ind_sd'; %single-subject participant error (log scale)
             measvalue = fit.extract('pars',measname).(measname);
             REL.out.ind_sdlog(:,end+1) = {num2cell(measvalue)};
+            
+            just_t = table(...
+                darray.data{i}.id, darray.data{i}.id2);
+            just_t = unique(just_t);
+            just_t.Properties.VariableNames = {'id','id2'};
+            
+            REL.out.id_matches(:,end+1) = {just_t};
             
             REL.out.conv.data{end+1} = era_storeconv(fit,3);
             

@@ -169,7 +169,7 @@ if ~sserrvar
     str_label = 'Plot: Intraclass Correlation Coefficients';
     str_tool = 'Display a plot of the intraclass correlation coefficients';
 elseif sserrvar
-    str_label = 'Plot: Subject-Level Reliabilities';
+    str_label = 'Plot: Subject-Level Intraclass Correlation Coefficients';
     str_tool = sprintf(['Display a plot that shows subject-level \n'...
         'intraclass correlation coefficients']);
 end
@@ -398,10 +398,20 @@ if depeval ~= 0
     return;
 end
 
+%which type of analysis is this (are we using subject-level reliability?)
+if ~isfield(era_data.rel,'analysis') ||... 
+        (isfield(era_data.rel,'analysis') && ...
+        strcmp(era_data.rel.analysis,'ic'))
+    analysis_type = 'sing';
+elseif isfield(era_data.rel,'analysis') && ...
+        strcmp(era_data.rel.analysis,'ic_sserrvar')
+    analysis_type = 'sing_sserr';
+end
+
 %pass inputs from gui to era_relfigures
 era_relfigures('era_data',era_data,...
     'era_prefs',era_prefs,...
-    'analysis','sing');
+    'analysis',analysis_type);
 
 end
 

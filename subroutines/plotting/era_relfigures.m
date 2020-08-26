@@ -183,7 +183,8 @@ if ~isempty(varargin)
     else
         error('varargin:noanalysistype',... %Error code and associated error
             strcat('WARNING: analysis not specified \n\n',...
-            'Please input the analysis to be run: ''sing'' or ''trt'' \n'));
+            'Please input the analysis to be run:\n',...
+            ' ''sing'', ''sing_sserr'', or ''trt'' \n'));
     end
 end
 
@@ -417,7 +418,7 @@ end %if ~isempty(varargin)
 
 if ~isempty(era_prefs)
     switch analysis
-        case 'sing'
+        case {'sing','sing_sserr'}
             depcutoff = era_prefs.view.depvalue;
             pdep = era_prefs.view.plotdep;
             picc = era_prefs.view.ploticc;
@@ -450,11 +451,12 @@ if ~isempty(era_prefs)
     end
 end
 
+
 switch analysis
-    case 'sing'
+    case {'sing','sing_sserr'}
         %calculate reliabitliy information to be used for plotting and tables
         [era_data, relerr] = era_relsummary('era_data',era_data,...
-            'analysis','sing',...
+            'analysis',analysis,...
             'depcutoff',depcutoff,...
             'meascutoff',meascutoff,...
             'depcentmeas',depcentmeas);
