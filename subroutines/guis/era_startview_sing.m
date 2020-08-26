@@ -4,7 +4,7 @@ function era_startview_sing(varargin)
 %
 %era_startview_sing('era_prefs',era_prefs,'era_data',era_data)
 %
-%Last Updated 6/21/19
+%Last Updated 8/26/20
 %
 %Required Input
 % era_data - ERA Toolbox data structure array
@@ -37,9 +37,21 @@ function era_startview_sing(varargin)
 % by Peter Clayson (6/21/19)
 % peter.clayson@gmail.com
 %
+%8/26/20 PC
+% changes associated with viewing subject-level relabilities
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
+
+%which type of analysis is this (are we using subject-level reliability?)
+if ~isfield(era_data.rel,'analysis') ||... 
+        (isfield(era_data.rel,'analysis') && ...
+        strcmp(era_data.rel.analysis,'ic'))
+    sserrvar = 0;
+elseif isfield(era_data.rel,'analysis') && ...
+        strcmp(era_data.rel.analysis,'ic_sserrvar')
+    sserrvar = 1;
+end
 
 %check if era_gui is open.
 era_gui = findobj('Tag','era_gui');
@@ -126,14 +138,22 @@ rowspace = 50;
 rcol = (figwidth/4)*3;
 
 chckstr = 'Checked = Yes; Unchecked = No';
-str = sprintf(['Display a plot that shows the impact of the number of\n'...
-    'trials retained for averaging on dependability estimates']);
+
+if ~sserrvar
+    str_label = 'Plot: Number of Trials v Dependability';
+    str_tool = sprintf(['Display a plot that shows the impact of the number of\n'...
+        'trials retained for averaging on dependability estimates']);
+elseif sserrvar
+    str_label = 'Plot: Subject-Level Reliabilities';
+    str_tool = sprintf(['Display a plot that shows each participant''s \n'...
+        'reliabiltiy estimate and their credible interval']);
+end
 
 %dependability with increasing trials
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
-    'String','Plot: Number of Trials v Dependability',...
-    'Tooltip',str,...
+    'String',str_label,...
+    'Tooltip',str_tool,...
     'Position', [lcol row figwidth/2 40]);  
 
 inputs.h(2) = uicontrol(era_gui,'Style','checkbox',...
@@ -141,20 +161,31 @@ inputs.h(2) = uicontrol(era_gui,'Style','checkbox',...
     'Tooltip',chckstr,...
     'Position', [rcol row+20 figwidth/2 25]); 
 
+
 %next row
 row = row - rowspace;
+
+if ~sserrvar
+    str_label = 'Plot: Intraclass Correlation Coefficients';
+    str_tool = 'Display a plot of the intraclass correlation coefficients';
+elseif sserrvar
+    str_label = 'Plot: Subject-Level Reliabilities';
+    str_tool = sprintf(['Display a plot that shows subject-level \n'...
+        'intraclass correlation coefficients']);
+end
 
 %plot ICCs
 uicontrol(era_gui,'Style','text','fontsize',era_prefs.guis.fsize,...
     'HorizontalAlignment','left',...
-    'String','Plot: Intraclass Correlation Coefficients',...
-    'Tooltip','Display a plot of the intraclass correlation coefficients',...
+    'String',str_label,...
+    'Tooltip',str_tool,...
     'Position', [lcol row figwidth/2 40]);  
 
 inputs.h(3) = uicontrol(era_gui,'Style','checkbox',...
     'Value',era_prefs.view.ploticc,...
     'Tooltip',chckstr,...
     'Position', [rcol row+20 figwidth/2 25]); 
+
 
 %next row
 row = row - rowspace;
@@ -170,6 +201,7 @@ inputs.h(7) = uicontrol(era_gui,'Style','checkbox',...
     'Value',era_prefs.view.showstddevf,...
     'Tooltip',chckstr,...
     'Position', [rcol row+20 figwidth/2 25]);
+
 
 %next row
 row = row - rowspace;
@@ -189,6 +221,7 @@ inputs.h(4) = uicontrol(era_gui,'Style','checkbox',...
     'Value',era_prefs.view.inctrltable,...
     'Tooltip',chckstr,...
     'Position', [rcol row+20 figwidth/2 25]); 
+
 
 %next row
 row = row - rowspace;
@@ -212,6 +245,7 @@ inputs.h(5) = uicontrol(era_gui,'Style','checkbox',...
     'Tooltip',chckstr,...
     'Position', [rcol row+20 figwidth/2 25]); 
 
+
 %next row
 row = row - rowspace;
 
@@ -229,6 +263,7 @@ inputs.h(6) = uicontrol(era_gui,'Style','checkbox',...
     'Value',era_prefs.view.showstddevt,...
     'Tooltip',chckstr,...
     'Position', [rcol row+20 figwidth/2 25]);
+
 
 %next row for buttons
 row = row - rowspace*1.4;
