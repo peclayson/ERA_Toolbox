@@ -4,7 +4,7 @@ function era_relfigures(varargin)
 %
 %era_relfigures('era_data',era_data,'analysis','sing')
 %
-%Last Modified 8/3/19
+%Last Modified 8/27/20
 %
 %Required Inputs:
 % era_data - ERA Toolbox data structure array containing outputs from
@@ -44,7 +44,13 @@ function era_relfigures(varargin)
 %  depcentmeas - which measure of central tendency to use to estimate the
 %   overall dependability, 1 - mean, 2 - median (default: 1)
 %
-% Option 3 (for analysis = 'trt'):
+% Option 3 (for analysis = 'ic_sing_sserr')
+%  plotdep - plots the subject-level dependability estimates with credible
+%   intervals in ascending order
+%  ploticc- plots the subject-level ICCs with credible intervals in
+%   ascending order
+%
+% Option 4 (for analysis = 'trt'):
 %  relcutoff - reliability level to use for cutoff when deciding the
 %   minimum number of trials needed to achieve this specified level of
 %   reliability
@@ -152,6 +158,9 @@ function era_relfigures(varargin)
 %
 %8/3/19 PC
 % finished making trt changes
+%
+%8/20/27 PC
+% add functionality to plot subject-level reliability 
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -491,6 +500,11 @@ switch analysis
                 'trials',[1 plotntrials],...
                 'depline',plotdepline,...
                 'depcutoff',depcutoff);
+        end
+    case 'sing_sserr'
+        if pdep == 1
+            era_depssplot('era_data',era_data,...
+                'depline',plotdepline);
         end
     case 'trt'
         if plotrel == 1
