@@ -137,6 +137,7 @@ depplot = figure;
 set(gcf,'NumberTitle','Off');
 depplot.Position = [125 630 900 450];
 fsize = 16;
+plot_count = 1;
 
 if strcmp(stat,'dep')
     plottitle = 'Subject-Level Dependability Estimates';
@@ -162,8 +163,9 @@ if strcmp(stat,'dep')
                     any(gtable.dep_ll > gro_est)
                 
                 miss = 1;
-                miss_ids = find(gtable.dep_ul < gro_est);
-                miss_ids = [miss_ids find(gtable.dep_ll > gro_est)];
+                miss_ids1 = find(gtable.dep_ul < gro_est);
+                miss_ids2 = find(gtable.dep_ll > gro_est);
+                miss_ids = [miss_ids1; miss_ids2];
                 
                 good_ids = 1:height(gtable);
                 good_ids(miss_ids) = [];
@@ -171,7 +173,7 @@ if strcmp(stat,'dep')
             
             
             set(gcf,'Name',plottitle);
-            subplot(yplots,xplots,eloc);
+            subplot(yplots,xplots,plot_count);
             if miss
                 hold on
                 errorbar(plotssrel.subj(miss_ids),...
@@ -210,7 +212,7 @@ if strcmp(stat,'dep')
                     'LineStyle','none');
                 
             end
-            axis([0 max(plotssrel(gloc).subj)+1 0 1]);
+            axis([0 max(plotssrel.subj)+1 0 1]);
             set(gca,'fontsize',16);
             set(gca,'xticklabel',[])
             
@@ -236,6 +238,8 @@ if strcmp(stat,'dep')
                 'Color','k',...
                 'LineStyle','-',...
                 'LineWidth',1.5);
+            
+            plot_count = plot_count + 1;
         end
     end
 elseif strcmp(stat,'icc')
@@ -262,8 +266,9 @@ elseif strcmp(stat,'icc')
                     any(gtable.icc_ll > gro_est)
                 
                 miss = 1;
-                miss_ids = find(gtable.icc_ul < gro_est);
-                miss_ids = [miss_ids find(gtable.icc_ll > gro_est)];
+                miss_ids1 = find(gtable.icc_ul < gro_est);
+                miss_ids2 = find(gtable.icc_ll > gro_est);
+                miss_ids = [miss_ids1; miss_ids2];
                 
                 good_ids = 1:height(gtable);
                 good_ids(miss_ids) = [];
@@ -271,7 +276,7 @@ elseif strcmp(stat,'icc')
             
             
             set(gcf,'Name',plottitle);
-            subplot(yplots,xplots,eloc);
+            subplot(yplots,xplots,plot_count);
             if miss
                 hold on
                 errorbar(plotssrel.subj(miss_ids),...
@@ -310,7 +315,7 @@ elseif strcmp(stat,'icc')
                     'LineStyle','none');
                 
             end
-            axis([0 max(plotssrel(gloc).subj)+1 0 1]);
+            axis([0 max(plotssrel.subj)+1 0 1]);
             set(gca,'fontsize',16);
             set(gca,'xticklabel',[])
             
@@ -336,6 +341,8 @@ elseif strcmp(stat,'icc')
                 'Color','k',...
                 'LineStyle','-',...
                 'LineWidth',1.5);
+            
+            plot_count = plot_count + 1;
         end
     end
 end

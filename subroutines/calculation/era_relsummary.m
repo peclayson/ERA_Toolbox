@@ -1597,10 +1597,10 @@ switch relanalysis
                     %differentiate where the group and event the data are for
                     lblstr = strsplit(REL.out.labels{i},'_;_');
                     
-                    eloc = find(ismember(enames,lblstr(1)));
-                    gloc = find(ismember(gnames,lblstr(2)));
+                    eloc = find(ismember(enames,lblstr(2)));
+                    gloc = find(ismember(gnames,lblstr(1)));
                     
-                    data.g(gloc).e(eloc).label = REL.out.labels(i);
+                    data.g(gloc).e(eloc).label = REL.out.labels{i};
                     data.g(gloc).e(eloc).mu = REL.out.mu(:,i);
                     data.g(gloc).e(eloc).ind_bs = REL.out.ind_bs{:,i};
                     data.g(gloc).e(eloc).gro_sds = REL.out.gro_sds{:,i};
@@ -1862,15 +1862,17 @@ switch relanalysis
                     
                     try
                         %create empty arrays for storing dependability information
-                        trltable = varfun(@length,REL.data{1},'GroupingVariables',{'id'});
+                        trltable = varfun(@length,REL.data{1},'GroupingVariables',{'id','event'});
                     catch
                         %create empty arrays for storing dependability information
-                        trltable = varfun(@length,REL.data,'GroupingVariables',{'id'});
+                        trltable = varfun(@length,REL.data,'GroupingVariables',{'id','event'});
                     end
+                    
+                    trltable = trltable(strcmp(trltable.event,enames{eloc}),:);
                     
                     %compute dependabiltiy
                     idtable = innerjoin(data.g(gloc).e(eloc).id_match,...
-                        trltable(:,1:2));
+                        trltable(:,[1 3]));
                     idtable.Properties.VariableNames{3} = 'trls';
                     
                     ssrel_table = era_ssrel(...
@@ -1990,15 +1992,17 @@ switch relanalysis
                         
                         try
                             %create empty arrays for storing dependability information
-                            trltable = varfun(@length,REL.data{1},'GroupingVariables',{'id'});
+                            trltable = varfun(@length,REL.data{1},'GroupingVariables',{'id','event'});
                         catch
                             %create empty arrays for storing dependability information
-                            trltable = varfun(@length,REL.data,'GroupingVariables',{'id'});
+                            trltable = varfun(@length,REL.data,'GroupingVariables',{'id','event'});
                         end
+                        
+                        trltable = trltable(strcmp(trltable.event,enames{eloc}),:);
                         
                         %compute dependabiltiy
                         idtable = innerjoin(data.g(gloc).e(eloc).id_match,...
-                            trltable(:,1:2));
+                            trltable(:,[1 3]));
                         idtable.Properties.VariableNames{3} = 'trls';
                         
                         ssrel_table = era_ssrel(...

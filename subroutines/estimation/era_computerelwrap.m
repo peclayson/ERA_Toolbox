@@ -219,6 +219,10 @@ while rerun ~= 0
     elseif era_prefs.proc.traceplots == 2 && rerun == 0 && ...
             strcmp(RELout.analysis,'trt')
         fprintf('\nViewing trace plots for trt analyses is not currently supported\n');
+    elseif era_prefs.proc.traceplots == 2 && rerun == 0 && ...
+            strcmp(RELout.analysis,'ic_sserrvar')
+        fprintf(strcat('\nViewing trace plots for subject-level',...
+            ' reliability analyses is not currently supported\n'));
     end
     
     %if convergence was not met and the user would like to rerun the model,
