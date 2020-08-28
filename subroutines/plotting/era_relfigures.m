@@ -503,7 +503,8 @@ switch analysis
         end
     case 'sing_sserr'
         if pdep == 1
-            era_depssplot('era_data',era_data,...
+            era_ssrelplot('era_data',era_data,...
+                'stat','dep',...
                 'depline',plotdepline);
         end
     case 'trt'
@@ -518,7 +519,13 @@ end
 %Plot that compares the intraclass correlation coefficients for each
 %group and/or condition
 if picc == 1
-    era_ptintervalplot('era_data',era_data,'stat','icc');
+    if strcmp(analysis,'sing_sserr')
+        era_ssrelplot('era_data',era_data,...
+                'stat','icc',...
+                'depline',plotdepline);
+    else
+        era_ptintervalplot('era_data',era_data,'stat','icc');
+    end
 end
 
 %plot that shows between-person standard deviation
@@ -545,7 +552,7 @@ end
 
 %table displaying overall dependability information
 switch analysis
-    case 'sing'
+    case {'sing','sing_sserr'}
         if showoverallt == 1
             era_depoverallt('era_data',era_data,'gui',1);
         end

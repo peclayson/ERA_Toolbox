@@ -1,9 +1,9 @@
 function ptintplot = era_ptintervalplot(varargin)
 %Plot the a point estimate with its associated confidence interval
 %
-
+%era_ptintervalplot('era_data',era_data,'stat','bet')
 %
-%Last Modified 1/19/17
+%Last Modified 8/28/20
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -21,23 +21,23 @@ function ptintplot = era_ptintervalplot(varargin)
 % figure that displays a point estimate and its credible interval
 
 % Copyright (C) 2016-2020 Peter E. Clayson
-% 
+%
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
 %     the Free Software Foundation, either version 3 of the License, or
 %     any later version.
-% 
+%
 %     This program is distributed in the hope that it will be useful,
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 %     GNU General Public License for more details.
-% 
+%
 %     You should have received a copy of the GNU General Public License
-%     along with this program (gpl.txt). If not, see 
+%     along with this program (gpl.txt). If not, see
 %     <http://www.gnu.org/licenses/>.
 %
 
-%History 
+%History
 % by Peter Clayson (7/24/16)
 % peter.clayson@gmail.com
 %
@@ -49,52 +49,54 @@ function ptintplot = era_ptintervalplot(varargin)
 %
 %8/2/19 PCA
 % fixed typo
-
+%
+%8/28/20 PC
+% add functionality for subject-level reliabiltiy era_data
 
 %somersault through inputs
 if ~isempty(varargin)
     
-    %the optional inputs check assumes that there was an even number of 
+    %the optional inputs check assumes that there was an even number of
     %optional inputs entered. If not, an error will displayed and the
     %script will terminate.
-    if mod(length(varargin),2)  
+    if mod(length(varargin),2)
         error('varargin:incomplete',... %Error code and associated error
-        strcat('WARNING: Inputs are incomplete \n\n',... 
-        'Make sure each variable input is paired with a value \n',...
-        'See help era_dep for more information about inputs'));
+            strcat('WARNING: Inputs are incomplete \n\n',...
+            'Make sure each variable input is paired with a value \n',...
+            'See help era_dep for more information about inputs'));
     end
     
-    %check if era_data was specified. 
+    %check if era_data was specified.
     %If it is not found, set display error.
     ind = find(strcmpi('era_data',varargin),1);
     if ~isempty(ind)
-        era_data = varargin{ind+1}; 
-    else 
+        era_data = varargin{ind+1};
+    else
         error('varargin:era_data',... %Error code and associated error
-            strcat('WARNING: era_data not specified \n\n',... 
+            strcat('WARNING: era_data not specified \n\n',...
             'Please input era_data (ERA Toolbox data structure array).\n',...
             'See help era_depvtrialsplot for more information \n'));
     end
     
-    %check if stat was specified. 
+    %check if stat was specified.
     %If it is not found, set as default: 2.
     ind = find(strcmpi('stat',varargin),1);
     if ~isempty(ind)
-        stat = varargin{ind+1}; 
+        stat = varargin{ind+1};
         %make sure depline is 1, 2, or 3
         if ~strcmpi('ICC',stat) && ~strcmpi('Bet',stat) &&...
                 ~strcmpi('Wit',stat)
             error('varargin:stat',... %Error code and associated error
-                strcat('WARNING: stat not properly specified \n\n',... 
+                strcat('WARNING: stat not properly specified \n\n',...
                 'Please input the stat for the plot\n',...
                 'ICC - to plot ICC estimates\n',...
                 'Bet - to plot between-subject standard deviations\n',...
                 'Wit - to plot within-subject standard deviations\n',...
                 'See help era_ptintervalplot for more information \n'));
         end
-    else 
+    else
         error('varargin:stat',... %Error code and associated error
-            strcat('WARNING: stat not specified \n\n',... 
+            strcat('WARNING: stat not specified \n\n',...
             'Please input the stat for the plot\n',...
             'ICC - to plot ICC estimates\n',...
             'Bet - to plot between-subject standard deviations\n',...
@@ -102,7 +104,7 @@ if ~isempty(varargin)
             'See help era_ptintervalplot for more information \n'));
     end
     
-    %check if CI was specified. 
+    %check if CI was specified.
     %If it is not found, set default as 95%
     ind = find(strcmpi('CI',varargin),1);
     if ~isempty(ind)
@@ -115,7 +117,7 @@ if ~isempty(varargin)
                 ' is invalid\n',...
                 'See help era_depvtrialsplot for more information \n'));
         end
-    else 
+    else
         ciperc = .95; %default: 95%
     end
     
@@ -123,7 +125,7 @@ end
 
 %make sure the user understood the the CI input is width not edges, if
 %inputted incorrectly, provide a warning, but don't change
-if ciperc < .5 
+if ciperc < .5
     str = sprintf(' %2.0f%%',100*ciperc);
     warning('ci:width',... %Warning code and associated warning
         strcat('WARNING: Size of credible interval is small \n\n',...
@@ -160,57 +162,101 @@ llest = zeros(nevents,ngroups);
 ulest = zeros(nevents,ngroups);
 offsetm = zeros(nevents,ngroups);
 
-%grab icc information for each event and group
-for gloc=1:ngroups
-   for eloc=1:nevents
-%        ptest(eloc,gloc) = relsummary.group(gloc).event(eloc).icc.m;
-%        llest(eloc,gloc) = relsummary.group(gloc).event(eloc).icc.m...
-%            - relsummary.group(gloc).event(eloc).icc.ll;
-%        ulest(eloc,gloc) = relsummary.group(gloc).event(eloc).icc.ul...
-%            - relsummary.group(gloc).event(eloc).icc.m;
-
-       %pull stat-specific information
-        switch lower(stat)
-            case 'icc'
-                llest(eloc,gloc) = ...
-                    era_data.relsummary.group(gloc).event(eloc).icc.m -...
-                    era_data.relsummary.group(gloc).event(eloc).icc.ll;
-                ptest(eloc,gloc) = era_data.relsummary.group(gloc).event(eloc).icc.m;
-                ulest(eloc,gloc) = ...
-                    era_data.relsummary.group(gloc).event(eloc).icc.ul -...
-                    era_data.relsummary.group(gloc).event(eloc).icc.m;
-            case 'bet'
-                llest(eloc,gloc) = ...
-                    era_data.relsummary.group(gloc).event(eloc).betsd.m -...
-                    era_data.relsummary.group(gloc).event(eloc).betsd.ll;
-                ptest(eloc,gloc) = era_data.relsummary.group(gloc).event(eloc).betsd.m;
-                ulest(eloc,gloc) = ...
-                    era_data.relsummary.group(gloc).event(eloc).betsd.ul -...
-                    era_data.relsummary.group(gloc).event(eloc).betsd.m;        
-            case 'wit'
-                llest(eloc,gloc) = ...
-                    era_data.relsummary.group(gloc).event(eloc).witsd.m -...
-                    era_data.relsummary.group(gloc).event(eloc).witsd.ll;
-                ptest(eloc,gloc) = era_data.relsummary.group(gloc).event(eloc).witsd.m;
-                ulest(eloc,gloc) = ...
-                    era_data.relsummary.group(gloc).event(eloc).witsd.ul -...
-                    era_data.relsummary.group(gloc).event(eloc).witsd.m;             
+if ~strcmp(era_data.rel.analysis,'ic_sserrvar')
+    
+    %grab icc information for each event and group
+    for gloc=1:ngroups
+        for eloc=1:nevents
+            %        ptest(eloc,gloc) = relsummary.group(gloc).event(eloc).icc.m;
+            %        llest(eloc,gloc) = relsummary.group(gloc).event(eloc).icc.m...
+            %            - relsummary.group(gloc).event(eloc).icc.ll;
+            %        ulest(eloc,gloc) = relsummary.group(gloc).event(eloc).icc.ul...
+            %            - relsummary.group(gloc).event(eloc).icc.m;
+            
+            %pull stat-specific information
+            switch lower(stat)
+                case 'icc'
+                    llest(eloc,gloc) = ...
+                        era_data.relsummary.group(gloc).event(eloc).icc.m -...
+                        era_data.relsummary.group(gloc).event(eloc).icc.ll;
+                    ptest(eloc,gloc) = era_data.relsummary.group(gloc).event(eloc).icc.m;
+                    ulest(eloc,gloc) = ...
+                        era_data.relsummary.group(gloc).event(eloc).icc.ul -...
+                        era_data.relsummary.group(gloc).event(eloc).icc.m;
+                case 'bet'
+                    llest(eloc,gloc) = ...
+                        era_data.relsummary.group(gloc).event(eloc).betsd.m -...
+                        era_data.relsummary.group(gloc).event(eloc).betsd.ll;
+                    ptest(eloc,gloc) = era_data.relsummary.group(gloc).event(eloc).betsd.m;
+                    ulest(eloc,gloc) = ...
+                        era_data.relsummary.group(gloc).event(eloc).betsd.ul -...
+                        era_data.relsummary.group(gloc).event(eloc).betsd.m;
+                case 'wit'
+                    llest(eloc,gloc) = ...
+                        era_data.relsummary.group(gloc).event(eloc).witsd.m -...
+                        era_data.relsummary.group(gloc).event(eloc).witsd.ll;
+                    ptest(eloc,gloc) = era_data.relsummary.group(gloc).event(eloc).witsd.m;
+                    ulest(eloc,gloc) = ...
+                        era_data.relsummary.group(gloc).event(eloc).witsd.ul -...
+                        era_data.relsummary.group(gloc).event(eloc).witsd.m;
+            end
+            
+            %figure out spacing for plot
+            if gloc < median(1:ngroups)
+                offsetm(eloc,gloc) = eloc - (.4/ngroups);
+            elseif gloc > median(1:ngroups)
+                offsetm(eloc,gloc) = eloc + (.4/ngroups);
+            elseif gloc == median(1:ngroups)
+                offsetm(eloc,gloc) = eloc;
+            end
+            
         end
-       
-       %figure out spacing for plot
-       if gloc < median(1:ngroups)
-           offsetm(eloc,gloc) = eloc - (.4/ngroups);
-       elseif gloc > median(1:ngroups)
-           offsetm(eloc,gloc) = eloc + (.4/ngroups);
-       elseif gloc == median(1:ngroups)
-           offsetm(eloc,gloc) = eloc;
-       end
-
-   end
+    end
+    
+else
+    %grab icc information for each event and group
+    ciedge = (1-ciperc)/2;
+    for gloc=1:ngroups
+        for eloc=1:nevents
+           
+            %pull stat-specific information
+            
+            switch lower(stat)
+                case 'bet'
+                    bp_var = cell2mat(era_data.relsummary.data.g(gloc).e(eloc).gro_sds(:,1));
+                    
+                    ptest(eloc,gloc) = sqrt(mean(bp_var));
+                    llest(eloc,gloc) = sqrt(mean(bp_var)) - ...
+                        sqrt(quantile(bp_var,ciedge));
+                    ulest(eloc,gloc) = sqrt(quantile(bp_var,1-ciedge)) - ...
+                        sqrt(mean(bp_var));
+                    
+                case 'wit'
+                    
+                    pop_sdlog = era_data.relsummary.data.g(gloc).e(eloc).pop_sdlog;
+                    
+                    ptest(eloc,gloc) = exp(mean(pop_sdlog));
+                    llest(eloc,gloc) = exp(mean(pop_sdlog)) - ...
+                        exp(quantile(pop_sdlog,ciedge));
+                    ulest(eloc,gloc) = exp(quantile(pop_sdlog,1-ciedge)) - ...
+                        exp(mean(pop_sdlog));
+            end
+            
+            %figure out spacing for plot
+            if gloc < median(1:ngroups)
+                offsetm(eloc,gloc) = eloc - (.4/ngroups);
+            elseif gloc > median(1:ngroups)
+                offsetm(eloc,gloc) = eloc + (.4/ngroups);
+            elseif gloc == median(1:ngroups)
+                offsetm(eloc,gloc) = eloc;
+            end
+            
+        end
+    end
 end
 
 %find the dimensions
-[e,g] = size(ptest); 
+[e,g] = size(ptest);
 
 %plot
 if ~(g > 1 && e == 1)
@@ -242,7 +288,7 @@ end
 
 %remove extra lines
 if nevents > 1
-    for i = 1:length(ptintplot) 
+    for i = 1:length(ptintplot)
         ptintplot(i).LineStyle = 'none';
     end
 end
@@ -273,7 +319,7 @@ legend('boxoff');
 %change axis location and rotate plot
 ptintplot(1).Parent.YAxisLocation = 'right';
 camroll(-90);
-    
+
 
 end
 
