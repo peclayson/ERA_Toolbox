@@ -4,7 +4,7 @@ function overalltable = era_depoverallt(varargin)
 %
 %era_depoverallt('era_data',era_data,'gui',1);
 %
-%Last Modified 6/22/18
+%Last Modified 8/28/20
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. 
@@ -40,6 +40,9 @@ function overalltable = era_depoverallt(varargin)
 %
 %6/22/18 PC
 % added standard deviation to table
+%
+%8/28/20 PC
+% add subject-level reliability functionality
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -128,44 +131,87 @@ stdtrl = {};
 goodn = {};
 badn = {};
 
-%put data together to display in tables
-for gloc=1:ngroups
-    for eloc=1:nevents
-        
-        %label for group and/or event
-        switch analysis
-            case 1
-                label{end+1} = 'Measurement';
-            case 2
-                label{end+1} = gnames{gloc};
-            case 3
-                label{end+1} = enames{eloc};
-            case 4
-                label{end+1} = [gnames{gloc} ' - ' enames{eloc}];
+if ~strcmp(era_data.rel.analysis,'ic_sserrvar')
+    %put data together to display in tables
+    for gloc=1:ngroups
+        for eloc=1:nevents
+            
+            %label for group and/or event
+            switch analysis
+                case 1
+                    label{end+1} = 'Measurement'; %#ok<*AGROW>
+                case 2
+                    label{end+1} = gnames{gloc};
+                case 3
+                    label{end+1} = enames{eloc};
+                case 4
+                    label{end+1} = [gnames{gloc} ' - ' enames{eloc}];
+            end
+            
+            %create a string with the dependability point estimate and credible
+            %interval for overall data
+            overalldep{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
+                era_data.relsummary.group(gloc).event(eloc).dep.m,...
+                era_data.relsummary.group(gloc).event(eloc).dep.ll,...
+                era_data.relsummary.group(gloc).event(eloc).dep.ul);
+            
+            %put together trial summary information
+            mintrl{end+1} = era_data.relsummary.group(gloc).event(eloc).trlinfo.min;
+            maxtrl{end+1} = era_data.relsummary.group(gloc).event(eloc).trlinfo.max;
+            meantrl{end+1} = era_data.relsummary.group(gloc).event(eloc).trlinfo.mean;
+            medtrl{end+1} = era_data.relsummary.group(gloc).event(eloc).trlinfo.med;
+            stdtrl{end+1} = era_data.relsummary.group(gloc).event(eloc).trlinfo.std;
+            
+            %pull good and bad ns
+            goodn{end+1} = era_data.relsummary.group(gloc).event(eloc).goodn;
+            badn{end+1} = length(era_data.relsummary.group(gloc).badids);
+            
         end
-        
-        %create a string with the dependability point estimate and credible
-        %interval for overall data
-        overalldep{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
-            era_data.relsummary.group(gloc).event(eloc).dep.m,...
-            era_data.relsummary.group(gloc).event(eloc).dep.ll,...
-            era_data.relsummary.group(gloc).event(eloc).dep.ul);
-        
-        %put together trial summary information
-        mintrl{end+1} = era_data.relsummary.group(gloc).event(eloc).trlinfo.min;
-        maxtrl{end+1} = era_data.relsummary.group(gloc).event(eloc).trlinfo.max;
-        meantrl{end+1} = era_data.relsummary.group(gloc).event(eloc).trlinfo.mean;
-        medtrl{end+1} = era_data.relsummary.group(gloc).event(eloc).trlinfo.med;
-        stdtrl{end+1} = era_data.relsummary.group(gloc).event(eloc).trlinfo.std;
-        
-        %pull good and bad ns
-        goodn{end+1} = era_data.relsummary.group(gloc).event(eloc).goodn;
-        badn{end+1} = length(era_data.relsummary.group(gloc).badids);
-        
-    end 
+    end
+elseif strcmp(era_data.rel.analysis,'ic_sserrvar')
+    for gloc=1:ngroups
+        for eloc=1:nevents
+            
+            bp_var = cell2mat(era_data.relsummary.data.g(gloc).e(eloc).gro_sds(:,1));
+            pop_sdlog = era_data.relsummary.data.g(gloc).e(eloc).pop_sdlog;
+            ciedge = .025;
+            
+            idtable = era_data.relsummary.group(gloc).event(eloc).ssrel_table;
+            
+            %label for group and/or event
+            switch analysis
+                case 1
+                    label{end+1} = 'Measurement';
+                case 2
+                    label{end+1} = gnames{gloc};
+                case 3
+                    label{end+1} = enames{eloc};
+                case 4
+                    label{end+1} = [gnames{gloc} ' - ' enames{eloc}];
+            end
+            
+            %create a string with the dependability point estimate and credible
+            %interval for overall data
+            overalldep{end+1} = sprintf(' %0.2f SD: %0.2f',...
+                mean(idtable.dep_pt),...
+                std(idtable.dep_pt));
+            
+            %put together trial summary information
+            mintrl{end+1} = min(idtable.trls);
+            maxtrl{end+1} = max(idtable.trls);
+            meantrl{end+1} = mean(idtable.trls);
+            medtrl{end+1} = median(idtable.trls);
+            stdtrl{end+1} = std(idtable.trls);
+            
+            %pull good and bad ns
+            goodn{end+1} = sum(idtable.ind2include);
+            badn{end+1} = sum(idtable.ind2exclude);
+            
+        end
+    end
+    
+    
 end
-
-
 %create table to describe the data including all trials 
 overalltable = table(label',goodn',badn',overalldep',meantrl',...
     medtrl',stdtrl',mintrl',maxtrl');
@@ -177,54 +223,62 @@ overalltable.Properties.VariableNames = {'Label', ...
     'Max_Num_Trials'};
 
 %display gui if desired
-if gui == 1 
+if gui == 1
     
-%define parameters for figure size
-figwidth = 815;
-figheight = 500;
-
-%define space between rows and first row location
-rowspace = 25;
-row = figheight - rowspace*2;
-
-%create a gui for displaying the overall trial information
-era_overall= figure('unit','pix',...
-  'position',[1150 150 figwidth figheight],...
-  'menub','no',...
-  'name','Dependability Analyses Including All Trials',...
-  'numbertitle','off',...
-  'resize','off');
-
-%Print the name of the loaded dataset
-uicontrol(era_overall,'Style','text','fontsize',16,...
-    'HorizontalAlignment','center',...
-    'String','Overall Dependability',...
-    'Position',[0 row figwidth 25]);          
-
-%Start a table
-t = uitable('Parent',era_overall,'Position',...
-    [25 100 figwidth-50 figheight-175],...
-    'Data',table2cell(overalltable));
-set(t,'ColumnName',{'Label' 'n Included' 'n Excluded' ...
-    'Dependability' 'Mean # of Trials' 'Med # of Trials'...
-    'Std Dev of Trials' 'Min # of Trials' 'Max # of Trials'});
-set(t,'ColumnWidth',{'auto' 'auto' 'auto' 110 'auto' 'auto' 'auto' 'auto'});
-set(t,'RowName',[]);
-
-%Create a save button that will take save the table
-uicontrol(era_overall,'Style','push','fontsize',14,...
-    'HorizontalAlignment','center',...
-    'String','Save Table',...
-    'Position', [figwidth/8 25 figwidth/4 50],...
-    'Callback',{@era_saveoveralltable,era_data,overalltable}); 
-
-%Create button that will save good/bad ids
-uicontrol(era_overall,'Style','push','fontsize',14,...
-    'HorizontalAlignment','center',...
-    'String','Save IDs',...
-    'Position', [5*figwidth/8 25 figwidth/4 50],...
-    'Callback',{@era_saveids,era_data}); 
-
+    %define parameters for figure size
+    figwidth = 815;
+    figheight = 500;
+    
+    %define space between rows and first row location
+    rowspace = 25;
+    row = figheight - rowspace*2;
+    
+    %create a gui for displaying the overall trial information
+    era_overall= figure('unit','pix',...
+        'position',[1150 150 figwidth figheight],...
+        'menub','no',...
+        'name','Dependability Analyses',...
+        'numbertitle','off',...
+        'resize','off');
+    
+    %Print the name of the loaded dataset
+    uicontrol(era_overall,'Style','text','fontsize',16,...
+        'HorizontalAlignment','center',...
+        'String','Overall Dependability',...
+        'Position',[0 row figwidth 25]);
+    
+    %Start a table
+    t = uitable('Parent',era_overall,'Position',...
+        [25 100 figwidth-50 figheight-175],...
+        'Data',table2cell(overalltable));
+    
+    if ~strcmp(era_data.rel.analysis,'ic_sserrvar')
+        set(t,'ColumnName',{'Label' 'n Included' 'n Excluded' ...
+            'Dependability' 'Mean # of Trials' 'Med # of Trials'...
+            'Std Dev of Trials' 'Min # of Trials' 'Max # of Trials'});
+    elseif strcmp(era_data.rel.analysis,'ic_sserrvar')
+        set(t,'ColumnName',{'Label' 'n Included' 'n Excluded' ...
+            'Subject Level Dependability' 'Mean # of Trials' 'Med # of Trials'...
+            'Std Dev of Trials' 'Min # of Trials' 'Max # of Trials'});
+    end
+    
+    set(t,'ColumnWidth',{'auto' 'auto' 'auto' 110 'auto' 'auto' 'auto' 'auto'});
+    set(t,'RowName',[]);
+    
+    %Create a save button that will take save the table
+    uicontrol(era_overall,'Style','push','fontsize',14,...
+        'HorizontalAlignment','center',...
+        'String','Save Table',...
+        'Position', [figwidth/8 25 figwidth/4 50],...
+        'Callback',{@era_saveoveralltable,era_data,overalltable});
+    
+    %Create button that will save good/bad ids
+    uicontrol(era_overall,'Style','push','fontsize',14,...
+        'HorizontalAlignment','center',...
+        'String','Save IDs',...
+        'Position', [5*figwidth/8 25 figwidth/4 50],...
+        'Callback',{@era_saveids,era_data});
+    
 end
 
 end

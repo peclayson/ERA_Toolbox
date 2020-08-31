@@ -2,7 +2,7 @@ function era_start
 %
 %Initiate Matlab gui to use the ERP Reliability Analysis (ERA) toolbox
 %
-%version 0.5.0 - Last Updated 04/14/20
+%version 0.5.1 - Last Updated 8/31/20
 %
 
 %The ERA toolbox uses generalizability theory as a method for evaluating 
@@ -32,6 +32,9 @@ function era_start
 % Reliability Analysis (ERA) Toolbox for assessing test-retest reliability 
 % of ERP scores: Algorithms, framework, and implementation. 
 %
+% Clayson, P. E., Brush, C. J., & Hajcak, G. (under review). Data quality
+% and reliability metrics for event-related potentials (ERPs): The utility 
+% of subject-level reliability.
 %
 %The notion of reporting estimates of reliability in all ERP studies and 
 % this toolbox are specifically discussed in 

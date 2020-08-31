@@ -4,7 +4,7 @@ function era_startview(varargin)
 %
 %era_startview('file','/Users/REL/SomeERAData.mat')
 %
-%Last Updated 6/21/19
+%Last Updated 8/26/19
 %
 %Required Inputs:
 % No inputs are required.
@@ -90,6 +90,9 @@ function era_startview(varargin)
 % this function was turned into a wrapper to determine whether data
 %  contain just one occasion (just internal consistency) or mulitple
 %  occasions (internal consistency + trt)
+%
+%8/26/20 PC
+% added in a point to the gui for subject-level reliability estimates
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -149,6 +152,9 @@ end
 if ~isfield(era_data.rel,'analysis') ||... 
         (isfield(era_data.rel,'analysis') && ...
         strcmp(era_data.rel.analysis,'ic'))
+    era_startview_sing('era_prefs',era_prefs,'era_data',era_data);
+elseif isfield(era_data.rel,'analysis') && ...
+        strcmp(era_data.rel.analysis,'ic_sserrvar')
     era_startview_sing('era_prefs',era_prefs,'era_data',era_data);
 elseif isfield(era_data.rel,'analysis') &&... 
         strcmp(era_data.rel.analysis,'trt')

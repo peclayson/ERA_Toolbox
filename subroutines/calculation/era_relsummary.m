@@ -5,20 +5,21 @@ function [era_data,relerr] = era_relsummary(varargin)
 %   'depcutoff',depcutoff,'meascutoff',meascutoff,...
 %   'depcentmeas',depcentmeas)
 %
-%Last Modified 11/12/19
+%Last Modified 8/26/20
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
 %  be included
 % analysis - 'sing' single occasion data; 'trt' multiple occasion data
 %
-% EITHER (for analysis type 'sing')
+% EITHER (for analysis type 'sing' and 'sing_sserr')
 %  depcutoff - dependabiltiy threshold for considering data reliable
 %  meascutoff - which estimate of dependability to use for cutoff (1 - lower
 %   limit of confidence interval, 2 - point estimate, 3 - upper limit of
 %   confidence interval)
 %  depcentmeas - which measure of central tendency to use for estimating
-%   overall score dependability after applying trial cutoffs
+%   overall score dependability after applying trial cutoffs (not used in
+%   'sing_sserr')
 %
 % OR (for analysis type 'trt')
 %  gcoeff - g-theory coefficient to calculate 1 - dependability, 2 -
@@ -117,6 +118,9 @@ function [era_data,relerr] = era_relsummary(varargin)
 %  enough trials from each session separately.
 % if symbolic toolbox is installed, MATLAB will solve for the number of
 %  trials required to reach adequate dependability
+%
+%8/26/20 PC
+% add capability for estimating subject-level reliability
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -155,7 +159,7 @@ if ~isempty(varargin)
 end
 
 switch relanalysis
-    case 'sing'
+    case {'sing','sing_sserr'}
         %check if depcutoff was specified.
         %If it is not found, set display error.
         ind = find(strcmpi('depcutoff',varargin),1);
@@ -298,7 +302,6 @@ switch relanalysis
             ciperc = .95; %default: 95%
         end
 end
-
 
 switch relanalysis
     case 'sing'
@@ -1489,6 +1492,623 @@ switch relanalysis
                             quantile(data.g(gloc).e(eloc).sig_e.raw,.975);
                         
                     end
+                end
+                
+                
+        end %switch analysis
+        
+    case 'sing_sserr'
+        
+        %place era_data.data in REL to work with
+        REL = era_data.rel;
+        
+        %create a data structure for storing outputs
+        data = struct;
+        
+        %create variable to specify whether there are bad/unreliable data
+        %default state: 0, will be changed to 1 if there is a problem
+        relerr = struct();
+        relerr.trlcutoff = 0;
+        relerr.trlmax = 0;
+        relerr.nogooddata = 0;
+        
+        %check whether any groups exist
+        if strcmpi(REL.groups,'none')
+            ngroups = 1;
+            %gnames = cellstr(REL.groups);
+            gnames ={''};
+        else
+            ngroups = length(REL.groups);
+            gnames = REL.groups(:);
+        end
+        
+        %check whether any events exist
+        if strcmpi(REL.events,'none')
+            nevents = 1;
+            %enames = cellstr(REL.events);
+            enames = {''};
+        else
+            nevents = length(REL.events);
+            enames = REL.events(:);
+        end
+        
+        
+        %figure out whether groups or events need to be considered
+        %1 - no groups or event types to consider
+        %2 - possible multiple groups but no event types to consider
+        %3 - possible event types but no groups to consider
+        %4 - possible groups and event types to consider
+        
+        if ngroups == 1 && nevents == 1
+            analysis = 1;
+        elseif ngroups > 1 && nevents == 1
+            analysis = 2;
+        elseif ngroups == 1 && nevents > 1
+            analysis = 3;
+        elseif ngroups > 1 && nevents > 1
+            analysis = 4;
+        end
+        
+        %extract information from REL and store in data for crunching
+        switch analysis
+            
+            case {1,2} %2 - possible multiple groups but no event types to consider
+                
+                eloc = 1;
+                
+                for gloc=1:length(REL.out.labels)
+                    
+                    data.g(gloc).e(eloc).label = REL.out.labels(gloc);
+                    data.g(gloc).e(eloc).mu = REL.out.mu(:,gloc);
+                    data.g(gloc).e(eloc).ind_bs = REL.out.ind_bs{:,gloc};
+                    data.g(gloc).e(eloc).gro_sds = REL.out.gro_sds{:,gloc};
+                    data.g(gloc).e(eloc).pop_sdlog = REL.out.pop_sdlog(:,gloc);
+                    data.g(gloc).e(eloc).ind_sdlog = REL.out.ind_sdlog{:,gloc};
+                    
+                    data.g(gloc).e(eloc).elabel = cellstr('none');
+                    data.g(gloc).e(eloc).id_match = REL.out.id_matches{:,gloc};
+                    data.g(gloc).glabel = gnames(gloc);
+                    
+                end
+                
+            case 3 %3 - possible event types but no groups to consider
+                
+                gloc = 1;
+                
+                for eloc=1:length(REL.out.labels)
+                    
+                    data.g(gloc).e(eloc).label = REL.out.labels(eloc);
+                    data.g(gloc).e(eloc).mu = REL.out.mu(:,eloc);
+                    data.g(gloc).e(eloc).ind_bs = REL.out.ind_bs{:,eloc};
+                    data.g(gloc).e(eloc).gro_sds = REL.out.gro_sds{:,eloc};
+                    data.g(gloc).e(eloc).pop_sdlog = REL.out.pop_sdlog(:,eloc);
+                    data.g(gloc).e(eloc).ind_sdlog = REL.out.ind_sdlog{:,eloc};
+                    
+                    data.g(gloc).e(eloc).elabel = enames(eloc);
+                    data.g(gloc).e(eloc).id_match = REL.out.id_matches{:,eloc};
+                    data.g(gloc).glabel = cellstr('none');
+                    
+                end
+                
+            case 4 %4 - possible groups and event types to consider
+                for i=1:length(REL.out.labels)
+                    
+                    %use the underscores that were added in era_computerel to
+                    %differentiate where the group and event the data are for
+                    lblstr = strsplit(REL.out.labels{i},'_;_');
+                    
+                    eloc = find(ismember(enames,lblstr(2)));
+                    gloc = find(ismember(gnames,lblstr(1)));
+                    
+                    data.g(gloc).e(eloc).label = REL.out.labels{i};
+                    data.g(gloc).e(eloc).mu = REL.out.mu(:,i);
+                    data.g(gloc).e(eloc).ind_bs = REL.out.ind_bs{:,i};
+                    data.g(gloc).e(eloc).gro_sds = REL.out.gro_sds{:,i};
+                    data.g(gloc).e(eloc).pop_sdlog = REL.out.pop_sdlog(:,i);
+                    data.g(gloc).e(eloc).ind_sdlog = REL.out.ind_sdlog{:,i};
+                    
+                    data.g(gloc).e(eloc).elabel = enames(eloc);
+                    data.g(gloc).e(eloc).id_match = REL.out.id_matches{:,i};
+                    data.g(gloc).glabel = gnames(gloc);
+                    
+                end
+        end %switch analysis
+        
+        %store the cutoff in relsummary to pass to other functions more easily
+        relsummary.depcutoff = depcutoff;
+        relsummary.ciperc = ciperc;
+        
+        %store which measure was used to specify cutoff
+        switch meascutoff
+            case 1
+                relsummary.meascutoff = strcat('Lower Limit of ',...
+                    sprintf(' %2.0f',ciperc*100),'% Credible Interval');
+            case 2
+                relsummary.meascutoff = 'Point Estimate';
+            case 3
+                relsummary.meascutoff = strcat('Upper Limit of ',...
+                    sprintf(' %2.0f',ciperc*100),'% Credible Interval');
+        end
+        
+        %compute dependability data for each group and event
+        switch analysis
+            case 1 %no groups or event types to consider
+                
+                %the same generic structure is used for relsummary, so the event
+                %and group locations will both be 1 for the data
+                eloc = 1;
+                gloc = 1;
+                
+                %grab the group names (if present)
+                relsummary.group(gloc).name = gnames{gloc};
+                
+                %set the event name as measure
+                relsummary.group(gloc).event(eloc).name = 'measure';
+                
+                try
+                    %create empty arrays for storing dependability information
+                    trltable = varfun(@length,REL.data{1},'GroupingVariables',{'id'});
+                catch
+                    %create empty arrays for storing dependability information
+                    trltable = varfun(@length,REL.data,'GroupingVariables',{'id'});
+                end
+                
+                %compute dependabiltiy
+                idtable = innerjoin(data.g(gloc).e(eloc).id_match,...
+                    trltable(:,1:2));
+                idtable.Properties.VariableNames{3} = 'trls';
+                
+                ssrel_table = era_ssrel(...
+                    'bp',data.g(gloc).e(eloc).gro_sds(:,1),...
+                    'wp_pop',data.g(gloc).e(eloc).pop_sdlog,...
+                    'wp_ss',data.g(gloc).e(eloc).ind_sdlog,...
+                    'idtable',idtable,...
+                    'CI',ciperc);
+                
+                
+                
+                %determine which participants had adequate reliability
+                switch meascutoff
+                    case 1
+                        ssrel_table.ind2include = ssrel_table.dep_ll >= depcutoff;
+                        ssrel_table.ind2exclude = ssrel_table.dep_ll < depcutoff;
+                    case 2
+                        ssrel_table.ind2include = ssrel_table.dep_pt >= depcutoff;
+                        ssrel_table.ind2exclude = ssrel_table.dep_pt < depcutoff;
+                    case 3
+                        ssrel_table.ind2include = ssrel_table.dep_ul >= depcutoff;
+                        ssrel_table.ind2exclude = ssrel_table.dep_ul < depcutoff;
+                end
+                
+                %store summary table
+                relsummary.group(gloc).event(eloc).ssrel_table = ssrel_table;
+                
+                if all(ssrel_table.ind2exclude)
+                    %define all of the data as bad, because the cutoff wasn't even
+                    %found
+                    relsummary.group(gloc).event(eloc).eventgoodids = 'none';
+                    relsummary.group(gloc).event(eloc).eventbadids =...
+                        ssrel_table.id(:);
+                    
+                    relsummary.group(gloc).goodids = 'none';
+                    relsummary.group(gloc).badids = ...
+                        ssrel_table.id(:);
+                    
+                    %get a little summary information about the number of
+                    %trials
+                    relsummary.group(gloc).event(eloc).trlinfo.min = min(ssrel_table.trls);
+                    relsummary.group(gloc).event(eloc).trlinfo.max = max(ssrel_table.trls);
+                    relsummary.group(gloc).event(eloc).trlinfo.mean = mean(ssrel_table.trls);
+                    relsummary.group(gloc).event(eloc).trlinfo.std = std(ssrel_table.trls);
+                    relsummary.group(gloc).event(eloc).trlinfo.med = median(ssrel_table.trls);
+                    relsummary.group(gloc).event(eloc).goodn = 0;
+                    
+                elseif any(ssrel_table.ind2include)
+                    
+                    %define all of the data as bad, because the cutoff wasn't even
+                    %found
+                    relsummary.group(gloc).event(eloc).eventgoodids =...
+                        ssrel_table.id(ssrel_table.ind2include);
+                    relsummary.group(gloc).event(eloc).eventbadids =...
+                        ssrel_table.id(ssrel_table.ind2exclude);
+                    
+                    relsummary.group(gloc).goodids = ...
+                        ssrel_table.id(ssrel_table.ind2include);
+                    relsummary.group(gloc).badids = ...
+                        ssrel_table.id(ssrel_table.ind2exclude);
+                    
+                    %get a little summary information about the number of
+                    %trials
+                    relsummary.group(gloc).event(eloc).trlinfo.min = ...
+                        min(ssrel_table.trls(ssrel_table.ind2include));
+                    relsummary.group(gloc).event(eloc).trlinfo.max = ...
+                        max(ssrel_table.trls(ssrel_table.ind2include));
+                    relsummary.group(gloc).event(eloc).trlinfo.mean = ...
+                        mean(ssrel_table.trls(ssrel_table.ind2include));
+                    relsummary.group(gloc).event(eloc).trlinfo.std = ...
+                        std(ssrel_table.trls(ssrel_table.ind2include));
+                    relsummary.group(gloc).event(eloc).trlinfo.med = ...
+                        median(ssrel_table.trls(ssrel_table.ind2include));
+                    relsummary.group(gloc).event(eloc).goodn = ...
+                        height(ssrel_table(ssrel_table.ind2include,:));
+                    
+                end
+                
+                
+            case 2 %possible multiple groups but no event types to consider
+                
+                %since the same generic structure is used for relsummary, the event
+                %location will be defined as 1.
+                eloc = 1;
+                
+                for gloc=1:ngroups %loop through each group
+                    
+                    %store the name of the group
+                    if eloc == 1
+                        relsummary.group(gloc).name = gnames{gloc};
+                    end
+                    
+                    %store the name of the event
+                    relsummary.group(gloc).event(eloc).name = enames{eloc};
+                    
+                    
+                    try
+                        %create empty arrays for storing dependability information
+                        trltable = varfun(@length,REL.data{1},'GroupingVariables',{'id'});
+                    catch
+                        %create empty arrays for storing dependability information
+                        trltable = varfun(@length,REL.data,'GroupingVariables',{'id'});
+                    end
+                    
+                    %compute dependabiltiy
+                    idtable = innerjoin(data.g(gloc).e(eloc).id_match,...
+                        trltable(:,1:2));
+                    idtable.Properties.VariableNames{3} = 'trls';
+                    
+                    ssrel_table = era_ssrel(...
+                        'bp',data.g(gloc).e(eloc).gro_sds(:,1),...
+                        'wp_pop',data.g(gloc).e(eloc).pop_sdlog,...
+                        'wp_ss',data.g(gloc).e(eloc).ind_sdlog,...
+                        'idtable',idtable,...
+                        'CI',ciperc);
+                    
+                    
+                    
+                    %determine which participants had adequate reliability
+                    switch meascutoff
+                        case 1
+                            ssrel_table.ind2include = ssrel_table.dep_ll >= depcutoff;
+                            ssrel_table.ind2exclude = ssrel_table.dep_ll < depcutoff;
+                        case 2
+                            ssrel_table.ind2include = ssrel_table.dep_pt >= depcutoff;
+                            ssrel_table.ind2exclude = ssrel_table.dep_pt < depcutoff;
+                        case 3
+                            ssrel_table.ind2include = ssrel_table.dep_ul >= depcutoff;
+                            ssrel_table.ind2exclude = ssrel_table.dep_ul < depcutoff;
+                    end
+                    
+                    %store summary table
+                    relsummary.group(gloc).event(eloc).ssrel_table = ssrel_table;
+                    
+                    if all(ssrel_table.ind2exclude)
+                        %define all of the data as bad, because the cutoff wasn't even
+                        %found
+                        relsummary.group(gloc).event(eloc).eventgoodids = 'none';
+                        relsummary.group(gloc).event(eloc).eventbadids =...
+                            ssrel_table.id(:);
+                        
+                        relsummary.group(gloc).goodids = 'none';
+                        relsummary.group(gloc).badids = ...
+                            ssrel_table.id(:);
+                        
+                        %get a little summary information about the number of
+                        %trials
+                        relsummary.group(gloc).event(eloc).trlinfo.min = min(ssrel_table.trls);
+                        relsummary.group(gloc).event(eloc).trlinfo.max = max(ssrel_table.trls);
+                        relsummary.group(gloc).event(eloc).trlinfo.mean = mean(ssrel_table.trls);
+                        relsummary.group(gloc).event(eloc).trlinfo.std = std(ssrel_table.trls);
+                        relsummary.group(gloc).event(eloc).trlinfo.med = median(ssrel_table.trls);
+                        relsummary.group(gloc).event(eloc).goodn = 0;
+                        
+                    elseif any(ssrel_table.ind2include)
+                        
+                        %define all of the data as bad, because the cutoff wasn't even
+                        %found
+                        relsummary.group(gloc).event(eloc).eventgoodids =...
+                            ssrel_table.id(ssrel_table.ind2include);
+                        relsummary.group(gloc).event(eloc).eventbadids =...
+                            ssrel_table.id(ssrel_table.ind2exclude);
+                        
+                        relsummary.group(gloc).goodids = ...
+                            ssrel_table.id(ssrel_table.ind2include);
+                        relsummary.group(gloc).badids = ...
+                            ssrel_table.id(ssrel_table.ind2exclude);
+                        
+                        %get a little summary information about the number of
+                        %trials
+                        relsummary.group(gloc).event(eloc).trlinfo.min = ...
+                            min(ssrel_table.trls(ssrel_table.ind2include));
+                        relsummary.group(gloc).event(eloc).trlinfo.max = ...
+                            max(ssrel_table.trls(ssrel_table.ind2include));
+                        relsummary.group(gloc).event(eloc).trlinfo.mean = ...
+                            mean(ssrel_table.trls(ssrel_table.ind2include));
+                        relsummary.group(gloc).event(eloc).trlinfo.std = ...
+                            std(ssrel_table.trls(ssrel_table.ind2include));
+                        relsummary.group(gloc).event(eloc).trlinfo.med = ...
+                            median(ssrel_table.trls(ssrel_table.ind2include));
+                        relsummary.group(gloc).event(eloc).goodn = ...
+                            height(ssrel_table(ssrel_table.ind2include,:));
+                        
+                    end
+                end
+                
+                
+            case 3 %possible event types but no groups to consider
+                
+                %since the relsummary structure is generic for any number of groups
+                %or events, the data will count as being from 1 group.
+                gloc = 1;
+                
+                %cycle through each event
+                for eloc=1:nevents
+                    
+                    %get the group name
+                    if eloc == 1
+                        relsummary.group(gloc).name = gnames{gloc};
+                    end
+                    
+                    %get the event name
+                    relsummary.group(gloc).event(eloc).name = enames{eloc};
+                    
+                    try
+                        %create empty arrays for storing dependability information
+                        trltable = varfun(@length,REL.data{1},'GroupingVariables',{'id','event'});
+                    catch
+                        %create empty arrays for storing dependability information
+                        trltable = varfun(@length,REL.data,'GroupingVariables',{'id','event'});
+                    end
+                    
+                    trltable = trltable(strcmp(trltable.event,enames{eloc}),:);
+                    
+                    %compute dependabiltiy
+                    idtable = innerjoin(data.g(gloc).e(eloc).id_match,...
+                        trltable(:,[1 3]));
+                    idtable.Properties.VariableNames{3} = 'trls';
+                    
+                    ssrel_table = era_ssrel(...
+                        'bp',data.g(gloc).e(eloc).gro_sds(:,1),...
+                        'wp_pop',data.g(gloc).e(eloc).pop_sdlog,...
+                        'wp_ss',data.g(gloc).e(eloc).ind_sdlog,...
+                        'idtable',idtable,...
+                        'CI',ciperc);
+                    
+                    %determine which participants had adequate reliability
+                    switch meascutoff
+                        case 1
+                            ssrel_table.ind2include = ssrel_table.dep_ll >= depcutoff;
+                            ssrel_table.ind2exclude = ssrel_table.dep_ll < depcutoff;
+                        case 2
+                            ssrel_table.ind2include = ssrel_table.dep_pt >= depcutoff;
+                            ssrel_table.ind2exclude = ssrel_table.dep_pt < depcutoff;
+                        case 3
+                            ssrel_table.ind2include = ssrel_table.dep_ul >= depcutoff;
+                            ssrel_table.ind2exclude = ssrel_table.dep_ul < depcutoff;
+                    end
+                    
+                    %store summary table
+                    relsummary.group(gloc).event(eloc).ssrel_table = ssrel_table;
+                    
+                    
+                    if all(ssrel_table.ind2exclude)
+                        %define all of the data as bad, because the cutoff wasn't even
+                        %found
+                        relsummary.group(gloc).event(eloc).eventgoodids = 'none';
+                        relsummary.group(gloc).event(eloc).eventbadids =...
+                            ssrel_table.id(:);
+                        
+                        %get a little summary information about the number of
+                        %trials
+                        relsummary.group(gloc).event(eloc).trlinfo.min = min(ssrel_table.trls);
+                        relsummary.group(gloc).event(eloc).trlinfo.max = max(ssrel_table.trls);
+                        relsummary.group(gloc).event(eloc).trlinfo.mean = mean(ssrel_table.trls);
+                        relsummary.group(gloc).event(eloc).trlinfo.std = std(ssrel_table.trls);
+                        relsummary.group(gloc).event(eloc).trlinfo.med = median(ssrel_table.trls);
+                        relsummary.group(gloc).event(eloc).goodn = 0;
+                        
+                    elseif any(ssrel_table.ind2include)
+                        
+                        %define all of the data as bad, because the cutoff wasn't even
+                        %found
+                        relsummary.group(gloc).event(eloc).eventgoodids =...
+                            ssrel_table.id(ssrel_table.ind2include);
+                        relsummary.group(gloc).event(eloc).eventbadids =...
+                            ssrel_table.id(ssrel_table.ind2exclude);
+                        
+                        %get a little summary information about the number of
+                        %trials
+                        relsummary.group(gloc).event(eloc).trlinfo.min = ...
+                            min(ssrel_table.trls(ssrel_table.ind2include));
+                        relsummary.group(gloc).event(eloc).trlinfo.max = ...
+                            max(ssrel_table.trls(ssrel_table.ind2include));
+                        relsummary.group(gloc).event(eloc).trlinfo.mean = ...
+                            mean(ssrel_table.trls(ssrel_table.ind2include));
+                        relsummary.group(gloc).event(eloc).trlinfo.std = ...
+                            std(ssrel_table.trls(ssrel_table.ind2include));
+                        relsummary.group(gloc).event(eloc).trlinfo.med = ...
+                            median(ssrel_table.trls(ssrel_table.ind2include));
+                        relsummary.group(gloc).event(eloc).goodn = ...
+                            height(ssrel_table(ssrel_table.ind2include,:));
+                        
+                    end
+                    
+                end
+                
+                %cycle through the events and store information about which
+                %participants have good data across all event types.
+                tempids = {};
+                badids = [];
+                for eloc=1:nevents
+                    if ~strcmp(relsummary.group(gloc).event(eloc).eventgoodids,'none')
+                        tempids{end+1} = relsummary.group(gloc).event(eloc).eventgoodids;
+                        if eloc == 1
+                            badids = relsummary.group(gloc).event(eloc).eventbadids;
+                        elseif eloc > 1
+                            [~,ind]=setdiff(tempids{1},tempids{end});
+                            new = tempids{1};
+                            badids = vertcat(badids,...
+                                relsummary.group(gloc).event(eloc).eventbadids,...
+                                new(ind));
+                            new(ind) = [];
+                            tempids{1} = new;
+                        end
+                    end
+                end
+                
+                %if none the participants had good data for all events
+                if isempty(tempids)
+                    tempids{1} = 'none';
+                end
+                
+                %store information about participants with good/bad ids
+                relsummary.group(gloc).goodids = tempids{1};
+                relsummary.group(gloc).badids = unique(badids);
+                
+                
+            case 4 %groups and event types to consider
+                
+                %cycle through each event
+                for eloc=1:nevents
+                    
+                    %cycle through each group
+                    for gloc=1:ngroups
+                        
+                        %get the group name
+                        if eloc == 1
+                            relsummary.group(gloc).name = gnames{gloc};
+                        end
+                        
+                        %get the event name
+                        relsummary.group(gloc).event(eloc).name = enames{eloc};
+                        
+                        try
+                            %create empty arrays for storing dependability information
+                            trltable = varfun(@length,REL.data{1},'GroupingVariables',{'id','event'});
+                        catch
+                            %create empty arrays for storing dependability information
+                            trltable = varfun(@length,REL.data,'GroupingVariables',{'id','event'});
+                        end
+                        
+                        trltable = trltable(strcmp(trltable.event,enames{eloc}),:);
+                        
+                        %compute dependabiltiy
+                        idtable = innerjoin(data.g(gloc).e(eloc).id_match,...
+                            trltable(:,[1 3]));
+                        idtable.Properties.VariableNames{3} = 'trls';
+                        
+                        ssrel_table = era_ssrel(...
+                            'bp',data.g(gloc).e(eloc).gro_sds(:,1),...
+                            'wp_pop',data.g(gloc).e(eloc).pop_sdlog,...
+                            'wp_ss',data.g(gloc).e(eloc).ind_sdlog,...
+                            'idtable',idtable,...
+                            'CI',ciperc);
+                        
+                        %determine which participants had adequate reliability
+                        switch meascutoff
+                            case 1
+                                ssrel_table.ind2include = ssrel_table.dep_ll >= depcutoff;
+                                ssrel_table.ind2exclude = ssrel_table.dep_ll < depcutoff;
+                            case 2
+                                ssrel_table.ind2include = ssrel_table.dep_pt >= depcutoff;
+                                ssrel_table.ind2exclude = ssrel_table.dep_pt < depcutoff;
+                            case 3
+                                ssrel_table.ind2include = ssrel_table.dep_ul >= depcutoff;
+                                ssrel_table.ind2exclude = ssrel_table.dep_ul < depcutoff;
+                        end
+                        
+                        %store summary table
+                        relsummary.group(gloc).event(eloc).ssrel_table = ssrel_table;
+                        
+                        
+                        if all(ssrel_table.ind2exclude)
+                            %define all of the data as bad, because the cutoff wasn't even
+                            %found
+                            relsummary.group(gloc).event(eloc).eventgoodids = 'none';
+                            relsummary.group(gloc).event(eloc).eventbadids =...
+                                ssrel_table.id(:);
+                            
+                            %get a little summary information about the number of
+                            %trials
+                            relsummary.group(gloc).event(eloc).trlinfo.min = min(ssrel_table.trls);
+                            relsummary.group(gloc).event(eloc).trlinfo.max = max(ssrel_table.trls);
+                            relsummary.group(gloc).event(eloc).trlinfo.mean = mean(ssrel_table.trls);
+                            relsummary.group(gloc).event(eloc).trlinfo.std = std(ssrel_table.trls);
+                            relsummary.group(gloc).event(eloc).trlinfo.med = median(ssrel_table.trls);
+                            relsummary.group(gloc).event(eloc).goodn = 0;
+                            
+                        elseif any(ssrel_table.ind2include)
+                            
+                            %define all of the data as bad, because the cutoff wasn't even
+                            %found
+                            relsummary.group(gloc).event(eloc).eventgoodids =...
+                                ssrel_table.id(ssrel_table.ind2include);
+                            relsummary.group(gloc).event(eloc).eventbadids =...
+                                ssrel_table.id(ssrel_table.ind2exclude);
+                            
+                            %get a little summary information about the number of
+                            %trials
+                            relsummary.group(gloc).event(eloc).trlinfo.min = ...
+                                min(ssrel_table.trls(ssrel_table.ind2include));
+                            relsummary.group(gloc).event(eloc).trlinfo.max = ...
+                                max(ssrel_table.trls(ssrel_table.ind2include));
+                            relsummary.group(gloc).event(eloc).trlinfo.mean = ...
+                                mean(ssrel_table.trls(ssrel_table.ind2include));
+                            relsummary.group(gloc).event(eloc).trlinfo.std = ...
+                                std(ssrel_table.trls(ssrel_table.ind2include));
+                            relsummary.group(gloc).event(eloc).trlinfo.med = ...
+                                median(ssrel_table.trls(ssrel_table.ind2include));
+                            relsummary.group(gloc).event(eloc).goodn = ...
+                                height(ssrel_table(ssrel_table.ind2include,:));
+                            
+                        end
+                        
+                    end
+                end
+                
+                %find the ids that have enough trials for each event type
+                
+                for gloc=1:ngroups
+                    tempids = {};
+                    badids = [];
+                    
+                    for eloc=1:nevents
+                        
+                        if ~strcmp(relsummary.group(gloc).event(eloc).eventgoodids,'none')
+                            tempids{end+1} = relsummary.group(gloc).event(eloc).eventgoodids;
+                            
+                            if eloc == 1
+                                badids = relsummary.group(gloc).event(eloc).eventbadids;
+                            elseif eloc > 1
+                                [~,ind]=setdiff(tempids{1},tempids{end});
+                                new = tempids{1};
+                                badids = vertcat(badids,...
+                                    relsummary.group(gloc).event(eloc).eventbadids,...
+                                    new(ind));
+                                new(ind) = [];
+                                tempids{1} = new;
+                            end
+                            
+                        end
+                    end
+                    
+                    %if there were no participants with enough trials for all event
+                    %types within a group, store 'none'
+                    if isempty(tempids)
+                        tempids{1} = 'none';
+                    end
+                    
+                    relsummary.group(gloc).goodids = tempids{1};
+                    relsummary.group(gloc).badids = unique(badids);
+                    
                 end
                 
                 

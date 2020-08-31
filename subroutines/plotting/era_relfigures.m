@@ -4,7 +4,7 @@ function era_relfigures(varargin)
 %
 %era_relfigures('era_data',era_data,'analysis','sing')
 %
-%Last Modified 8/3/19
+%Last Modified 8/27/20
 %
 %Required Inputs:
 % era_data - ERA Toolbox data structure array containing outputs from
@@ -44,7 +44,13 @@ function era_relfigures(varargin)
 %  depcentmeas - which measure of central tendency to use to estimate the
 %   overall dependability, 1 - mean, 2 - median (default: 1)
 %
-% Option 3 (for analysis = 'trt'):
+% Option 3 (for analysis = 'ic_sing_sserr')
+%  plotdep - plots the subject-level dependability estimates with credible
+%   intervals in ascending order
+%  ploticc- plots the subject-level ICCs with credible intervals in
+%   ascending order
+%
+% Option 4 (for analysis = 'trt'):
 %  relcutoff - reliability level to use for cutoff when deciding the
 %   minimum number of trials needed to achieve this specified level of
 %   reliability
@@ -152,6 +158,9 @@ function era_relfigures(varargin)
 %
 %8/3/19 PC
 % finished making trt changes
+%
+%8/20/27 PC
+% add functionality to plot subject-level reliability 
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -183,7 +192,8 @@ if ~isempty(varargin)
     else
         error('varargin:noanalysistype',... %Error code and associated error
             strcat('WARNING: analysis not specified \n\n',...
-            'Please input the analysis to be run: ''sing'' or ''trt'' \n'));
+            'Please input the analysis to be run:\n',...
+            ' ''sing'', ''sing_sserr'', or ''trt'' \n'));
     end
 end
 
@@ -417,7 +427,7 @@ end %if ~isempty(varargin)
 
 if ~isempty(era_prefs)
     switch analysis
-        case 'sing'
+        case {'sing','sing_sserr'}
             depcutoff = era_prefs.view.depvalue;
             pdep = era_prefs.view.plotdep;
             picc = era_prefs.view.ploticc;
@@ -450,11 +460,12 @@ if ~isempty(era_prefs)
     end
 end
 
+
 switch analysis
-    case 'sing'
+    case {'sing','sing_sserr'}
         %calculate reliabitliy information to be used for plotting and tables
         [era_data, relerr] = era_relsummary('era_data',era_data,...
-            'analysis','sing',...
+            'analysis',analysis,...
             'depcutoff',depcutoff,...
             'meascutoff',meascutoff,...
             'depcentmeas',depcentmeas);
@@ -490,6 +501,12 @@ switch analysis
                 'depline',plotdepline,...
                 'depcutoff',depcutoff);
         end
+    case 'sing_sserr'
+        if pdep == 1
+            era_ssrelplot('era_data',era_data,...
+                'stat','dep',...
+                'depline',plotdepline);
+        end
     case 'trt'
         if plotrel == 1
             era_trt_relvtrialsplot('era_data',era_data,...
@@ -502,7 +519,13 @@ end
 %Plot that compares the intraclass correlation coefficients for each
 %group and/or condition
 if picc == 1
-    era_ptintervalplot('era_data',era_data,'stat','icc');
+    if strcmp(analysis,'sing_sserr')
+        era_ssrelplot('era_data',era_data,...
+                'stat','icc',...
+                'depline',plotdepline);
+    else
+        era_ptintervalplot('era_data',era_data,'stat','icc');
+    end
 end
 
 %plot that shows between-person standard deviation
@@ -529,7 +552,7 @@ end
 
 %table displaying overall dependability information
 switch analysis
-    case 'sing'
+    case {'sing','sing_sserr'}
         if showoverallt == 1
             era_depoverallt('era_data',era_data,'gui',1);
         end

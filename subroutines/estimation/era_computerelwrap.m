@@ -3,7 +3,7 @@ function era_data = era_computerelwrap(varargin)
 %
 %era_dataout = era_relwrap('era_prefs',era_prefs,'era_data',era_data)
 %
-%Last Updated 4/18/19
+%Last Updated 8/21/20
 %
 %Input
 % era_prefs - toolbox preferences
@@ -61,6 +61,9 @@ function era_data = era_computerelwrap(varargin)
 %
 %4/18/19 PC
 % changes related to trt analyses
+%
+%8/21/20 PC
+% changes for estimating single-subject error variance
 
 %pull era_prefs and era_data from varargin
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -172,6 +175,7 @@ while rerun ~= 0
         'chains',era_prefs.proc.nchains,...
         'iter',era_prefs.proc.niter,...
         'verbose',era_prefs.proc.verbose,...
+        'sserrvar',era_prefs.proc.sserrvar,...
         'showgui',2);
     
     %check convergence of chains
@@ -215,6 +219,10 @@ while rerun ~= 0
     elseif era_prefs.proc.traceplots == 2 && rerun == 0 && ...
             strcmp(RELout.analysis,'trt')
         fprintf('\nViewing trace plots for trt analyses is not currently supported\n');
+    elseif era_prefs.proc.traceplots == 2 && rerun == 0 && ...
+            strcmp(RELout.analysis,'ic_sserrvar')
+        fprintf(strcat('\nViewing trace plots for subject-level',...
+            ' reliability analyses is not currently supported\n'));
     end
     
     %if convergence was not met and the user would like to rerun the model,
