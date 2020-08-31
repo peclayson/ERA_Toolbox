@@ -144,9 +144,9 @@ if ~sserrvar
     str_tool = sprintf(['Display a plot that shows the impact of the number of\n'...
         'trials retained for averaging on dependability estimates']);
 elseif sserrvar
-    str_label = 'Plot: Subject-Level Reliabilities';
+    str_label = 'Plot: Subject-Level Dependabilities';
     str_tool = sprintf(['Display a plot that shows each participant''s \n'...
-        'reliabiltiy estimate and their credible interval']);
+        'dependability estimate and their credible interval']);
 end
 
 %dependability with increasing trials
