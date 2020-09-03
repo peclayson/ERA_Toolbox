@@ -1,7 +1,7 @@
 function era_prefs = era_defaults
 %Default settings for the ERA Toolbox
 %
-%Last Updated 8/21/20
+%Last Updated 9/3/20
 %
 
 %This script will be read by the ERA Toolbox to define the default settings

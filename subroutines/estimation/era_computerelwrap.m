@@ -3,7 +3,7 @@ function era_data = era_computerelwrap(varargin)
 %
 %era_dataout = era_relwrap('era_prefs',era_prefs,'era_data',era_data)
 %
-%Last Updated 8/21/20
+%Last Updated 9/3/20
 %
 %Input
 % era_prefs - toolbox preferences

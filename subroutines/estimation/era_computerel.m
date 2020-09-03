@@ -3,7 +3,7 @@ function RELout = era_computerel(varargin)
 %
 %era_computerel('data',era_datatable,'chains',3,'iter',1000)
 %
-%Lasted Updated 8/26/20
+%Lasted Updated 9/3/20
 %
 %Required Inputs:
 % data - data table outputted from the era_loadfile script (see era_loadfile
@@ -2324,7 +2324,8 @@ switch analysis
                 REL.out.id_varcov = {};
                 REL.out.trl_varcov = {};
                 
-                REL.out.labels = {};
+                REL.out.elabels = {};
+                REL.out.glabels = {};
                 REL.out.conv.data = {};
             end
             
@@ -2354,9 +2355,10 @@ switch analysis
             
             REL.out.conv.data{end+1} = era_storeconv(fit,4);
             
+            REL.out.elabels(:,end+1) = eventnames;
+            REL.out.glabels(:,end+1) = groupnames(i);
+            
         end
-        
-        REL.out.labels = darray.names;
         
 end %switch analysis
 

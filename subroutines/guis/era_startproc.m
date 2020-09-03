@@ -2,7 +2,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 8/21/20
+%Last Updated 9/3/20
 %
 %
 %Input

@@ -427,7 +427,7 @@ end %if ~isempty(varargin)
 
 if ~isempty(era_prefs)
     switch analysis
-        case {'sing','sing_sserr'}
+        case {'sing','sing_sserr','sing_diff'}
             depcutoff = era_prefs.view.depvalue;
             pdep = era_prefs.view.plotdep;
             picc = era_prefs.view.ploticc;
@@ -462,7 +462,7 @@ end
 
 
 switch analysis
-    case {'sing','sing_sserr'}
+    case {'sing','sing_sserr','sing_diff'}
         %calculate reliabitliy information to be used for plotting and tables
         [era_data, relerr] = era_relsummary('era_data',era_data,...
             'analysis',analysis,...
