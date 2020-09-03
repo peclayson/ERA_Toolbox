@@ -64,6 +64,10 @@ function era_data = era_computerelwrap(varargin)
 %
 %8/21/20 PC
 % changes for estimating single-subject error variance
+%
+%9/3/20 PC
+% changes for estimating difference score internal consistency
+%
 
 %pull era_prefs and era_data from varargin
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -176,6 +180,7 @@ while rerun ~= 0
         'iter',era_prefs.proc.niter,...
         'verbose',era_prefs.proc.verbose,...
         'sserrvar',era_prefs.proc.sserrvar,...
+        'diffest',era_prefs.proc.diffest,...
         'showgui',2);
     
     %check convergence of chains
@@ -223,6 +228,10 @@ while rerun ~= 0
             strcmp(RELout.analysis,'ic_sserrvar')
         fprintf(strcat('\nViewing trace plots for subject-level',...
             ' reliability analyses is not currently supported\n'));
+    elseif era_prefs.proc.traceplots == 2 && rerun == 0 && ...
+            strcmp(RELout.analysis,'ic_diff')
+        fprintf(strcat('\nViewing trace plots for difference',...
+            ' score reliability estimates\n'));
     end
     
     %if convergence was not met and the user would like to rerun the model,
