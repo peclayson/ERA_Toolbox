@@ -2075,6 +2075,7 @@ switch analysis
             REL.groups = groupnames;
         elseif ngroup == 0
             REL.groups = 'none';
+            groupnames = cellstr('none');
         end
         
         %parse data based on number of events and groups
@@ -2168,7 +2169,7 @@ switch analysis
         for i = 1:ndchunks
             
             %create string to be printed and potentially viewed in gui
-            str = ['Working on event/group ' num2str(i) ' of ' num2str(ndchunks)];
+            str = ['Working on group ' num2str(i) ' of ' num2str(ndchunks)];
             
             %print to screen to notify user of progress
             fprintf(strcat('\n\n',str,'\n\n'));
@@ -2355,7 +2356,7 @@ switch analysis
             
             REL.out.conv.data{end+1} = era_storeconv(fit,4);
             
-            REL.out.elabels(:,end+1) = eventnames;
+            REL.out.elabels(:,end+1) = REL.diff_names;
             REL.out.glabels(:,end+1) = groupnames(i);
             
         end

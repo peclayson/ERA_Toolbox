@@ -1706,17 +1706,7 @@ switch relanalysis
                         .975);
                     
                 end
-                
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Begin inserting difference score calculation here. Focus on putting it by
-%group and inserting into relsummary.group.diffscore
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+               
                 
             case 4 %groups and event types to consider
                 
@@ -1735,8 +1725,11 @@ switch relanalysis
                         relsummary.group(gloc).event(eloc).name = enames{eloc};
                         
                         %create empty arrays for storing dependability information
-                        trltable = varfun(@length,REL.data{1},...
-                            'GroupingVariables',{'id'});
+                        trltable = varfun(@length,REL.data,...
+                            'GroupingVariables',{'group','id','event'});
+                        
+                        trltable = trltable(strcmp(trltable.event,enames{eloc})...
+                            & strcmp(trltable.group,gnames{gloc}),:);
                         
                         %compute dependability
                         ntrials = max(trltable.GroupCount(:)) + 1000;
@@ -1744,11 +1737,12 @@ switch relanalysis
                         
                         
                         [llrel,mrel,ulrel] = era_dep(...
-                            'bp',data.g(gloc).e(eloc).sig_u.raw,...
-                            'wp',data.g(gloc).e(eloc).sig_e.raw,...
-                            'obs',[1 ntrials],'CI',ciperc);
+                            'bp',cell2mat(data.g(gloc).e(eloc).sd_id.raw),...
+                            'wp',exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
+                            'obs',[1 ntrials],...
+                            'CI',ciperc);
                         
-                        %find the number of trials to reach cutoff
+                        %find the number of trials to reach cutoffl
                         switch meascutoff
                             case 1
                                 trlcutoff = find(llrel >= depcutoff, 1);
@@ -1757,7 +1751,6 @@ switch relanalysis
                             case 3
                                 trlcutoff = find(ulrel >= depcutoff, 1);
                         end
-                        
                         
                         %if a cutoff was not found
                         if isempty(trlcutoff)
@@ -1770,11 +1763,11 @@ switch relanalysis
                             relsummary.group(gloc).event(eloc).rel.ll = -1;
                             relsummary.group(gloc).event(eloc).rel.ul = -1;
                             
-                            datatrls = REL.data{eloc};
-                            ind = strcmp(datatrls.group,gnames{gloc});
-                            datatrls = datatrls(ind,:);
+                            trltable = varfun(@length,REL.data,...
+                                'GroupingVariables',{'group','id','event'});
                             
-                            trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+                            trltable = trltable(strcmp(trltable.event,enames{eloc})...
+                                & strcmp(trltable.group,gnames{gloc}),:);
                             
                             relsummary.group(gloc).event(eloc).eventgoodids =...
                                 'none';
@@ -1789,12 +1782,11 @@ switch relanalysis
                             relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
                             relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
                             
-                            datatrls = REL.data{eloc};
-                            ind = strcmp(datatrls.group,gnames{gloc});
-                            datatrls = datatrls(ind,:);
+                            trltable = varfun(@length,REL.data,...
+                                'GroupingVariables',{'group','id','event'});
                             
-                            %find ids with enough trials based on cutoff
-                            trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
+                            trltable = trltable(strcmp(trltable.event,enames{eloc})...
+                                & strcmp(trltable.group,gnames{gloc}),:);
                             
                             ind2include = trltable.GroupCount >= trlcutoff;
                             ind2exclude = trltable.GroupCount < trlcutoff;
@@ -1854,8 +1846,10 @@ switch relanalysis
                         
                         %pull the data to calculate the trial information from
                         %participants with good data
-                        datatable = REL.data{eloc};
-                        ind = strcmp(datatable.group,gnames{gloc});
+                        datatable = REL.data;
+                        ind = strcmp(datatable.group,gnames{gloc}) & ...
+                           strcmp(datatable.event,enames{eloc});
+                       
                         datasubset = datatable(ind,:);
                         
                         if ~strcmp(relsummary.group(gloc).goodids,'none')
@@ -1896,11 +1890,12 @@ switch relanalysis
                         [relsummary.group(gloc).event(eloc).dep.ll,...
                             relsummary.group(gloc).event(eloc).dep.m,...
                             relsummary.group(gloc).event(eloc).dep.ul] =...
-                            era_dep('bp',data.g(gloc).e(eloc).sig_u.raw,...
-                            'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                            era_dep('bp',cell2mat(data.g(gloc).e(eloc).sd_id.raw),...
+                            'wp',exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
                             'obs',depcent,'CI',ciperc);
                         
                         relsummary.group(gloc).event(eloc).dep.meas = depcent;
+                        
                         relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
                         relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
                         relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
@@ -1930,28 +1925,70 @@ switch relanalysis
                         [relsummary.group(gloc).event(eloc).icc.ll,...
                             relsummary.group(gloc).event(eloc).icc.m,...
                             relsummary.group(gloc).event(eloc).icc.ul] = ...
-                            era_icc('bp',data.g(gloc).e(eloc).sig_u.raw,...
-                            'wp',data.g(gloc).e(eloc).sig_e.raw,'CI',ciperc);
+                            era_icc('bp',cell2mat(data.g(gloc).e(eloc).sd_id.raw),...
+                            'wp',exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
+                            'CI',ciperc);
                         
                         relsummary.group(gloc).event(eloc).betsd.m = ...
-                            mean(data.g(gloc).e(eloc).sig_u.raw);
+                            mean(cell2mat(data.g(gloc).e(eloc).sd_id.raw));
                         relsummary.group(gloc).event(eloc).betsd.ll = ...
-                            quantile(data.g(gloc).e(eloc).sig_u.raw,.025);
+                            quantile(cell2mat(data.g(gloc).e(eloc).sd_id.raw),.025);
                         relsummary.group(gloc).event(eloc).betsd.ul = ...
-                            quantile(data.g(gloc).e(eloc).sig_u.raw,.975);
+                            quantile(cell2mat(data.g(gloc).e(eloc).sd_id.raw),.975);
                         
                         relsummary.group(gloc).event(eloc).witsd.m = ...
-                            mean(data.g(gloc).e(eloc).sig_e.raw);
+                            mean(exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)));
                         relsummary.group(gloc).event(eloc).witsd.ll = ...
-                            quantile(data.g(gloc).e(eloc).sig_e.raw,.025);
+                            quantile(exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
+                            .025);
                         relsummary.group(gloc).event(eloc).witsd.ul = ...
-                            quantile(data.g(gloc).e(eloc).sig_e.raw,.975);
+                            quantile(exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
+                            .975);
                         
                     end
                 end
                 
                 
         end %switch analysis
+        
+        if ngroups == 0
+            ngroups = 1;
+        end
+        
+        for gloc=1:ngroups
+            for est = 1:length(est_type)
+                
+                switch depcentmeas
+                    case 1
+                        trls1 = relsummary.group(gloc).event(1).trlinfo.mean;
+                        trls2 = relsummary.group(gloc).event(2).trlinfo.mean;
+                    case 2
+                        trls1 = relsummary.group(gloc).event(1).trlinfo.med;
+                        trls2 = relsummary.group(gloc).event(2).trlinfo.med;
+                end
+                
+                [ll,pt,ul,icc_ll,icc_pt,icc_ul] = era_diffrel(...
+                    'bp',cell2mat(REL.out.id_varcov{:,gloc}),...
+                    'bt',cell2mat(REL.out.trl_varcov{:,gloc}),...
+                    'er_var',cell2mat(REL.out.b_sigma{:,gloc}),...
+                    'obs',[trls1 trls2],...
+                    'est','dep',...
+                    'CI',relsummary.ciperc);
+                
+                relsummary.group(gloc).diffscore.est_type = 'dependability';
+                relsummary.group(gloc).diffscore.pt = pt;
+                relsummary.group(gloc).diffscore.ll = ll;
+                relsummary.group(gloc).diffscore.ul = ul;
+                relsummary.group(gloc).diffscore.icc_pt = icc_pt;
+                relsummary.group(gloc).diffscore.icc_ll = icc_ll;
+                relsummary.group(gloc).diffscore.icc_ul = icc_ul;
+                
+            end
+        end
+        
+        %here can loop through and add in difference score reliability
+        %estimation
+        
     case 'sing_sserr'
         
         %place era_data.data in REL to work with
