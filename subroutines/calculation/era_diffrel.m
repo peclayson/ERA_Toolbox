@@ -167,11 +167,11 @@ obs2 = obs(2);
 uni = bp1 + bp2 - (2*bp_cov);
 
 rel_err = (wp1 ./ obs1) + (wp2 ./ obs2);
-abs_err = rel_err + (bt1 ./ obs1) + (bt2 ./ obs2) +...
-    (bt_cov ./ harmmean(obs));
+abs_err = rel_err + (bt1 ./ obs1) + (bt2 ./ obs2) -...
+    ((2 .* bt_cov) ./ harmmean(obs));
 
 denom_rel_err =  wp1 + wp2;
-denom_abs_err = denom_rel_err + bt1 + bt2 + bt_cov;
+denom_abs_err = denom_rel_err + bt1 + bt2 - (2 .* bt_cov);
 
 switch est
     case 'dep'
