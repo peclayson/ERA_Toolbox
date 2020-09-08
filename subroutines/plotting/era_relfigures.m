@@ -540,7 +540,7 @@ end
 
 %table displaying trial cutoff information
 switch analysis
-    case 'sing'
+    case {'sing','sing_diff'}
         if showinct == 1
             era_depcutofft('era_data',era_data,'gui',1);
         end

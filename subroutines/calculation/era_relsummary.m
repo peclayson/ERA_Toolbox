@@ -1982,6 +1982,24 @@ switch relanalysis
             relsummary.group(gloc).diffscore.icc_ll = icc_ll;
             relsummary.group(gloc).diffscore.icc_ul = icc_ul;
             
+            trl1_cutoff = relsummary.group(gloc).event(1).trlcutoff;
+            trl1_cutoff = relsummary.group(gloc).event(2).trlcutoff;
+            
+            [ll,pt,ul,icc_ll,icc_pt,icc_ul] = era_diffrel(...
+                'bp',cell2mat(REL.out.id_varcov{:,gloc}),...
+                'bt',cell2mat(REL.out.trl_varcov{:,gloc}),...
+                'er_var',cell2mat(REL.out.b_sigma{:,gloc}),...
+                'obs',[trl1_cutoff trl1_cutoff],...
+                'est','dep',...
+                'CI',relsummary.ciperc);
+            
+            relsummary.group(gloc).diffscore.trlcutoff.pt = pt;
+            relsummary.group(gloc).diffscore.trlcutoff.ll = ll;
+            relsummary.group(gloc).diffscore.trlcutoff.ul = ul;
+            relsummary.group(gloc).diffscore.trlcutoff.icc_pt = icc_pt;
+            relsummary.group(gloc).diffscore.trlcutoff.icc_ll = icc_ll;
+            relsummary.group(gloc).diffscore.trlcutoff.icc_ul = icc_ul;
+            
             
         end
         
