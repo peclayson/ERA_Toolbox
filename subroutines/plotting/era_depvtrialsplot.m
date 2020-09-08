@@ -5,7 +5,7 @@ function depplot = era_depvtrialsplot(varargin)
 %depplot = era_depvtrialsplot('era_data',era_data,'trials',[1 50],...
 %   'depline',plotdepline,'depcutoff',depcutoff);
 %
-%Last Modified 1/19/17
+%Last Modified 9/8/20
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
@@ -55,6 +55,10 @@ function depplot = era_depvtrialsplot(varargin)
 %
 %1/19/17 PC
 % updated copyright
+%
+%9/9/20 PC
+% now can plot event-specific internal consistency for "normal" analyses
+%  and difference score analyses
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -213,26 +217,37 @@ set(gcf,'NumberTitle','Off');
 depplot.Position = [125 630 900 450];
 fsize = 16;
 
+
 %extract the data and create the subplots for depplot
 for eloc=1:nevents
     for gloc=1:ngroups
+        
+        if strcmp(era_data.rel.analysis,'ic')
+            bp = era_data.relsummary.data.g(gloc).e(eloc).sig_u.raw;
+            wp = era_data.relsummary.data.g(gloc).e(eloc).sig_e.raw;
+        elseif strcmp(era_data.rel.analysis,'ic_diff')
+            bp = cell2mat(era_data.relsummary.data.g(gloc).e(eloc).sd_id.raw);
+            wp = exp(cell2mat(era_data.relsummary.data.g(gloc).e(eloc).b_sigma.raw));
+        end
+
+        
         switch depline
             case 1 %lower limit
                 [plotrel(x,gloc),~,~] = era_dep(...
-                    'bp',era_data.relsummary.data.g(gloc).e(eloc).sig_u.raw,...
-                    'wp',era_data.relsummary.data.g(gloc).e(eloc).sig_e.raw,...
+                    'bp',bp,...
+                    'wp',wp,...
                     'obs',[trials(1) trials(2)],'CI',ciperc);
                 plottitle = 'Lower Limit of 95% Credible Interval';
             case 2 %point estimate
                 [~,plotrel(x,gloc),~] = era_dep(...
-                    'bp',era_data.relsummary.data.g(gloc).e(eloc).sig_u.raw,...
-                    'wp',era_data.relsummary.data.g(gloc).e(eloc).sig_e.raw,...
+                    'bp',bp,...
+                    'wp',wp,...
                     'obs',[trials(1) trials(2)],'CI',ciperc);
                 plottitle = 'Point Estimate';
             case 3 %upper limit
                 [~,~,plotrel(x,gloc)] = era_dep(...
-                    'bp',era_data.relsummary.data.g(gloc).e(eloc).sig_u.raw,...
-                    'wp',era_data.relsummary.data.g(gloc).e(eloc).sig_e.raw,...
+                    'bp',bp,...
+                    'wp',wp,...
                     'obs',[trials(1) trials(2)],'CI',ciperc);
                 plottitle = 'Upper Limit of 95% Credible Interval';
         end

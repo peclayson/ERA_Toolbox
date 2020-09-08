@@ -176,18 +176,26 @@ denom_abs_err = denom_rel_err + bt1 + bt2 - (2 .* bt_cov);
 switch est
     case 'dep'
         
-        [ll, ul] = quantile(uni ./ abs_err,[ciedge 1-ciedge]);
+        temp = quantile(uni ./ abs_err,[ciedge, 1-ciedge]);
+        ll = temp(1);
+        ul = temp(2);
         pt = mean(uni ./ abs_err);
         
-        [icc_ll, icc_ul] = quantile(uni ./ denom_abs_err,[ciedge 1-ciedge]);
+        temp = quantile(uni ./ denom_abs_err,[ciedge 1-ciedge]);
+        icc_ll = temp(1);
+        icc_ul = temp(2);
         icc_pt = mean(uni ./ denom_abs_err);
         
     case 'gen'
         
-        [ll, ul] = quantile(uni ./ abs_err,[ciedge 1-ciedge]);
+        temp = quantile(uni ./ abs_err,[ciedge 1-ciedge]);
+        ll = temp(1);
+        ul = temp(2);
         pt = mean(uni ./ abs_err);
         
-        [icc_ll, icc_ul] = quantile(uni ./ denom_rel_err,[ciedge 1-ciedge]);
+        temp = quantile(uni ./ denom_rel_err,[ciedge 1-ciedge]);
+        icc_ll = temp(1);
+        icc_ul = temp(2);
         icc_pt = mean(uni ./ denom_rel_err);
         
 end

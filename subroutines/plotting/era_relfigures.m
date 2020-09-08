@@ -494,7 +494,7 @@ end
 %Plot that shows the relationship between the number of trials retained
 %for averaging and dependability
 switch analysis
-    case 'sing'
+    case {'sing','sing_diff'}
         if pdep == 1
             era_depvtrialsplot('era_data',era_data,...
                 'trials',[1 plotntrials],...
