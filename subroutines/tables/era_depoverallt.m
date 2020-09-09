@@ -170,9 +170,8 @@ if ~strcmp(era_data.rel.analysis,'ic_sserrvar')
             badn{end+1} = length(era_data.relsummary.group(gloc).badids);
             
         end
-    end
-    
-    if strcmp(era_data.rel.analysis,'ic_diff')
+        
+        if strcmp(era_data.rel.analysis,'ic_diff')
         
         switch analysis
             case 3
@@ -198,6 +197,9 @@ if ~strcmp(era_data.rel.analysis,'ic_sserrvar')
             era_data.relsummary.group(gloc).diffscore.ll,...
             era_data.relsummary.group(gloc).diffscore.ul);
     end
+    end
+    
+    
     
 elseif strcmp(era_data.rel.analysis,'ic_sserrvar')
     for gloc=1:ngroups

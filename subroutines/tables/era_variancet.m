@@ -162,6 +162,7 @@ if ~strcmp(era_data.rel.analysis,'ic_sserrvar')
                 era_data.relsummary.group(gloc).event(eloc).witsd.ul);
             
         end
+        
     end
     
 elseif strcmp(era_data.rel.analysis,'ic_sserrvar')
@@ -216,7 +217,7 @@ end
 %deviation information
 vartable = table(label',betsd',witsd',icc');
 
-if ~strcmp(era_data.rel.analysis,'ic_sserrvar')
+if strcmp(era_data.rel.analysis,'ic')
     vartable.Properties.VariableNames = {'Label',...
         'Between_StdDev','Within_StdDev','ICC'};
 elseif strcmp(era_data.rel.analysis,'ic_sserrvar')
@@ -261,7 +262,7 @@ set(t,'ColumnName',{'Label' 'Between Std Dev'...
 set(t,'ColumnWidth',{200 140 140 140});
 set(t,'RowName',[]);
 
-if ~strcmp(era_data.rel.analysis,'ic_sserrvar')
+if strcmp(era_data.rel.analysis,'ic_sserrvar')
     
     %Create a save button that will save the table
     uicontrol(var_gui,'Style','push','fontsize',14,...
@@ -299,7 +300,16 @@ elseif strcmp(era_data.rel.analysis,'ic_sserrvar')
         'Position', [(figwidth/8)*5 25 figwidth/4 50],...
         'Callback',{@era_savesscoeffs,era_data});
     
+elseif strcmp(era_data.rel.analysis,'ic_diff')
+    
+    %Create a save button that will view variance components
+    uicontrol(var_gui,'Style','push','fontsize',14,...
+        'HorizontalAlignment','center',...
+        'String','<html><tr><td align=center>View All<br>Standard Deviations',...
+        'Position', [(figwidth/8)*5 25 figwidth/4 50],...
+        'Callback',{@era_viewdiffcomp,era_data});
 end
+
 
 end
 
@@ -493,8 +503,6 @@ fclose(fid);
 
 
 end
-
-
 
 
 function era_viewvarcomp(varargin)
@@ -714,3 +722,242 @@ end
 
 
 end
+
+
+function era_viewdiffcomp(varargin)
+%present another gui to view the variance components for diff score data
+
+%parse inputs
+era_data = varargin{3};
+
+%check whether any groups exist
+if strcmpi(era_data.rel.groups,'none')
+    ngroups = 1;
+    %gnames = cellstr(era_data.rel.groups);
+    gnames ={''};
+else
+    ngroups = length(era_data.rel.groups);
+    gnames = era_data.rel.groups(:);
+end
+
+%check whether any events exist
+if strcmpi(era_data.rel.events,'none')
+    nevents = 1;
+    %enames = cellstr(era_data.rel.events);
+    enames = {''};
+else
+    nevents = length(era_data.rel.events);
+    enames = era_data.rel.events(:);
+end
+
+%figure out whether groups or events need to be considered
+%1 - no groups or event types to consider
+%2 - possible multiple groups but no event types to consider
+%3 - possible event types but no groups to consider
+%4 - possible groups and event types to consider
+
+if ngroups == 1 && nevents == 1
+    analysis = 1;
+elseif ngroups > 1 && nevents == 1
+    analysis = 2;
+elseif ngroups == 1 && nevents > 1
+    analysis = 3;
+elseif ngroups > 1 && nevents > 1
+    analysis = 4;
+end
+
+%create placeholders for displaying data in tables in guis
+label = {};
+icc = {};
+betsd = {};
+witsd = {};
+bettrlsd = {};
+bp_cov = {};
+bt_cov = {};
+wp_cov = {};
+icc = {};
+
+
+%put data together to display in tables
+for gloc=1:ngroups
+    for eloc=1:nevents
+        
+        %label for group and/or event
+        switch analysis
+            case 3
+                label{end+1} = enames{eloc};
+            case 4
+                label{end+1} = [gnames{gloc} ' - ' enames{eloc}];
+        end
+        
+        %create a string with the icc point estimate and credible interval
+        icc{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
+            era_data.relsummary.group(gloc).event(eloc).icc.m,...
+            era_data.relsummary.group(gloc).event(eloc).icc.ll,...
+            era_data.relsummary.group(gloc).event(eloc).icc.ul);
+        
+        %create a string with the between-person standard devation point
+        %estimate and credible interval
+        betsd{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
+            era_data.relsummary.group(gloc).event(eloc).betsd.m,...
+            era_data.relsummary.group(gloc).event(eloc).betsd.ll,...
+            era_data.relsummary.group(gloc).event(eloc).betsd.ul);
+        
+        %create a string with the within-person standard devation point
+        %estimate and credible interval
+        witsd{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
+            era_data.relsummary.group(gloc).event(eloc).witsd.m,...
+            era_data.relsummary.group(gloc).event(eloc).witsd.ll,...
+            era_data.relsummary.group(gloc).event(eloc).witsd.ul);
+        
+        if eloc == 1
+            bettrlsd{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
+                sqrt(era_data.relsummary.group(gloc).diffscore.bt1_var_pt),...
+                sqrt(era_data.relsummary.group(gloc).diffscore.bt1_var_ll),...
+                sqrt(era_data.relsummary.group(gloc).diffscore.bt1_var_ul));
+        elseif eloc == 2
+            bettrlsd{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
+                sqrt(era_data.relsummary.group(gloc).diffscore.bt2_var_pt),...
+                sqrt(era_data.relsummary.group(gloc).diffscore.bt2_var_ll),...
+                sqrt(era_data.relsummary.group(gloc).diffscore.bt2_var_ul));
+        end
+        
+        bp_cov{end+1} = '---';
+        bt_cov{end+1} = '---';
+        wp_cov{end+1} = '---';
+    end
+
+    switch analysis
+        case 3
+            label{end+1} = 'diff score';
+        case 4
+            label{end+1} = [gnames{gloc} ' - diff score'];
+    end
+    
+    betsd{end+1} = '---';
+    witsd{end+1} = '---';
+    bettrlsd{end+1} = '---';
+    
+    %create a string with the dependability point estimate and credible
+    %interval for cutoff data
+    icc{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
+        era_data.relsummary.group(gloc).diffscore.icc_pt,...
+        era_data.relsummary.group(gloc).diffscore.icc_ll,...
+        era_data.relsummary.group(gloc).diffscore.icc_ul);
+    
+    bp_cov{end+1} = sprintf('%0.2f CI [%0.2f %0.2f]',...
+        sqrt(era_data.relsummary.group(gloc).diffscore.bp_cov_pt),...
+        sqrt(era_data.relsummary.group(gloc).diffscore.bp_cov_ll),...
+        sqrt(era_data.relsummary.group(gloc).diffscore.bp_cov_ul));
+    
+    bt_cov{end+1} = sprintf('%0.2f CI [%0.2f %0.2f]',...
+        sqrt(era_data.relsummary.group(gloc).diffscore.bt_cov_pt),...
+        sqrt(era_data.relsummary.group(gloc).diffscore.bt_cov_ll),...
+        sqrt(era_data.relsummary.group(gloc).diffscore.bt_cov_ul));
+    
+    wp_cov{end+1} = sprintf('%0.2f',...
+        era_data.relsummary.group(gloc).diffscore.wp_cov);
+    
+end
+
+%create table for displaying standard deviations
+vartable = table(label',betsd',bp_cov',bettrlsd',bt_cov',witsd',wp_cov',icc');
+
+vartnames = {'Label',...
+    'Between-Person Std Dev','BP Covariance Std Dev',...
+    'Between-Trial Std Dev','BT Covariance Std Dev',...
+    'Error Std Dev','Error Covariance Std Dev',...
+    'ICC'};
+
+vartable.Properties.VariableNames = vartnames;
+
+%define parameters for figure size
+figwidth = 1230;
+figheight = 400;
+
+%define space between rows and first row location
+rowspace = 25;
+row = figheight - rowspace*2;
+name = 'All Standard Deviation Components';
+
+%create gui for standard-deviation table
+varall_gui= figure('unit','pix',...
+    'position',[1250 600 figwidth figheight],...
+    'menub','no',...
+    'name',name,...
+    'numbertitle','off',...
+    'resize','off');
+
+%Print the name of the loaded dataset
+uicontrol(varall_gui,'Style','text','fontsize',16,...
+    'HorizontalAlignment','center',...
+    'String',...
+    'Estimated Standard Deviation Components',...
+    'Position',[0 row figwidth 25]);
+
+%Start a table
+t = uitable('Parent',varall_gui,'Position',...
+    [25 100 figwidth-50 figheight-175],...
+    'Data',table2cell(vartable));
+set(t,'ColumnName',vartnames);
+set(t,'ColumnWidth',{200 140 140 140 140 140 140 140});
+set(t,'RowName',[]);
+
+%Create a save button that will save the table
+uicontrol(varall_gui,'Style','push','fontsize',14,...
+    'HorizontalAlignment','center',...
+    'String','Save Table',...
+    'Position', [figwidth/8 25 figwidth/4 50],...
+    'Callback',{@era_savealldifftable,era_data,vartable});
+
+end
+
+
+function era_savealldifftable(varargin)
+%if the user pressed the button to save all of the standard deviation
+%components
+
+%parse inputs
+era_data = varargin{3};
+vartable = varargin{4};
+
+%ask the user where the file should be saved
+[savename, savepath] = uiputfile(...
+    {'*.csv',...
+    'Comma-Separated Vale File (.csv)'},...
+    'Where would you like to save table?');
+
+
+[~,~,ext] = fileparts(fullfile(savepath,savename));
+
+%save as csv file
+fid = fopen(fullfile(savepath,savename),'w');
+fprintf(fid,'%s\n','Table Generated on');
+fprintf(fid,'%s\n',datestr(clock));
+fprintf(fid,'ERA Toolbox v%s\n',era_data.ver);
+fprintf(fid,' \n');
+fprintf(fid,'Dataset: %s\n',era_data.rel.filename);
+fprintf(fid,'Chains: %d, Iterations: %d',...
+    era_data.rel.nchains,era_data.rel.niter);
+fprintf(fid,' \n');
+fprintf(fid,' \n');
+
+fprintf(fid,'%s', strcat('Label,Between-Person Std Dev,BP Covariance Std Dev,',...
+    'Between-Trial Std Dev,BT Covariance Std Dev,Error Std Dev,',...
+    'Error Covariance Std Dev,ICC'));
+fprintf(fid,' \n');
+
+for i = 1:height(vartable)
+    formatspec = '%s,%s,%s,%s,%s,%s,%s,%s\n';
+    fprintf(fid,formatspec,char(vartable{i,1}),...
+        char(vartable{i,2}), char(vartable{i,3}),...
+        char(vartable{i,4}), char(vartable{i,5}),...
+        char(vartable{i,6}), char(vartable{i,7}),...
+        char(vartable{i,8}));
+end
+
+fclose(fid);
+
+
+end
+
