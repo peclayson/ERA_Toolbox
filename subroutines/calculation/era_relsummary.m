@@ -1966,7 +1966,7 @@ switch relanalysis
                     trls2 = relsummary.group(gloc).event(2).trlinfo.med;
             end
             
-            [ll,pt,ul,icc_ll,icc_pt,icc_ul] = era_diffrel(...
+            diffscore = era_diffrel(...
                 'bp',cell2mat(REL.out.id_varcov{:,gloc}),...
                 'bt',cell2mat(REL.out.trl_varcov{:,gloc}),...
                 'er_var',cell2mat(REL.out.b_sigma{:,gloc}),...
@@ -1974,32 +1974,20 @@ switch relanalysis
                 'est','dep',...
                 'CI',relsummary.ciperc);
             
-            relsummary.group(gloc).diffscore.est_type = 'dependability';
-            relsummary.group(gloc).diffscore.pt = pt;
-            relsummary.group(gloc).diffscore.ll = ll;
-            relsummary.group(gloc).diffscore.ul = ul;
-            relsummary.group(gloc).diffscore.icc_pt = icc_pt;
-            relsummary.group(gloc).diffscore.icc_ll = icc_ll;
-            relsummary.group(gloc).diffscore.icc_ul = icc_ul;
+            relsummary.group(gloc).diffscore = diffscore;
             
             trl1_cutoff = relsummary.group(gloc).event(1).trlcutoff;
-            trl1_cutoff = relsummary.group(gloc).event(2).trlcutoff;
+            trl2_cutoff = relsummary.group(gloc).event(2).trlcutoff;
             
-            [ll,pt,ul,icc_ll,icc_pt,icc_ul] = era_diffrel(...
+            diffscore = era_diffrel(...
                 'bp',cell2mat(REL.out.id_varcov{:,gloc}),...
                 'bt',cell2mat(REL.out.trl_varcov{:,gloc}),...
                 'er_var',cell2mat(REL.out.b_sigma{:,gloc}),...
-                'obs',[trl1_cutoff trl1_cutoff],...
+                'obs',[trl1_cutoff trl2_cutoff],...
                 'est','dep',...
                 'CI',relsummary.ciperc);
             
-            relsummary.group(gloc).diffscore.trlcutoff.pt = pt;
-            relsummary.group(gloc).diffscore.trlcutoff.ll = ll;
-            relsummary.group(gloc).diffscore.trlcutoff.ul = ul;
-            relsummary.group(gloc).diffscore.trlcutoff.icc_pt = icc_pt;
-            relsummary.group(gloc).diffscore.trlcutoff.icc_ll = icc_ll;
-            relsummary.group(gloc).diffscore.trlcutoff.icc_ul = icc_ul;
-            
+            relsummary.group(gloc).diffscore.trlcutoff = diffscore;            
             
         end
         

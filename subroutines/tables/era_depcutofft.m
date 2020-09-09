@@ -150,7 +150,13 @@ for gloc=1:ngroups
     end
     
     if strcmp(era_data.rel.analysis,'ic_diff')
-        label{end+1} = [gnames{gloc} ' - difference score'];
+        
+        switch analysis
+            case 3
+                label{end+1} = 'diff score';
+            case 4
+                label{end+1} = [gnames{gloc} ' - diff score'];
+        end
         trlcutoff{end+1} = '---';
         
         %create a string with the dependability point estimate and credible

@@ -1,4 +1,4 @@
-function [ll,pt,ul,icc_ll,icc_pt,icc_ul] = era_diffrel(varargin)
+function diffscore = era_diffrel(varargin)
 %Calculate difference score reliability of single session data
 %
 %[idtable] = era_diffrel('bp',id_varcov,'bt',trl_varcov,...
@@ -16,13 +16,21 @@ function [ll,pt,ul,icc_ll,icc_pt,icc_ul] = era_diffrel(varargin)
 % CI - size of the credible interval in decimal format: .95 = 95%
 %
 %Outputs
-% ll - lower limit of credible interval for dependability/generalizability
-% pt - point estimate of credible interval for dependability/generalizability
-% ul - upper limit of credible interval for dependability/generalizability
-% ll - lower limit of credible interval for ICC
-% pt - point estimate of credible interval for ICC
-% ul - upper limit of credible interval for ICC
-%
+% diffscore - array, which contains
+%  ll - lower limit of credible interval for dependability/generalizability
+%  pt - point estimate of credible interval for dependability/generalizability
+%  ul - upper limit of credible interval for dependability/generalizability
+%  bp_cov_ll - lower limit of credible interval for between-trial covariance
+%  bp_cov_pt - point estimate of credible interval for between-trial covariance
+%  bp_cov_ul - upper limit of credible interval for between-trial covariance
+%  bt_cov_ll - lower limit of credible interval for between-trial covariance
+%  bt_cov_pt - point estimate of credible interval for between-trial covariance
+%  bt_cov_ul - upper limit of credible interval for between-trial covariance
+%  wp_cov - within-person (residual) covariance
+%  icc_ll - lower limit of credible interval for ICC
+%  icc_pt - point estimate of credible interval for ICC
+%  icc_ul - upper limit of credible interval for ICC
+% 
 
 % Copyright (C) 2016-2020 Peter E. Clayson
 %
@@ -170,35 +178,93 @@ rel_err = (wp1 ./ obs1) + (wp2 ./ obs2);
 abs_err = rel_err + (bt1 ./ obs1) + (bt2 ./ obs2) -...
     ((2 .* bt_cov) ./ harmmean(obs));
 
-denom_rel_err =  wp1 + wp2;
+denom_rel_err = wp1 + wp2;
 denom_abs_err = denom_rel_err + bt1 + bt2 - (2 .* bt_cov);
 
 switch est
     case 'dep'
         
-        temp = quantile(uni ./ abs_err,[ciedge, 1-ciedge]);
+        temp = quantile(uni ./ (uni + abs_err),[ciedge, 1-ciedge]);
         ll = temp(1);
         ul = temp(2);
-        pt = mean(uni ./ abs_err);
+        pt = mean(uni ./ (uni + abs_err));
         
-        temp = quantile(uni ./ denom_abs_err,[ciedge 1-ciedge]);
+        temp = quantile(uni ./ (uni + denom_abs_err),[ciedge 1-ciedge]);
         icc_ll = temp(1);
         icc_ul = temp(2);
-        icc_pt = mean(uni ./ denom_abs_err);
+        icc_pt = mean(uni ./ (uni + denom_abs_err));
+        
+        est_type = 'dependability';
         
     case 'gen'
         
-        temp = quantile(uni ./ abs_err,[ciedge 1-ciedge]);
+        temp = quantile(uni ./ (uni + rel_err),[ciedge 1-ciedge]);
         ll = temp(1);
         ul = temp(2);
-        pt = mean(uni ./ abs_err);
+        pt = mean(uni ./ (uni + rel_err));
         
-        temp = quantile(uni ./ denom_rel_err,[ciedge 1-ciedge]);
+        temp = quantile(uni ./ (uni + denom_rel_err),[ciedge 1-ciedge]);
         icc_ll = temp(1);
         icc_ul = temp(2);
-        icc_pt = mean(uni ./ denom_rel_err);
+        icc_pt = mean(uni ./ (uni + denom_rel_err));
+        
+        est_type = 'generalizability';
         
 end
 
+
+%for now, covariance is not estimated for within-person error because the
+%two events are not considered to be jointly observed
+
+
+%Outputs
+% diffscore - array, which contains
+%  ll - lower limit of credible interval for dependability/generalizability
+%  pt - point estimate of credible interval for dependability/generalizability
+%  ul - upper limit of credible interval for dependability/generalizability
+%  bp_cov_ll - lower limit of credible interval for between-trial covariance
+%  bp_cov_pt - point estimate of credible interval for between-trial covariance
+%  bp_cov_ul - upper limit of credible interval for between-trial covariance
+%  bt_cov_ll - lower limit of credible interval for between-trial covariance
+%  bt_cov_pt - point estimate of credible interval for between-trial covariance
+%  bt_cov_ul - upper limit of credible interval for between-trial covariance
+%  wp_cov - within-person (residual) covariance
+%  icc_ll - lower limit of credible interval for ICC
+%  icc_pt - point estimate of credible interval for ICC
+%  icc_ul - upper limit of credible interval for ICC
+% 
+
+%create output structure array
+diffscore = [];
+
+diffscore.est_type = est_type;
+
+diffscore.pt = pt;
+diffscore.ll = ll;
+diffscore.ul = ul;
+
+diffscore.bp_cov_pt = mean(bp_cov);
+diffscore.bp_cov_ll = quantile(bp_cov,ciedge);
+diffscore.bp_cov_ul = quantile(bp_cov,1-ciedge);
+
+%output between-trial variances as well
+diffscore.bt1_var_pt = mean(bt1);
+diffscore.bt1_var_ll = quantile(bt1,ciedge);
+diffscore.bt1_var_ul = quantile(bt1,1-ciedge);
+
+diffscore.bt2_var_pt = mean(bt2);
+diffscore.bt2_var_ll = quantile(bt2,ciedge);
+diffscore.bt2_var_ul = quantile(bt2,1-ciedge);
+
+diffscore.bt_cov_pt = mean(bt_cov);
+diffscore.bt_cov_ll = quantile(bt_cov,ciedge);
+diffscore.bt_cov_ul = quantile(bt_cov,1-ciedge);
+
+%two observations are not considered to be jointly observed
+diffscore.wp_cov = 0;
+
+diffscore.icc_pt = icc_pt;
+diffscore.icc_ll = icc_ll;
+diffscore.icc_ul = icc_ul;
 
 end

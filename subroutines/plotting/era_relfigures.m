@@ -552,7 +552,7 @@ end
 
 %table displaying overall dependability information
 switch analysis
-    case {'sing','sing_sserr'}
+    case {'sing','sing_sserr','sing_diff'}
         if showoverallt == 1
             era_depoverallt('era_data',era_data,'gui',1);
         end
