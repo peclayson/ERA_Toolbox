@@ -1,7 +1,7 @@
 function versions = era_checkversionsofdeps
 %Check the versions of the dependents for ERA Toolbox
 %
-%Last Updated 6/24/17
+%Last Updated 9/10/20
 %
 
 %This function just will examine whether the dependents are up to date. It
@@ -40,6 +40,8 @@ function versions = era_checkversionsofdeps
 % by Peter Clayson (6/24/17)
 % peter.clayson@gmail.com
 %
+%9/10/20 Pc
+% changes for checking version of cmdstan after updating to 2.24.1
 
 %create an empty array for storing the information about dependents
 versions = struct;
@@ -52,14 +54,25 @@ depvers = era_dependentsversions;
 
 %start off checking the version of cmdstan
 %find the file that has the information about the version
-cs_filepath = which('cmdstan-guide.tex');
+% cs_filepath = which('cmdstan-guide.tex');
+% 
+% %load the file and pull the version information
+% cs_file = fileread(cs_filepath);
+% C = strsplit(cs_file,'\');
+% str = C{5};
+% c_beg = strfind(str,'{');
+% cs_ver = str(c_beg+1:end-2);
 
-%load the file and pull the version information
-cs_file = fileread(cs_filepath);
-C = strsplit(cs_file,'\');
-str = C{5};
-c_beg = strfind(str,'{');
-cs_ver = str(c_beg+1:end-2);
+cs_filepath = fileparts(which('runCmdStanTests.py'));
+command = [fullfile(cs_filepath,'bin','stanc') ' --version'];
+%command = [fullfile(self.stan_home,'bin','stanc') ' --version'];
+         p = processManager('id','stanc version','command',command,...
+                            'keepStdout',true,...
+                            'printStdout',false,...
+                            'pollInterval',0.005);
+                        
+str = regexp(p.stdout{1},'\ ','split');
+cs_ver = str{2}(2:end);
 
 %format version information for cmdstan that is used by the toolbox
 cs_used_parts = sscanf(depvers.cmdstan,'%d.%d.%d')';

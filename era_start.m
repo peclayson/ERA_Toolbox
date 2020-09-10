@@ -202,36 +202,36 @@ if exist('mcmc.m','file') ~= 2 || ...
     
 else
     
-    fprintf('CmdStan, MatlabProcessManager, and MatlabStan files found\n');
-    
-    %check if the most up-to-date releases are being used for each of the
-    %dependents
-    
-    depvercheck = era_checkversionsofdeps;
-    
-    switch depvercheck.cmdstan
-        case 0
-            fprintf('There is a new version of CmdStan available\n');
-        case 1
-            fprintf('CmdStan version is current\n');
-        case 2
-            warning(strcat('Installed CmdStan version is newer than the',...
-                ' version tested for the Toolbox.',...
-                ' Toolbox may not work properly as a result'));
-    end
-    
-    switch depvercheck.matlabprocessmanager
-        case 0
-            fprintf('There is a new version of MatlabProcessManager available\n');
-        case 1
-            fprintf('MatlabProcessManager version is current\n');
-        case 2
-            warning(strcat('Installed MatlabProcessManager version is newer than the',...
-                ' version tested for the Toolbox.',...
-                ' Toolbox may not work properly as a result'));
-    end
-    
-    fprintf('Checking the installed version of MatlabStan is not currently supported\n');
+%     fprintf('CmdStan, MatlabProcessManager, and MatlabStan files found\n');
+%     
+%     %check if the most up-to-date releases are being used for each of the
+%     %dependents
+%     
+%     depvercheck = era_checkversionsofdeps;
+%     
+%     switch depvercheck.cmdstan
+%         case 0
+%             fprintf('There is a new version of CmdStan available\n');
+%         case 1
+%             fprintf('CmdStan version is current\n');
+%         case 2
+%             warning(strcat('Installed CmdStan version is newer than the',...
+%                 ' version tested for the Toolbox.',...
+%                 ' Toolbox may not work properly as a result'));
+%     end
+%     
+%     switch depvercheck.matlabprocessmanager
+%         case 0
+%             fprintf('There is a new version of MatlabProcessManager available\n');
+%         case 1
+%             fprintf('MatlabProcessManager version is current\n');
+%         case 2
+%             warning(strcat('Installed MatlabProcessManager version is newer than the',...
+%                 ' version tested for the Toolbox.',...
+%                 ' Toolbox may not work properly as a result'));
+%     end
+%     
+%     fprintf('Checking the installed version of MatlabStan is not currently supported\n');
     
 end
 
@@ -242,7 +242,7 @@ eraver = era_defineversion;
 fprintf('\n\n\nERP Reliability Analysis Toolbox Version %s\n\n',eraver);
 
 %check whether running the newest release of the toolbox
-eravercheck = era_updatecheck(eraver);
+% eravercheck = era_updatecheck(eraver);
 
 fprintf('\n');
 
