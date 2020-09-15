@@ -3,7 +3,7 @@ function era_installdependents(varargin)
 %
 %era_installdependents
 %
-%Last Updated 9/8/17
+%Last Updated 9/11/20
 %
 %Required Inputs:
 % No inputs are required.
@@ -83,6 +83,9 @@ function era_installdependents(varargin)
 % Fixed bug where cmdstan path not updated in stan_home when cmdstan was 
 %  updated on Mac OS
 %
+%9/11/20 PC
+% Changes assocaited with fixing MatlabStan installation (need to manually
+%  input version number into script
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -544,6 +547,32 @@ if depcheck.mstan == 0
     end
     fclose(fid);
     
+    
+    %open the StanModel.m file and change the version to current cmdstan
+    % version
+    fid=fopen(fullfile(msdir,'StanModel.m'));
+    storefile = {};
+    while 1
+        tline = fgetl(fid);
+        storefile{end+1} = tline;
+        if ~ischar(tline), break, end
+    end
+    fclose(fid);
+
+    ind = strcmp(storefile,"            ver = cellfun(@str2num,regexp(str{3},'\.','split'));");
+    
+    jvers = era_dependentsversions;
+    storefile{ind} = ['            ver = ''' jvers.cmdstan ''';'];
+
+    %overwrite the existing stan_home.m file with the new information
+    fid=fopen(fullfile(msdir,'StanModel.m'),'w');
+    for i=1:(length(storefile)-1)
+        storefile{i} = strrep(storefile{i},'%','%%');
+        storefile{i} = strrep(storefile{i},'\','\\');
+        fprintf(fid,[storefile{i} '\n']);
+    end
+    fclose(fid);
+    
     %update depcheck and display gui
     depcheck.mstan = 1;
     fprintf('MatlabStan succesfully installed\n');
@@ -857,6 +886,31 @@ if depcheck.mstan == 0
 
     %overwrite the existing stan_home.m file with the new information
     fid = fopen(fullfile(msdir,'+mstan','stan_home.m'),'w');
+    for i=1:(length(storefile)-1)
+        storefile{i} = strrep(storefile{i},'%','%%');
+        storefile{i} = strrep(storefile{i},'\','\\');
+        fprintf(fid,[storefile{i} '\n']);
+    end
+    fclose(fid);
+    
+     %open the StanModel.m file and change the version to current cmdstan
+    % version
+    fid=fopen(fullfile(msdir,'StanModel.m'));
+    storefile = {};
+    while 1
+        tline = fgetl(fid);
+        storefile{end+1} = tline;
+        if ~ischar(tline), break, end
+    end
+    fclose(fid);
+
+    ind = strcmp(storefile,"            ver = cellfun(@str2num,regexp(str{3},'\.','split'));");
+    
+    jvers = era_dependentsversions;
+    storefile{ind} = ['            ver = ''' jvers.cmdstan ''';'];
+
+    %overwrite the existing stan_home.m file with the new information
+    fid=fopen(fullfile(msdir,'StanModel.m'));
     for i=1:(length(storefile)-1)
         storefile{i} = strrep(storefile{i},'%','%%');
         storefile{i} = strrep(storefile{i},'\','\\');

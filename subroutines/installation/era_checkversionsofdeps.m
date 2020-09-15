@@ -54,25 +54,31 @@ depvers = era_dependentsversions;
 
 %start off checking the version of cmdstan
 %find the file that has the information about the version
-% cs_filepath = which('cmdstan-guide.tex');
-% 
-% %load the file and pull the version information
-% cs_file = fileread(cs_filepath);
-% C = strsplit(cs_file,'\');
-% str = C{5};
-% c_beg = strfind(str,'{');
-% cs_ver = str(c_beg+1:end-2);
+%need to do this two different ways due to changes around ~vcmdstan 2.22
+cs_filepath = which('cmdstan-guide.tex');
 
-cs_filepath = fileparts(which('runCmdStanTests.py'));
-command = [fullfile(cs_filepath,'bin','stanc') ' --version'];
-%command = [fullfile(self.stan_home,'bin','stanc') ' --version'];
-         p = processManager('id','stanc version','command',command,...
-                            'keepStdout',true,...
-                            'printStdout',false,...
-                            'pollInterval',0.005);
-                        
-str = regexp(p.stdout{1},'\ ','split');
-cs_ver = str{2}(2:end);
+if ~isempty(cs_filepath)
+    %load the file and pull the version information
+    cs_file = fileread(cs_filepath);
+    C = strsplit(cs_file,'\');
+    str = C{5};
+    c_beg = strfind(str,'{');
+    cs_ver = str(c_beg+1:end-2);
+    
+else
+    cs_filepath = fileparts(which('runCmdStanTests.py'));
+    command = [fullfile(cs_filepath,'bin','stanc') ' --version'];
+    %command = [fullfile(self.stan_home,'bin','stanc') ' --version'];
+    p = processManager('id','stanc version','command',command,...
+        'keepStdout',true,...
+        'printStdout',false,...
+        'pollInterval',0.005);
+    
+    p.block(0.05);
+    
+    str = regexp(p.stdout{1},'\ ','split');
+    cs_ver = str{2}(2:end);
+end
 
 %format version information for cmdstan that is used by the toolbox
 cs_used_parts = sscanf(depvers.cmdstan,'%d.%d.%d')';
