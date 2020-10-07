@@ -209,7 +209,12 @@ elseif strcmp(era_data.rel.analysis,'ic_sserrvar')
             pop_sdlog = era_data.relsummary.data.g(gloc).e(eloc).pop_sdlog;
             ciedge = .025;
             
-            idtable = era_data.relsummary.group(gloc).event(eloc).ssrel_table;
+            idtable_raw = era_data.relsummary.group(gloc).event(eloc).ssrel_table;
+            
+            goodid_rows = ismember(idtable_raw.id,...
+                era_data.relsummary.group(gloc).goodids);
+            
+            idtable = idtable_raw(goodid_rows,:);
             
             %label for group and/or event
             switch analysis
@@ -238,7 +243,11 @@ elseif strcmp(era_data.rel.analysis,'ic_sserrvar')
             
             %pull good and bad ns
             goodn{end+1} = sum(idtable.ind2include);
-            badn{end+1} = sum(idtable.ind2exclude);
+            
+            badid_rows = ~ismember(idtable_raw.id,...
+                era_data.relsummary.group(gloc).goodids);
+            
+            badn{end+1} = height(idtable_raw(badid_rows,:));
             
         end
     end
