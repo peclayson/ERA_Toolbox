@@ -20,6 +20,10 @@ Clayson, P. E., Brush, C. J., & Hajcak, G. (under review) Data quality and relia
 
 &nbsp;
 
+Clayson, P. E., Baldwin, S. A., & Larson, M. J. (under review). Evaluating the internal consistency of subtraction-based and residualized difference scores: Considerations for studies of event-related potentials. ([preprint](https://psyarxiv.com/nqwz6))
+
+&nbsp;
+
 ***
 
 Copyright (C) 2016-2020 Peter E. Clayson
