@@ -4,7 +4,7 @@ function overalltable = era_depoverallt(varargin)
 %
 %era_depoverallt('era_data',era_data,'gui',1);
 %
-%Last Modified 8/28/20
+%Last Modified 9/9/20
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. 
@@ -43,6 +43,9 @@ function overalltable = era_depoverallt(varargin)
 %
 %8/28/20 PC
 % add subject-level reliability functionality
+%
+%9/9/20 PC
+% changes for displaying difference score reliability
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -167,7 +170,37 @@ if ~strcmp(era_data.rel.analysis,'ic_sserrvar')
             badn{end+1} = length(era_data.relsummary.group(gloc).badids);
             
         end
+        
+        if strcmp(era_data.rel.analysis,'ic_diff')
+        
+        switch analysis
+            case 3
+                label{end+1} = 'diff score';
+            case 4
+                label{end+1} = [gnames{gloc} ' - diff score'];
+        end
+        
+        mintrl{end+1} = '---';
+        maxtrl{end+1} = '---';
+        meantrl{end+1} = '---';
+        medtrl{end+1} = '---';
+        stdtrl{end+1} = '---';
+        
+        %pull good and bad ns
+        goodn{end+1} = era_data.relsummary.group(gloc).event(eloc).goodn;
+        badn{end+1} = '---';
+        
+        %create a string with the dependability point estimate and credible
+        %interval for cutoff data
+        overalldep{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
+            era_data.relsummary.group(gloc).diffscore.pt,...
+            era_data.relsummary.group(gloc).diffscore.ll,...
+            era_data.relsummary.group(gloc).diffscore.ul);
     end
+    end
+    
+    
+    
 elseif strcmp(era_data.rel.analysis,'ic_sserrvar')
     for gloc=1:ngroups
         for eloc=1:nevents
@@ -176,7 +209,12 @@ elseif strcmp(era_data.rel.analysis,'ic_sserrvar')
             pop_sdlog = era_data.relsummary.data.g(gloc).e(eloc).pop_sdlog;
             ciedge = .025;
             
-            idtable = era_data.relsummary.group(gloc).event(eloc).ssrel_table;
+            idtable_raw = era_data.relsummary.group(gloc).event(eloc).ssrel_table;
+            
+            goodid_rows = ismember(idtable_raw.id,...
+                era_data.relsummary.group(gloc).goodids);
+            
+            idtable = idtable_raw(goodid_rows,:);
             
             %label for group and/or event
             switch analysis
@@ -205,7 +243,11 @@ elseif strcmp(era_data.rel.analysis,'ic_sserrvar')
             
             %pull good and bad ns
             goodn{end+1} = sum(idtable.ind2include);
-            badn{end+1} = sum(idtable.ind2exclude);
+            
+            badid_rows = ~ismember(idtable_raw.id,...
+                era_data.relsummary.group(gloc).goodids);
+            
+            badn{end+1} = height(idtable_raw(badid_rows,:));
             
         end
     end

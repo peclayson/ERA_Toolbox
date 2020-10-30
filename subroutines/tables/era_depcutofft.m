@@ -7,7 +7,7 @@ function inctrltable = era_depcutofft(varargin)
 %Last Modified 1/19/17
 %
 %Inputs
-% era_data - ERA Toolbox data structure array. 
+% era_data - ERA Toolbox data structure array.
 % gui - 0 for off, 1 for on
 %
 %Outputs
@@ -15,23 +15,23 @@ function inctrltable = era_depcutofft(varargin)
 % a gui will also be shown if desired
 
 % Copyright (C) 2016-2020 Peter E. Clayson
-% 
+%
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
 %     the Free Software Foundation, either version 3 of the License, or
 %     any later version.
-% 
+%
 %     This program is distributed in the hope that it will be useful,
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 %     GNU General Public License for more details.
-% 
+%
 %     You should have received a copy of the GNU General Public License
-%     along with this program (gpl.txt). If not, see 
+%     along with this program (gpl.txt). If not, see
 %     <http://www.gnu.org/licenses/>.
 %
 
-%History 
+%History
 % by Peter Clayson (7/24/16)
 % peter.clayson@gmail.com
 %
@@ -43,24 +43,24 @@ function inctrltable = era_depcutofft(varargin)
 %somersault through inputs
 if ~isempty(varargin)
     
-    %the optional inputs check assumes that there was an even number of 
+    %the optional inputs check assumes that there was an even number of
     %optional inputs entered. If not, an error will displayed and the
     %script will terminate.
-    if mod(length(varargin),2)  
+    if mod(length(varargin),2)
         error('varargin:incomplete',... %Error code and associated error
-        strcat('WARNING: Inputs are incomplete \n\n',... 
-        'Make sure each variable input is paired with a value \n',...
-        'See help era_dep for more information about inputs'));
+            strcat('WARNING: Inputs are incomplete \n\n',...
+            'Make sure each variable input is paired with a value \n',...
+            'See help era_dep for more information about inputs'));
     end
     
-    %check if era_data was specified. 
+    %check if era_data was specified.
     %If it is not found, set display error.
     ind = find(strcmpi('era_data',varargin),1);
     if ~isempty(ind)
-        era_data = varargin{ind+1}; 
-    else 
+        era_data = varargin{ind+1};
+    else
         error('varargin:era_data',... %Error code and associated error
-            strcat('WARNING: era_data not specified \n\n',... 
+            strcat('WARNING: era_data not specified \n\n',...
             'Please input era_data (ERA Toolbox data structure array).\n',...
             'See help era_depvtrialsplot for more information \n'));
     end
@@ -69,10 +69,10 @@ if ~isempty(varargin)
     %If it is not found, set display error.
     ind = find(strcmpi('gui',varargin),1);
     if ~isempty(ind)
-        gui = varargin{ind+1}; 
-    else 
+        gui = varargin{ind+1};
+    else
         error('varargin:gui',... %Error code and associated error
-            strcat('WARNING: gui not specified \n\n',... 
+            strcat('WARNING: gui not specified \n\n',...
             'Please input gui specifying whether to display a gui.\n',...
             '0 for off, 1 for on\n',...
             'See help era_depvtrialsplot for more information \n'));
@@ -147,7 +147,25 @@ for gloc=1:ngroups
             era_data.relsummary.group(gloc).event(eloc).rel.ll,...
             era_data.relsummary.group(gloc).event(eloc).rel.ul);
         
-    end 
+    end
+    
+    if strcmp(era_data.rel.analysis,'ic_diff')
+        
+        switch analysis
+            case 3
+                label{end+1} = 'diff score';
+            case 4
+                label{end+1} = [gnames{gloc} ' - diff score'];
+        end
+        trlcutoff{end+1} = '---';
+        
+        %create a string with the dependability point estimate and credible
+        %interval for cutoff data
+        dep{end+1} = sprintf(' %0.2f CI [%0.2f %0.2f]',...
+            era_data.relsummary.group(gloc).diffscore.trlcutoff.pt,...
+            era_data.relsummary.group(gloc).diffscore.trlcutoff.ll,...
+            era_data.relsummary.group(gloc).diffscore.trlcutoff.ul);
+    end
 end
 
 %create table to display the cutoff information with its associated
@@ -159,39 +177,39 @@ inctrltable.Properties.VariableNames = {'Label','Trial_Cutoff',...
 
 %only display gui if desired
 if gui == 1
-
+    
     %define parameters for figure size
     figwidth = 500;
     figheight = 400;
-
+    
     %define space between rows and first row location
     rowspace = 25;
     row = figheight - rowspace*1.6;
-
+    
     %create a gui to display the cutoff information table
     era_inctrl= figure('unit','pix',...
-      'position',[1150 700 figwidth figheight],...
-      'menub','no',...
-      'name',...
-      'Results of Increasing Trials the Number of Trials on Dependability',...
-      'numbertitle','off',...
-      'resize','off');
-
+        'position',[1150 700 figwidth figheight],...
+        'menub','no',...
+        'name',...
+        'Results of Increasing Trials the Number of Trials on Dependability',...
+        'numbertitle','off',...
+        'resize','off');
+    
     %Add table title
     uicontrol(era_inctrl,'Style','text','fontsize',16,...
         'HorizontalAlignment','center',...
         'String',...
         sprintf('Dependability Analyses, %0.2f Cutoff\n',...
         era_data.relsummary.depcutoff),...
-        'Position',[0 row figwidth 20]);   
-
+        'Position',[0 row figwidth 20]);
+    
     uicontrol(era_inctrl,'Style','text','fontsize',16,...
         'HorizontalAlignment','center',...
         'String',...
         sprintf('Cutoff Used the %s',...
         era_data.relsummary.meascutoff),...
-        'Position',[0 row-20 figwidth 20]); 
-
+        'Position',[0 row-20 figwidth 20]);
+    
     %Start a table
     t = uitable('Parent',era_inctrl,'Position',...
         [25 100 figwidth-50 figheight-175],...
@@ -199,13 +217,13 @@ if gui == 1
     set(t,'ColumnName',{'Label' 'Trial Cutoff' 'Dependability'});
     set(t,'ColumnWidth',{200 'auto' 170});
     set(t,'RowName',[]);
-
+    
     %Create a save button that will take save the table
     uicontrol(era_inctrl,'Style','push','fontsize',14,...
         'HorizontalAlignment','center',...
         'String','Save Table',...
         'Position', [figwidth/8 25 figwidth/4 50],...
-        'Callback',{@era_saveinctrltable,era_data,inctrltable}); 
+        'Callback',{@era_saveinctrltable,era_data,inctrltable});
 end
 
 end
@@ -237,7 +255,7 @@ end
 %save as either excel or csv file
 if strcmp(ext,'.xlsx')
     
-    filehead = {'Table Generated on'; datestr(clock);''}; 
+    filehead = {'Table Generated on'; datestr(clock);''};
     filehead{end+1} = sprintf('ERA Toolbox v%s',era_data.ver);
     filehead{end+1} = '';
     filehead{end+1} = sprintf('Dataset: %s',era_data.rel.filename);
@@ -275,9 +293,9 @@ elseif strcmp(ext,'.csv')
     fprintf(fid,' \n');
     
     for i = 1:height(incltrltable)
-         formatspec = '%s,%d,%s\n';
-         fprintf(fid,formatspec,char(incltrltable{i,1}),...
-             cell2mat(incltrltable{i,2}),char(incltrltable{i,3}));
+        formatspec = '%s,%d,%s\n';
+        fprintf(fid,formatspec,char(incltrltable{i,1}),...
+            cell2mat(incltrltable{i,2}),char(incltrltable{i,3}));
     end
     
     fclose(fid);

@@ -427,7 +427,7 @@ end %if ~isempty(varargin)
 
 if ~isempty(era_prefs)
     switch analysis
-        case {'sing','sing_sserr'}
+        case {'sing','sing_sserr','sing_diff'}
             depcutoff = era_prefs.view.depvalue;
             pdep = era_prefs.view.plotdep;
             picc = era_prefs.view.ploticc;
@@ -462,7 +462,7 @@ end
 
 
 switch analysis
-    case {'sing','sing_sserr'}
+    case {'sing','sing_sserr','sing_diff'}
         %calculate reliabitliy information to be used for plotting and tables
         [era_data, relerr] = era_relsummary('era_data',era_data,...
             'analysis',analysis,...
@@ -494,7 +494,7 @@ end
 %Plot that shows the relationship between the number of trials retained
 %for averaging and dependability
 switch analysis
-    case 'sing'
+    case {'sing','sing_diff'}
         if pdep == 1
             era_depvtrialsplot('era_data',era_data,...
                 'trials',[1 plotntrials],...
@@ -540,7 +540,7 @@ end
 
 %table displaying trial cutoff information
 switch analysis
-    case 'sing'
+    case {'sing','sing_diff'}
         if showinct == 1
             era_depcutofft('era_data',era_data,'gui',1);
         end
@@ -552,7 +552,7 @@ end
 
 %table displaying overall dependability information
 switch analysis
-    case {'sing','sing_sserr'}
+    case {'sing','sing_sserr','sing_diff'}
         if showoverallt == 1
             era_depoverallt('era_data',era_data,'gui',1);
         end

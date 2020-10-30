@@ -4,7 +4,7 @@ function era_startview(varargin)
 %
 %era_startview('file','/Users/REL/SomeERAData.mat')
 %
-%Last Updated 8/26/19
+%Last Updated 9/3/20
 %
 %Required Inputs:
 % No inputs are required.
@@ -93,6 +93,9 @@ function era_startview(varargin)
 %
 %8/26/20 PC
 % added in a point to the gui for subject-level reliability estimates
+%
+%9/3/20 PC
+% added in a point to the gui for diff score reliability estimates
 
 %somersault through varargin inputs to check for era_prefs and era_data
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -154,7 +157,8 @@ if ~isfield(era_data.rel,'analysis') ||...
         strcmp(era_data.rel.analysis,'ic'))
     era_startview_sing('era_prefs',era_prefs,'era_data',era_data);
 elseif isfield(era_data.rel,'analysis') && ...
-        strcmp(era_data.rel.analysis,'ic_sserrvar')
+        (strcmp(era_data.rel.analysis,'ic_sserrvar') || ...
+        strcmp(era_data.rel.analysis,'ic_diff'))
     era_startview_sing('era_prefs',era_prefs,'era_data',era_data);
 elseif isfield(era_data.rel,'analysis') &&... 
         strcmp(era_data.rel.analysis,'trt')

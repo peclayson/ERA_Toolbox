@@ -1,7 +1,7 @@
 function era_prefs = era_defaults
 %Default settings for the ERA Toolbox
 %
-%Last Updated 8/21/20
+%Last Updated 9/3/20
 %
 
 %This script will be read by the ERA Toolbox to define the default settings
@@ -49,6 +49,9 @@ function era_prefs = era_defaults
 %
 %8/21/20 PC
 % added preference for estimating subject-specific reliability
+%
+%9/3/20 PC
+% add preferences for estimating difference score reliability
 
 %define an empty structure array where preferences will be stored
 era_prefs = struct;
@@ -74,13 +77,19 @@ era_prefs.proc.verbose = 1;
 % 2 = Yes
 era_prefs.proc.traceplots = 1;
 
-%%%%This preference is only relevant to analyses on data withOUT %%%%%%%%%%
+%%%%These preferences ar only relevant to analyses on data withOUT %%%%%%%%
 %%%% multiple occasions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Whether subject-specific error variances should be estimated for
 %calculating subject-level reliabiltiy
 % 1 = No
 % 2 = Yes
 era_prefs.proc.sserrvar = 1;
+
+%Whether the internal consistency of difference scores should be estimated
+% 1 = No
+% 2 = Yes
+era_prefs.proc.diffest = 1;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%Viewing Preferences%%%%%%%%%%%%%%%%%%%%%%%%%%%%

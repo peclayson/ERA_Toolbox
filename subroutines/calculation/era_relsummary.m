@@ -5,14 +5,14 @@ function [era_data,relerr] = era_relsummary(varargin)
 %   'depcutoff',depcutoff,'meascutoff',meascutoff,...
 %   'depcentmeas',depcentmeas)
 %
-%Last Modified 8/26/20
+%Last Modified 9/3/20
 %
 %Inputs
 % era_data - ERA Toolbox data structure array. Variance components should
 %  be included
 % analysis - 'sing' single occasion data; 'trt' multiple occasion data
 %
-% EITHER (for analysis type 'sing' and 'sing_sserr')
+% EITHER (for analysis type 'sing', 'sing_sserr', 'sing_diff')
 %  depcutoff - dependabiltiy threshold for considering data reliable
 %  meascutoff - which estimate of dependability to use for cutoff (1 - lower
 %   limit of confidence interval, 2 - point estimate, 3 - upper limit of
@@ -121,6 +121,11 @@ function [era_data,relerr] = era_relsummary(varargin)
 %
 %8/26/20 PC
 % add capability for estimating subject-level reliability
+%
+%9/3/20 PC
+% add capability for estimating difference score reliability
+% took out symbolic toolbox, I wasn't comfortable with the rounding
+%  error...
 
 %somersault through inputs
 if ~isempty(varargin)
@@ -159,7 +164,7 @@ if ~isempty(varargin)
 end
 
 switch relanalysis
-    case {'sing','sing_sserr'}
+    case {'sing','sing_sserr','sing_diff'}
         %check if depcutoff was specified.
         %If it is not found, set display error.
         ind = find(strcmpi('depcutoff',varargin),1);
@@ -461,55 +466,19 @@ switch relanalysis
                 %compute dependabiltiy
                 ntrials = max(trltable.GroupCount(:)) + 1000;
                 
-                if license('test','symbolic_toolbox')
-                    switch meascutoff
-                        case 1
-                            bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,ciperc);
-                            er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,ciperc);
-                        case 2
-                            bp = mean(data.g(gloc).e(eloc).sig_u.raw .^2);
-                            er = mean(data.g(gloc).e(eloc).sig_e.raw .^2);
-                        case 3
-                            bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,1-ciperc);
-                            er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,1-ciperc);
-                    end
-                    
-                    
-                    syms iix
-                    ntrls = vpasolve(depcutoff == ...
-                        bp / (bp + (er/iix)));
-                    trlcutoff = double(ceil(ntrls));
-                    
-                    [llrel,mrel,ulrel] = era_dep(...
-                        'bp',data.g(gloc).e(eloc).sig_u.raw,...
-                        'wp',data.g(gloc).e(eloc).sig_e.raw,...
-                        'obs',trlcutoff,'CI',ciperc);
-                    
-                    switch meascutoff
-                        case 1
-                            trlcutoff = find(llrel >= depcutoff, 1);
-                        case 2
-                            trlcutoff = find(mrel >= depcutoff, 1);
-                        case 3
-                            trlcutoff = find(ulrel >= depcutoff, 1);
-                    end
-                    
-                else
-                    
-                    [llrel,mrel,ulrel] = era_dep(...
-                        'bp',data.g(gloc).e(eloc).sig_u.raw,...
-                        'wp',data.g(gloc).e(eloc).sig_e.raw,...
-                        'obs',[1 ntrials],'CI',ciperc);
-                    
-                    %find the number of trials to reach cutoff
-                    switch meascutoff
-                        case 1
-                            trlcutoff = find(llrel >= depcutoff, 1);
-                        case 2
-                            trlcutoff = find(mrel >= depcutoff, 1);
-                        case 3
-                            trlcutoff = find(ulrel >= depcutoff, 1);
-                    end
+                [llrel,mrel,ulrel] = era_dep(...
+                    'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                    'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                    'obs',[1 ntrials],'CI',ciperc);
+                
+                %find the number of trials to reach cutoff
+                switch meascutoff
+                    case 1
+                        trlcutoff = find(llrel >= depcutoff, 1);
+                    case 2
+                        trlcutoff = find(mrel >= depcutoff, 1);
+                    case 3
+                        trlcutoff = find(ulrel >= depcutoff, 1);
                 end
                 
                 %see whether the trial cutoff was found. If not store all values as
@@ -526,18 +495,10 @@ switch relanalysis
                     
                 elseif ~isempty(trlcutoff)
                     
-                    %store information about cutoffs
-                    if license('test','symbolic_toolbox')
-                        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                        relsummary.group(gloc).event(eloc).rel.m = mrel;
-                        relsummary.group(gloc).event(eloc).rel.ll = llrel;
-                        relsummary.group(gloc).event(eloc).rel.ul = ulrel;
-                    else
-                        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                        relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
-                        relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
-                        relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
-                    end
+                    relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                    relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
+                    relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
+                    relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
                     
                 end
                 
@@ -746,47 +707,23 @@ switch relanalysis
                     ntrials = max(trltable.GroupCount(:)) + 1000;
                     
                     %compute dependability
-                    if license('test','symbolic_toolbox')
-                        
-                        switch meascutoff
-                            case 1
-                                bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,ciperc);
-                                er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,ciperc);
-                            case 2
-                                bp = mean(data.g(gloc).e(eloc).sig_u.raw .^2);
-                                er = mean(data.g(gloc).e(eloc).sig_e.raw .^2);
-                            case 3
-                                bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,1-ciperc);
-                                er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,1-ciperc);
-                        end
-                        
-                        
-                        syms iix
-                        ntrls = vpasolve(depcutoff == ...
-                            bp / (bp + (er/iix)));
-                        trlcutoff = double(ceil(ntrls));
-                        
-                        [llrel,mrel,ulrel] = era_dep(...
-                            'bp',data.g(gloc).e(eloc).sig_u.raw,...
-                            'wp',data.g(gloc).e(eloc).sig_e.raw,...
-                            'obs',trlcutoff,'CI',ciperc);
-                    else
-                        
-                        [llrel,mrel,ulrel] = era_dep(...
-                            'bp',data.g(gloc).e(eloc).sig_u.raw,...
-                            'wp',data.g(gloc).e(eloc).sig_e.raw,...
-                            'obs',[1 ntrials],'CI',ciperc);
-                        
-                        %find the number of trials to reach cutoff
-                        switch meascutoff
-                            case 1
-                                trlcutoff = find(llrel >= depcutoff, 1);
-                            case 2
-                                trlcutoff = find(mrel >= depcutoff, 1);
-                            case 3
-                                trlcutoff = find(ulrel >= depcutoff, 1);
-                        end
+                    
+                    
+                    [llrel,mrel,ulrel] = era_dep(...
+                        'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                        'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                        'obs',[1 ntrials],'CI',ciperc);
+                    
+                    %find the number of trials to reach cutoff
+                    switch meascutoff
+                        case 1
+                            trlcutoff = find(llrel >= depcutoff, 1);
+                        case 2
+                            trlcutoff = find(mrel >= depcutoff, 1);
+                        case 3
+                            trlcutoff = find(ulrel >= depcutoff, 1);
                     end
+                    
                     %see whether the trial cutoff was found. If not store all
                     %values as -1. If it is found, store the dependability
                     %information about the cutoffs.
@@ -801,18 +738,12 @@ switch relanalysis
                         relsummary.group(gloc).event(eloc).rel.ul = -1;
                         
                     elseif ~isempty(trlcutoff)
-                        if license('test','symbolic_toolbox')
-                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                            relsummary.group(gloc).event(eloc).rel.m = mrel;
-                            relsummary.group(gloc).event(eloc).rel.ll = llrel;
-                            relsummary.group(gloc).event(eloc).rel.ul = ulrel;
-                        else
-                            %store information about cutoffs
-                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                            relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
-                            relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
-                            relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
-                        end
+                        
+                        %store information about cutoffs
+                        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                        relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
                         
                     end
                     
@@ -1009,47 +940,22 @@ switch relanalysis
                     ntrials = max(trltable.GroupCount(:)) + 1000;
                     
                     
-                    if license('test','symbolic_toolbox')
-                        
-                        switch meascutoff
-                            case 1
-                                bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,ciperc);
-                                er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,ciperc);
-                            case 2
-                                bp = mean(data.g(gloc).e(eloc).sig_u.raw .^2);
-                                er = mean(data.g(gloc).e(eloc).sig_e.raw .^2);
-                            case 3
-                                bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,1-ciperc);
-                                er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,1-ciperc);
-                        end
-                        
-                        
-                        syms iix
-                        ntrls = vpasolve(depcutoff == ...
-                            bp / (bp + (er/iix)));
-                        trlcutoff = double(ceil(ntrls));
-                        
-                        [llrel,mrel,ulrel] = era_dep(...
-                            'bp',data.g(gloc).e(eloc).sig_u.raw,...
-                            'wp',data.g(gloc).e(eloc).sig_e.raw,...
-                            'obs',trlcutoff,'CI',ciperc);
-                    else
-                        [llrel,mrel,ulrel] = era_dep(...
-                            'bp',data.g(gloc).e(eloc).sig_u.raw,...
-                            'wp',data.g(gloc).e(eloc).sig_e.raw,...
-                            'obs',[1 ntrials],'CI',ciperc);
-                        
-                        %find the number of trials to reach cutoffl
-                        switch meascutoff
-                            case 1
-                                trlcutoff = find(llrel >= depcutoff, 1);
-                            case 2
-                                trlcutoff = find(mrel >= depcutoff, 1);
-                            case 3
-                                trlcutoff = find(ulrel >= depcutoff, 1);
-                        end
-                        
+                    
+                    [llrel,mrel,ulrel] = era_dep(...
+                        'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                        'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                        'obs',[1 ntrials],'CI',ciperc);
+                    
+                    %find the number of trials to reach cutoffl
+                    switch meascutoff
+                        case 1
+                            trlcutoff = find(llrel >= depcutoff, 1);
+                        case 2
+                            trlcutoff = find(mrel >= depcutoff, 1);
+                        case 3
+                            trlcutoff = find(ulrel >= depcutoff, 1);
                     end
+                    
                     
                     if isempty(trlcutoff) %if a cutoff wasn't found
                         
@@ -1073,18 +979,13 @@ switch relanalysis
                             trltable.id;
                         
                     elseif ~isempty(trlcutoff) %if a cutoff was found
-                        if license('test','symbolic_toolbox')
-                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                            relsummary.group(gloc).event(eloc).rel.m = mrel;
-                            relsummary.group(gloc).event(eloc).rel.ll = llrel;
-                            relsummary.group(gloc).event(eloc).rel.ul = ulrel;
-                        else
-                            %store information about cutoffs
-                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                            relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
-                            relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
-                            relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
-                        end
+                        
+                        %store information about cutoffs
+                        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                        relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+                        
                         datatrls = REL.data{eloc};
                         
                         trltable = varfun(@length,datatrls,'GroupingVariables',{'id'});
@@ -1256,46 +1157,22 @@ switch relanalysis
                         ntrials = max(trltable.GroupCount(:)) + 1000;
                         
                         
-                        if license('test','symbolic_toolbox')
-                            
-                            switch meascutoff
-                                case 1
-                                    bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,ciperc);
-                                    er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,ciperc);
-                                case 2
-                                    bp = mean(data.g(gloc).e(eloc).sig_u.raw .^2);
-                                    er = mean(data.g(gloc).e(eloc).sig_e.raw .^2);
-                                case 3
-                                    bp = quantile(data.g(gloc).e(eloc).sig_u.raw .^2,1-ciperc);
-                                    er = quantile(data.g(gloc).e(eloc).sig_e.raw .^2,1-ciperc);
-                            end
-                            
-                            
-                            syms iix
-                            ntrls = vpasolve(depcutoff == ...
-                                bp / (bp + (er/iix)));
-                            trlcutoff = double(ceil(ntrls));
-                            
-                            [llrel,mrel,ulrel] = era_dep(...
-                                'bp',data.g(gloc).e(eloc).sig_u.raw,...
-                                'wp',data.g(gloc).e(eloc).sig_e.raw,...
-                                'obs',trlcutoff,'CI',ciperc);
-                        else
-                            [llrel,mrel,ulrel] = era_dep(...
-                                'bp',data.g(gloc).e(eloc).sig_u.raw,...
-                                'wp',data.g(gloc).e(eloc).sig_e.raw,...
-                                'obs',[1 ntrials],'CI',ciperc);
-                            
-                            %find the number of trials to reach cutoff
-                            switch meascutoff
-                                case 1
-                                    trlcutoff = find(llrel >= depcutoff, 1);
-                                case 2
-                                    trlcutoff = find(mrel >= depcutoff, 1);
-                                case 3
-                                    trlcutoff = find(ulrel >= depcutoff, 1);
-                            end
+                        
+                        [llrel,mrel,ulrel] = era_dep(...
+                            'bp',data.g(gloc).e(eloc).sig_u.raw,...
+                            'wp',data.g(gloc).e(eloc).sig_e.raw,...
+                            'obs',[1 ntrials],'CI',ciperc);
+                        
+                        %find the number of trials to reach cutoff
+                        switch meascutoff
+                            case 1
+                                trlcutoff = find(llrel >= depcutoff, 1);
+                            case 2
+                                trlcutoff = find(mrel >= depcutoff, 1);
+                            case 3
+                                trlcutoff = find(ulrel >= depcutoff, 1);
                         end
+                        
                         
                         %if a cutoff was not found
                         if isempty(trlcutoff)
@@ -1321,18 +1198,12 @@ switch relanalysis
                             
                         elseif ~isempty(trlcutoff) %if a cutoff was found
                             
-                            %store information about cutoffs
-                            if license('test','symbolic_toolbox')
-                                relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                                relsummary.group(gloc).event(eloc).rel.m = mrel;
-                                relsummary.group(gloc).event(eloc).rel.ll = llrel;
-                                relsummary.group(gloc).event(eloc).rel.ul = ulrel;
-                            else
-                                relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
-                                relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
-                                relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
-                                relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
-                            end
+                            
+                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                            relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+                            
                             datatrls = REL.data{eloc};
                             ind = strcmp(datatrls.group,gnames{gloc});
                             datatrls = datatrls(ind,:);
@@ -1496,6 +1367,632 @@ switch relanalysis
                 
                 
         end %switch analysis
+        
+    case 'sing_diff'
+        
+        %place era_data.data in REL to work with
+        REL = era_data.rel;
+        
+        %create a data structure for storing outputs
+        data = struct;
+        
+        %create variable to specify whether there are bad/unreliable data
+        %default state: 0, will be changed to 1 if there is a problem
+        relerr = struct();
+        relerr.trlcutoff = 0;
+        relerr.trlmax = 0;
+        relerr.nogooddata = 0;
+        
+        %check whether any groups exist
+        if strcmpi(REL.groups,'none')
+            ngroups = 1;
+            %gnames = cellstr(REL.groups);
+            gnames ={''};
+        else
+            ngroups = length(REL.groups);
+            gnames = REL.groups(:);
+        end
+        
+        %The data have have two events
+        nevents = 2;
+        enames = REL.events(:);
+        
+        
+        %figure out whether groups or events need to be considered
+        %1 - no groups or event types to consider
+        %2 - possible multiple groups but no event types to consider
+        %3 - possible event types but no groups to consider
+        %4 - possible groups and event types to consider
+        
+        
+        if ngroups == 1
+            analysis = 3;
+        elseif ngroups > 1
+            analysis = 4;
+        end
+        
+        %extract information from REL and store in data for crunching
+        switch analysis
+            case 3 %3 - possible event types but no groups to consider
+                
+                gloc = 1;
+                
+                data.g(gloc).e(1).b.raw = REL.out.b{:,1}(:,1);
+                data.g(gloc).e(1).b_sigma.raw = REL.out.b_sigma{:,1}(:,1);
+                data.g(gloc).e(1).sd_id.raw = REL.out.sd_id{:,1}(:,1);
+                data.g(gloc).e(1).sd_trl.raw = REL.out.sd_trl{:,1}(:,1);
+                data.g(gloc).e(1).id_varcov.raw = REL.out.id_varcov{:,1}(:,1);
+                data.g(gloc).e(1).trl_varcov.raw = REL.out.trl_varcov{:,1}(:,1);
+                data.g(gloc).e(1).elabel = enames(1);
+                
+                data.g(gloc).e(2).b.raw = REL.out.b{:,1}(:,2);
+                data.g(gloc).e(2).b_sigma.raw = REL.out.b_sigma{:,1}(:,2);
+                data.g(gloc).e(2).sd_id.raw = REL.out.sd_id{:,1}(:,2);
+                data.g(gloc).e(2).sd_trl.raw = REL.out.sd_trl{:,1}(:,2);
+                data.g(gloc).e(2).id_varcov.raw = REL.out.id_varcov{:,1}(:,2);
+                data.g(gloc).e(2).trl_varcov.raw = REL.out.trl_varcov{:,1}(:,2);
+                data.g(gloc).e(2).elabel = enames(2);
+                data.g(gloc).glabel = gnames(gloc);
+                
+                
+            case 4 %4 - possible groups and event types to consider
+                for gloc=1:length(REL.out.glabels)
+                    
+                    data.g(gloc).e(1).b.raw = REL.out.b{:,gloc}(:,1);
+                    data.g(gloc).e(1).b_sigma.raw = REL.out.b_sigma{:,gloc}(:,1);
+                    data.g(gloc).e(1).sd_id.raw = REL.out.sd_id{:,gloc}(:,1);
+                    data.g(gloc).e(1).sd_trl.raw = REL.out.sd_trl{:,gloc}(:,1);
+                    data.g(gloc).e(1).id_varcov.raw = REL.out.id_varcov{:,gloc}(:,1);
+                    data.g(gloc).e(1).trl_varcov.raw = REL.out.trl_varcov{:,gloc}(:,1);
+                    data.g(gloc).e(1).elabel = enames(1);
+                    
+                    data.g(gloc).e(2).b.raw = REL.out.b{:,gloc}(:,2);
+                    data.g(gloc).e(2).b_sigma.raw = REL.out.b_sigma{:,gloc}(:,2);
+                    data.g(gloc).e(2).sd_id.raw = REL.out.sd_id{:,gloc}(:,2);
+                    data.g(gloc).e(2).sd_trl.raw = REL.out.sd_trl{:,gloc}(:,2);
+                    data.g(gloc).e(2).id_varcov.raw = REL.out.id_varcov{:,gloc}(:,2);
+                    data.g(gloc).e(2).trl_varcov.raw = REL.out.trl_varcov{:,gloc}(:,2);
+                    data.g(gloc).e(2).elabel = enames(2);
+                    data.g(gloc).glabel = gnames(gloc);
+                    
+                end
+        end %switch analysis
+        
+        %store the cutoff in relsummary to pass to other functions more easily
+        relsummary.depcutoff = depcutoff;
+        relsummary.ciperc = ciperc;
+        
+        %store which measure was used to specify cutoff
+        switch meascutoff
+            case 1
+                relsummary.meascutoff = strcat('Lower Limit of ',...
+                    sprintf(' %2.0f',ciperc*100),'% Credible Interval');
+            case 2
+                relsummary.meascutoff = 'Point Estimate';
+            case 3
+                relsummary.meascutoff = strcat('Upper Limit of ',...
+                    sprintf(' %2.0f',ciperc*100),'% Credible Interval');
+        end
+        
+        %compute dependability data for each group and event
+        switch analysis
+            
+            case 3 %possible event types but no groups to consider
+                
+                %since the relsummary structure is generic for any number of groups
+                %or events, the data will count as being from 1 group.
+                gloc = 1;
+                
+                %cylce through each event
+                for eloc=1:nevents
+                    
+                    %get the group name
+                    if eloc == 1
+                        relsummary.group(gloc).name = gnames{gloc};
+                    end
+                    
+                    %get the event name
+                    relsummary.group(gloc).event(eloc).name = enames{eloc};
+                    
+                    %create empty arrays for storing dependability information
+                    trltable = varfun(@length,REL.data,...
+                        'GroupingVariables',{'id','event'});
+                    
+                    trltable = trltable(strcmp(trltable.event,enames{eloc}),:);
+                    
+                    %compute dependability
+                    ntrials = max(trltable.GroupCount(:)) + 1000;
+                    
+
+                    [llrel,mrel,ulrel] = era_dep(...
+                        'bp',cell2mat(data.g(gloc).e(eloc).sd_id.raw),...
+                        'wp',exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
+                        'obs',[1 ntrials],...
+                        'CI',ciperc);
+                    
+                    %find the number of trials to reach cutoffl
+                    switch meascutoff
+                        case 1
+                            trlcutoff = find(llrel >= depcutoff, 1);
+                        case 2
+                            trlcutoff = find(mrel >= depcutoff, 1);
+                        case 3
+                            trlcutoff = find(ulrel >= depcutoff, 1);
+                    end
+                    
+                    
+                    if isempty(trlcutoff) %if a cutoff wasn't found
+                        
+                        relerr.trlcutoff = 1;
+                        trlcutoff = -1;
+                        relsummary.group(gloc).event(eloc).trlcutoff = -1;
+                        relsummary.group(gloc).event(eloc).rel.m = -1;
+                        relsummary.group(gloc).event(eloc).rel.ll = -1;
+                        relsummary.group(gloc).event(eloc).rel.ul = -1;
+                        
+                        datatrls = REL.data;
+                        
+                        trltable = varfun(@length,datatrls,...
+                            'GroupingVariables',{'id','event'});
+                        
+                        trltable = trltable(strcmp(trltable.event,enames{eloc}),:);
+                        
+                        %store all of the participant ids as bad, becuase none
+                        %reached the cutoff
+                        relsummary.group(gloc).event(eloc).eventgoodids =...
+                            'none';
+                        relsummary.group(gloc).event(eloc).eventbadids =...
+                            trltable.id;
+                        
+                    elseif ~isempty(trlcutoff) %if a cutoff was found
+                        
+                        %store information about cutoffs
+                        relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                        relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
+                        relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+                        
+                        datatrls = REL.data;
+                        
+                        trltable = varfun(@length,datatrls,...
+                            'GroupingVariables',{'id','event'});
+                        
+                        trltable = trltable(strcmp(trltable.event,enames{eloc}),:);
+                        
+                        ind2include = trltable.GroupCount >= trlcutoff;
+                        ind2exclude = trltable.GroupCount < trlcutoff;
+                        
+                        %store which participants had enough trials to meet cutoff
+                        relsummary.group(gloc).event(eloc).eventgoodids =...
+                            trltable.id(ind2include);
+                        relsummary.group(gloc).event(eloc).eventbadids =...
+                            trltable.id(ind2exclude);
+                        
+                    end
+                    
+                end
+                
+                %cycle through the events and store information about which
+                %participants have good data across all event types.
+                tempids = {};
+                badids = [];
+                for eloc=1:nevents
+                    if ~strcmp(relsummary.group(gloc).event(eloc).eventgoodids,'none')
+                        tempids{end+1} = relsummary.group(gloc).event(eloc).eventgoodids;
+                        if eloc == 1
+                            badids = relsummary.group(gloc).event(eloc).eventbadids;
+                        elseif eloc > 1
+                            [~,ind]=setdiff(tempids{1},tempids{end});
+                            new = tempids{1};
+                            badids = vertcat(badids,...
+                                relsummary.group(gloc).event(eloc).eventbadids,...
+                                new(ind));
+                            new(ind) = [];
+                            tempids{1} = new;
+                        end
+                    end
+                end
+                
+                %if none the participants had good data for all events
+                if isempty(tempids)
+                    tempids{1} = 'none';
+                end
+                
+                %store information about participants with good/bad ids
+                relsummary.group(gloc).goodids = tempids{1};
+                relsummary.group(gloc).badids = unique(badids);
+                
+                %cycle through each event
+                for eloc=1:nevents
+                    
+                    %get trial information to use for dependability estimates. only
+                    %participants with enough data will contribute toward trial
+                    %counts
+                    datatable = REL.data;
+                    datatable = datatable(...
+                        strcmp(datatable.event,enames{eloc}),:);
+                    
+                    if ~strcmp(relsummary.group(gloc).goodids,'none')
+                        goodids = table(relsummary.group(gloc).goodids);
+                    else
+                        goodids = table(relsummary.group(gloc).badids);
+                    end
+                    
+                    %check whether there are not enough good data after applying
+                    %reliability threshold and extrapolating
+                    if isempty(goodids)
+                        dlg = {'Data do not reach reliability threshold after extrapolation';...
+                            'Set a lower reliability threshold'};
+                        errordlg(dlg, 'Data do not meet reliability threshold');
+                        relerr.nogooddata = 1;
+                        return;
+                    end
+                    
+                    trlcdata = innerjoin(datatable, goodids,...
+                        'LeftKeys', 'id', 'RightKeys', 'Var1',...
+                        'LeftVariables', {'id' 'meas'});
+                    
+                    trltable = varfun(@length,trlcdata,...
+                        'GroupingVariables',{'id'});
+                    
+                    trlmean = mean(trltable.GroupCount);
+                    trlmed = median(trltable.GroupCount);
+                    
+                    %calculate dependability using either the mean or median (based
+                    %on user input)
+                    switch depcentmeas
+                        case 1
+                            depcent = trlmean;
+                        case 2
+                            depcent = trlmed;
+                    end
+                    
+                    [relsummary.group(gloc).event(eloc).dep.ll,...
+                        relsummary.group(gloc).event(eloc).dep.m,...
+                        relsummary.group(gloc).event(eloc).dep.ul] =...
+                        era_dep('bp',cell2mat(data.g(gloc).e(eloc).sd_id.raw),...
+                        'wp',exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
+                        'obs',depcent,'CI',ciperc);
+                    
+                    relsummary.group(gloc).event(eloc).dep.meas = depcent;
+                    
+                    relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
+                    relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
+                    relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
+                    relsummary.group(gloc).event(eloc).trlinfo.std = std(trltable.GroupCount);
+                    relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
+                    
+                    %just in case a cutoff was extrapolated, the dependability
+                    %information will be overwritten
+                    if  relsummary.group(gloc).event(eloc).trlcutoff >...
+                            relsummary.group(gloc).event(eloc).trlinfo.max
+                        
+                        relerr.trlmax = 1;
+                        relsummary.group(gloc).event(eloc).rel.m = -1;
+                        relsummary.group(gloc).event(eloc).rel.ll = -1;
+                        relsummary.group(gloc).event(eloc).rel.ul = -1;
+                        
+                    end
+                    
+                    if ~strcmp(relsummary.group(gloc).goodids,'none')
+                        relsummary.group(gloc).event(eloc).goodn = height(goodids);
+                    else
+                        relsummary.group(gloc).event(eloc).goodn = 0;
+                    end
+                    
+                    %calculate iccs, between-subject standard deviations, and
+                    %within-subject standard deviations
+                    [relsummary.group(gloc).event(eloc).icc.ll,...
+                        relsummary.group(gloc).event(eloc).icc.m,...
+                        relsummary.group(gloc).event(eloc).icc.ul] = ...
+                        era_icc('bp',cell2mat(data.g(gloc).e(eloc).sd_id.raw),...
+                        'wp',exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
+                        'CI',ciperc);
+                    
+                    relsummary.group(gloc).event(eloc).betsd.m = ...
+                        mean(cell2mat(data.g(gloc).e(eloc).sd_id.raw));
+                    relsummary.group(gloc).event(eloc).betsd.ll = ...
+                        quantile(cell2mat(data.g(gloc).e(eloc).sd_id.raw),.025);
+                    relsummary.group(gloc).event(eloc).betsd.ul = ...
+                        quantile(cell2mat(data.g(gloc).e(eloc).sd_id.raw),.975);
+                    
+                    relsummary.group(gloc).event(eloc).witsd.m = ...
+                        mean(exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)));
+                    relsummary.group(gloc).event(eloc).witsd.ll = ...
+                        quantile(exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
+                        .025);
+                    relsummary.group(gloc).event(eloc).witsd.ul = ...
+                        quantile(exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
+                        .975);
+                    
+                end
+               
+                
+            case 4 %groups and event types to consider
+                
+                %cycle through each event
+                for eloc=1:nevents
+                    
+                    %cycle through each group
+                    for gloc=1:ngroups
+                        
+                        %store the group name
+                        if eloc == 1
+                            relsummary.group(gloc).name = gnames{gloc};
+                        end
+                        
+                        %store the event name
+                        relsummary.group(gloc).event(eloc).name = enames{eloc};
+                        
+                        %create empty arrays for storing dependability information
+                        trltable = varfun(@length,REL.data,...
+                            'GroupingVariables',{'group','id','event'});
+                        
+                        trltable = trltable(strcmp(trltable.event,enames{eloc})...
+                            & strcmp(trltable.group,gnames{gloc}),:);
+                        
+                        %compute dependability
+                        ntrials = max(trltable.GroupCount(:)) + 1000;
+                        
+                        
+                        
+                        [llrel,mrel,ulrel] = era_dep(...
+                            'bp',cell2mat(data.g(gloc).e(eloc).sd_id.raw),...
+                            'wp',exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
+                            'obs',[1 ntrials],...
+                            'CI',ciperc);
+                        
+                        %find the number of trials to reach cutoffl
+                        switch meascutoff
+                            case 1
+                                trlcutoff = find(llrel >= depcutoff, 1);
+                            case 2
+                                trlcutoff = find(mrel >= depcutoff, 1);
+                            case 3
+                                trlcutoff = find(ulrel >= depcutoff, 1);
+                        end
+                        
+                        %if a cutoff was not found
+                        if isempty(trlcutoff)
+                            
+                            %store all the participant ids as having bad data
+                            relerr.trlcutoff = 1;
+                            trlcutoff = -1;
+                            relsummary.group(gloc).event(eloc).trlcutoff = -1;
+                            relsummary.group(gloc).event(eloc).rel.m = -1;
+                            relsummary.group(gloc).event(eloc).rel.ll = -1;
+                            relsummary.group(gloc).event(eloc).rel.ul = -1;
+                            
+                            trltable = varfun(@length,REL.data,...
+                                'GroupingVariables',{'group','id','event'});
+                            
+                            trltable = trltable(strcmp(trltable.event,enames{eloc})...
+                                & strcmp(trltable.group,gnames{gloc}),:);
+                            
+                            relsummary.group(gloc).event(eloc).eventgoodids =...
+                                'none';
+                            relsummary.group(gloc).event(eloc).eventbadids =...
+                                trltable.id;
+                            
+                        elseif ~isempty(trlcutoff) %if a cutoff was found
+                            
+                            
+                            relsummary.group(gloc).event(eloc).trlcutoff = trlcutoff;
+                            relsummary.group(gloc).event(eloc).rel.m = mrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).rel.ll = llrel(trlcutoff);
+                            relsummary.group(gloc).event(eloc).rel.ul = ulrel(trlcutoff);
+                            
+                            trltable = varfun(@length,REL.data,...
+                                'GroupingVariables',{'group','id','event'});
+                            
+                            trltable = trltable(strcmp(trltable.event,enames{eloc})...
+                                & strcmp(trltable.group,gnames{gloc}),:);
+                            
+                            ind2include = trltable.GroupCount >= trlcutoff;
+                            ind2exclude = trltable.GroupCount < trlcutoff;
+                            
+                            relsummary.group(gloc).event(eloc).eventgoodids =...
+                                trltable.id(ind2include);
+                            relsummary.group(gloc).event(eloc).eventbadids =...
+                                trltable.id(ind2exclude);
+                            
+                        end
+                        
+                    end
+                end
+                
+                %find the ids that have enough trials for each event type
+                
+                for gloc=1:ngroups
+                    tempids = {};
+                    badids = [];
+                    
+                    for eloc=1:nevents
+                        
+                        if ~strcmp(relsummary.group(gloc).event(eloc).eventgoodids,'none')
+                            tempids{end+1} = relsummary.group(gloc).event(eloc).eventgoodids;
+                            
+                            if eloc == 1
+                                badids = relsummary.group(gloc).event(eloc).eventbadids;
+                            elseif eloc > 1
+                                [~,ind]=setdiff(tempids{1},tempids{end});
+                                new = tempids{1};
+                                badids = vertcat(badids,...
+                                    relsummary.group(gloc).event(eloc).eventbadids,...
+                                    new(ind));
+                                new(ind) = [];
+                                tempids{1} = new;
+                            end
+                            
+                        end
+                    end
+                    
+                    %if there were no participants with enough trials for all event
+                    %types within a group, store 'none'
+                    if isempty(tempids)
+                        tempids{1} = 'none';
+                    end
+                    
+                    relsummary.group(gloc).goodids = tempids{1};
+                    relsummary.group(gloc).badids = unique(badids);
+                    
+                end
+                
+                %calculate dependability estimates for the overall data for each
+                %group and event type
+                for eloc=1:nevents
+                    
+                    for gloc=1:ngroups
+                        
+                        %pull the data to calculate the trial information from
+                        %participants with good data
+                        datatable = REL.data;
+                        ind = strcmp(datatable.group,gnames{gloc}) & ...
+                           strcmp(datatable.event,enames{eloc});
+                       
+                        datasubset = datatable(ind,:);
+                        
+                        if ~strcmp(relsummary.group(gloc).goodids,'none')
+                            goodids = table(relsummary.group(gloc).goodids);
+                        else
+                            goodids = table(relsummary.group(gloc).badids);
+                        end
+                        
+                        %check whether there are not enough good data after applying
+                        %reliability threshold and extrapolating
+                        if isempty(goodids)
+                            dlg = {'Data do not reach reliability threshold after extrapolation';...
+                                'Set a lower reliability threshold'};
+                            errordlg(dlg, 'Data do not meet reliability threshold');
+                            relerr.nogooddata = 1;
+                            return;
+                        end
+                        
+                        trlcdata = innerjoin(datasubset, goodids,...
+                            'LeftKeys', 'id', 'RightKeys', 'Var1',...
+                            'LeftVariables', {'id' 'meas'});
+                        
+                        trltable = varfun(@length,trlcdata,...
+                            'GroupingVariables',{'id'});
+                        
+                        trlmean = mean(trltable.GroupCount);
+                        trlmed = median(trltable.GroupCount);
+                        
+                        %calculate dependability using either the mean or median
+                        %(based on user input)
+                        switch depcentmeas
+                            case 1
+                                depcent = trlmean;
+                            case 2
+                                depcent = trlmed;
+                        end
+                        
+                        [relsummary.group(gloc).event(eloc).dep.ll,...
+                            relsummary.group(gloc).event(eloc).dep.m,...
+                            relsummary.group(gloc).event(eloc).dep.ul] =...
+                            era_dep('bp',cell2mat(data.g(gloc).e(eloc).sd_id.raw),...
+                            'wp',exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
+                            'obs',depcent,'CI',ciperc);
+                        
+                        relsummary.group(gloc).event(eloc).dep.meas = depcent;
+                        
+                        relsummary.group(gloc).event(eloc).trlinfo.min = min(trltable.GroupCount);
+                        relsummary.group(gloc).event(eloc).trlinfo.max = max(trltable.GroupCount);
+                        relsummary.group(gloc).event(eloc).trlinfo.mean = trlmean;
+                        relsummary.group(gloc).event(eloc).trlinfo.std = std(trltable.GroupCount);
+                        relsummary.group(gloc).event(eloc).trlinfo.med = trlmed;
+                        
+                        %check if trial cutoff for an event exceeded the total
+                        %number of trials for any subjects
+                        if  relsummary.group(gloc).event(eloc).trlcutoff >...
+                                relsummary.group(gloc).event(eloc).trlinfo.max
+                            
+                            relerr.trlmax = 1;
+                            relsummary.group(gloc).event(eloc).rel.m = -1;
+                            relsummary.group(gloc).event(eloc).rel.ll = -1;
+                            relsummary.group(gloc).event(eloc).rel.ul = -1;
+                            
+                        end
+                        
+                        if ~strcmp(relsummary.group(gloc).event(eloc).eventgoodids,'none')
+                            relsummary.group(gloc).event(eloc).goodn = height(goodids);
+                        else
+                            relsummary.group(gloc).event(eloc).goodn = 0;
+                        end
+                        
+                        %calculate iccs, between-subject standard deviations, and
+                        %within-subject standard deviations
+                        [relsummary.group(gloc).event(eloc).icc.ll,...
+                            relsummary.group(gloc).event(eloc).icc.m,...
+                            relsummary.group(gloc).event(eloc).icc.ul] = ...
+                            era_icc('bp',cell2mat(data.g(gloc).e(eloc).sd_id.raw),...
+                            'wp',exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
+                            'CI',ciperc);
+                        
+                        relsummary.group(gloc).event(eloc).betsd.m = ...
+                            mean(cell2mat(data.g(gloc).e(eloc).sd_id.raw));
+                        relsummary.group(gloc).event(eloc).betsd.ll = ...
+                            quantile(cell2mat(data.g(gloc).e(eloc).sd_id.raw),.025);
+                        relsummary.group(gloc).event(eloc).betsd.ul = ...
+                            quantile(cell2mat(data.g(gloc).e(eloc).sd_id.raw),.975);
+                        
+                        relsummary.group(gloc).event(eloc).witsd.m = ...
+                            mean(exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)));
+                        relsummary.group(gloc).event(eloc).witsd.ll = ...
+                            quantile(exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
+                            .025);
+                        relsummary.group(gloc).event(eloc).witsd.ul = ...
+                            quantile(exp(cell2mat(data.g(gloc).e(eloc).b_sigma.raw)),...
+                            .975);
+                        
+                    end
+                end
+                
+                
+        end %switch analysis
+        
+        if ngroups == 0
+            ngroups = 1;
+        end
+        
+        for gloc=1:ngroups
+            
+            switch depcentmeas
+                case 1
+                    trls1 = relsummary.group(gloc).event(1).trlinfo.mean;
+                    trls2 = relsummary.group(gloc).event(2).trlinfo.mean;
+                case 2
+                    trls1 = relsummary.group(gloc).event(1).trlinfo.med;
+                    trls2 = relsummary.group(gloc).event(2).trlinfo.med;
+            end
+            
+            diffscore = era_diffrel(...
+                'bp',cell2mat(REL.out.id_varcov{:,gloc}),...
+                'bt',cell2mat(REL.out.trl_varcov{:,gloc}),...
+                'er_var',cell2mat(REL.out.b_sigma{:,gloc}),...
+                'obs',[trls1 trls2],...
+                'est','dep',...
+                'CI',relsummary.ciperc);
+            
+            relsummary.group(gloc).diffscore = diffscore;
+            
+            trl1_cutoff = relsummary.group(gloc).event(1).trlcutoff;
+            trl2_cutoff = relsummary.group(gloc).event(2).trlcutoff;
+            
+            diffscore = era_diffrel(...
+                'bp',cell2mat(REL.out.id_varcov{:,gloc}),...
+                'bt',cell2mat(REL.out.trl_varcov{:,gloc}),...
+                'er_var',cell2mat(REL.out.b_sigma{:,gloc}),...
+                'obs',[trl1_cutoff trl2_cutoff],...
+                'est','dep',...
+                'CI',relsummary.ciperc);
+            
+            relsummary.group(gloc).diffscore.trlcutoff = diffscore;            
+            
+        end
+        
+        %here can loop through and add in difference score reliability
+        %estimation
         
     case 'sing_sserr'
         
