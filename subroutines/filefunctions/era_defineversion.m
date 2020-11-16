@@ -38,7 +38,7 @@ function eraver = era_defineversion
 % updated copyright
 %
 
-eraver = '0.5.2';
+eraver = '0.5.3';
 
 
 end

@@ -2,7 +2,7 @@ function era_startproc(varargin)
 %Initiate Matlab gui to begin processing data in Stan
 %
 %
-%Last Updated 9/3/20
+%Last Updated 11/16/20
 %
 %
 %Input
@@ -89,6 +89,10 @@ function era_startproc(varargin)
 %
 %8/21/20 PC
 % add functionality to specify estimatin of single-subject erorr variance
+%
+%11/16/20 PC
+% fixed bug where rows were being read rather than columns for identifying
+%  number of events to process for difference score internal consistemcy
 
 %check if era_gui is open. If the user executes era_startproc and skips
 %era_start then there will be no gui to close.
@@ -1484,7 +1488,8 @@ if era_prefs.proc.diffest == 2
         
     end
     
-    if size(era_prefs.proc.inp.whichevents,1) < 2
+    if (size(era_prefs.proc.inp.whichevents,1) *... 
+            size(era_prefs.proc.inp.whichevents,2)) < 2
         dlg = {'Estimation of difference score reliability requires';...
             'at least two different events in the ERP data'; ...
             'Only 1 event type was found in the event column'; ...
@@ -1495,7 +1500,9 @@ if era_prefs.proc.diffest == 2
         era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
         return;
         
-    elseif size(era_prefs.proc.inp.whichevents,1) > 2
+    elseif (size(era_prefs.proc.inp.whichevents,1) * ... 
+            size(era_prefs.proc.inp.whichevents,2)) > 2
+        
         dlg = {'Estimation of difference score reliability requires';...
             'only two different events for analysis'; ...
             'More than two event type were found in the event column, '; ...
@@ -1508,8 +1515,6 @@ if era_prefs.proc.diffest == 2
         era_startproc_gui('era_prefs',era_prefs,'era_data',era_data);
         return;
     end
-    
-    
     
     
 end
