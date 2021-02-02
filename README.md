@@ -12,7 +12,7 @@ Clayson, P. E., & Miller, G. A. (2017). [ERP Reliability Analysis (ERA) Toolbox:
 
 &nbsp;
 
-Clayson, P. E., Carbine, K. A., Baldwin, S. A., Olsen, J. A., & Larson, M. J. (under review). Using generalizability theory and the ERP Reliability Analysis (ERA) Toolbox for assessing test-retest reliability of ERP scores: Algorithms, Framework, and Implementation. ([preprint](https://psyarxiv.com/kcven/))
+Clayson, P. E., Carbine, K. A., Baldwin, S. A., Olsen, J. A., & Larson, M. J. (in press). [Using generalizability theory and the ERP Reliability Analysis (ERA) Toolbox for assessing test-retest reliability of ERP scores part 1: Algorithms, Framework, and Implementation](https://www.sciencedirect.com/science/article/pii/S0167876021000064?via%3Dihub). _International Journal of Psychophysiology_ ([preprint](https://psyarxiv.com/kcven/))
 
 &nbsp;
 
@@ -20,7 +20,7 @@ Clayson, P. E., Brush, C. J., & Hajcak, G. (under review) Data quality and relia
 
 &nbsp;
 
-Clayson, P. E., Baldwin, S. A., & Larson, M. J. (under review). Evaluating the internal consistency of subtraction-based and residualized difference scores: Considerations for studies of event-related potentials. ([preprint](https://psyarxiv.com/nqwz6))
+Clayson, P. E., Baldwin, S. A., & Larson, M. J. (in press). [Evaluating the internal consistency of subtraction-based and residualized difference scores: Considerations for studies of event-related potentials](https://onlinelibrary.wiley.com/doi/full/10.1111/psyp.13762). _Psychophysiology_ ([preprint](https://psyarxiv.com/nqwz6))
 
 &nbsp;
 
