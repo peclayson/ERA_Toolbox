@@ -86,6 +86,9 @@ function era_installdependents(varargin)
 %9/11/20 PC
 % Changes assocaited with fixing MatlabStan installation (need to manually
 %  input version number into script
+%
+%1/20/21 PC
+% Changes associated with checking the version of Mac OS >11
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -146,8 +149,13 @@ if sys == 1 %mac
     [~,cmdout] = system('sw_vers');
     parseout = strsplit(cmdout);
     parseOS = strsplit(parseout{6},'.');
-    if str2double(parseOS{1}) == 10
-        if str2double(parseOS{2}) >= 9
+    
+    if isnan(str2double(parseOS{1}))
+        parseOS = strsplit(parseout{4},'.');
+    end
+    
+    if str2double(parseOS{1}) >= 10
+        if str2double(parseOS{2}) >= 9 || str2double(parseOS{1}) >= 11
             
             if isempty(depvercheck)
             

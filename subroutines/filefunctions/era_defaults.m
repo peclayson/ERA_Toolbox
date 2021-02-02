@@ -61,15 +61,15 @@ era_prefs = struct;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %Number of chains for processing data in CmdStan (default = 3)
-era_prefs.proc.nchains = 3;
+era_prefs.proc.nchains = 4;
 
 %Number of iterations for processing data in CmdStan (default = 1000)
-era_prefs.proc.niter = 1000;
+era_prefs.proc.niter = 10000;
 
-%Verbose input while processing data in CmdStan (default = 1);
+%Verbose input while processing data in CmdStan (default = 2);
 % 1 = No
 % 2 = Yes
-era_prefs.proc.verbose = 1;
+era_prefs.proc.verbose = 2;
 
 %View the traceplots for parameters prior to saving the stan output 
 %(default= 1)
