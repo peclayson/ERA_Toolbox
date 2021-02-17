@@ -68,6 +68,9 @@ function era_data = era_computerelwrap(varargin)
 %9/3/20 PC
 % changes for estimating difference score internal consistency
 %
+%2/17/21 PC
+% changes to creation of unique temporary directories so multiple instances
+%  of the toolbox can run stan models simultaneously
 
 %pull era_prefs and era_data from varargin
 [era_prefs, era_data] = era_findprefsdata(varargin);
@@ -160,10 +163,16 @@ else
 end
 
 %Change working dir for temporary Stan files
-if ~exist(fullfile(era_data.proc.savepath,'Temp_StanFiles'), 'dir')
-  mkdir(era_data.proc.savepath,'Temp_StanFiles');
-end
-origdir = cd(fullfile(era_data.proc.savepath,'Temp_StanFiles'));
+%change to vaoid problems with running multiple instances
+tempdir = tempname(era_data.proc.savepath);
+[~,tempdir] = fileparts(tempdir);
+tempdir(1:10) = 'erat_stan_';
+mkdir(era_data.proc.savepath,tempdir);
+
+% if ~exist(fullfile(era_data.proc.savepath,'Temp_StanFiles'), 'dir')
+%   mkdir(era_data.proc.savepath,'Temp_StanFiles');
+% end
+origdir = cd(fullfile(era_data.proc.savepath,tempdir));
 
 %set initial state of rerun to 1
 %this will run era_computerel
@@ -259,7 +268,7 @@ cd(origdir);
 %attempt to remove the temporary directory and its files
 try
     
-    rmdir(fullfile(era_data.proc.savepath,'Temp_StanFiles'),'s');
+    rmdir(fullfile(era_data.proc.savepath,tempdir),'s');
 
 catch
     
