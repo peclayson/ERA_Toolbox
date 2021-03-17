@@ -89,6 +89,11 @@ function era_installdependents(varargin)
 %
 %1/20/21 PC
 % Changes associated with checking the version of Mac OS >11
+%
+%3/5/21 PC
+% fix problem with checking compiler on Windows
+% fixed url to .zip for cmdstan
+
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values. 
@@ -118,16 +123,18 @@ end
 %load the versions of the dependents used by the toolbox
 depvers = era_dependentsversions;
 
-url_cs = strcat('https://github.com/stan-dev/cmdstan/releases/download/v',...
-    depvers.cmdstan,'/cmdstan-',depvers.cmdstan);
+url_cs_zip = strcat('https://github.com/stan-dev/cmdstan/archive/v',...
+    depvers.cmdstan,'.zip');
+url_cs_tar = strcat('https://github.com/stan-dev/cmdstan/releases/download/v',...
+    depvers.cmdstan,'/cmdstan-',depvers.cmdstan,'.tar.gz');
 url_ms = strcat('https://github.com/brian-lau/MatlabStan/archive/v',...
     depvers.matlabstan);
 url_mp = strcat('https://github.com/brian-lau/MatlabProcessManager/archive/v',...
     depvers.matlabprocessmanager);
 
 urls = struct;
-urls.cmdstan_zip = strcat(url_cs,'.zip');
-urls.cmdstan_tar = strcat(url_cs,'.tar.gz');
+urls.cmdstan_zip = url_cs_zip;
+urls.cmdstan_tar = url_cs_tar;
 urls.ms_zip = strcat(url_ms,'.zip');
 urls.ms_tar = strcat(url_ms,'.tar.gz');
 urls.mpm_zip = strcat(url_mp,'.zip');
@@ -671,7 +678,7 @@ depcheck = struct;
 
 %first check whether g++ and make compilers exist
 [~,cmdout] = system('make -v');
-makematch = strncmp(cmdout,'GNU Make version',16);
+makematch = strncmp(cmdout,'GNU Make',8);
 
 if makematch == 1
     depcheck.CLT = 1;
