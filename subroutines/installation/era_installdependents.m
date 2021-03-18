@@ -93,6 +93,9 @@ function era_installdependents(varargin)
 %3/5/21 PC
 % fix problem with checking compiler on Windows
 % fixed url to .zip for cmdstan
+%
+%3/18/21 PC
+% continued fixes to Windows installation
 
 
 %somersault through varargin inputs to check for which inputs were
@@ -881,7 +884,10 @@ if depcheck.mstan == 0
     
     %in case cmdstan wasn't installed in this run, find the location of the
     %cmdstan dir
-    if isempty(cmdstandir)
+    if ~exist('cmdstandir','var') || isempty(cmdstandir)
+        p = which('runCmdStanTests.py');
+        cmdstandir = fileparts(p);
+    elseif exist('cmdstandir','var') && isempty(cmdstandir)
         p = which('runCmdStanTests.py');
         cmdstandir = fileparts(p);
     end
@@ -908,7 +914,7 @@ if depcheck.mstan == 0
     end
     fclose(fid);
     
-     %open the StanModel.m file and change the version to current cmdstan
+    %open the StanModel.m file and change the version to current cmdstan
     % version
     fid=fopen(fullfile(msdir,'StanModel.m'));
     storefile = {};
@@ -925,7 +931,7 @@ if depcheck.mstan == 0
     storefile{ind} = ['            ver = ''' jvers.cmdstan ''';'];
 
     %overwrite the existing stan_home.m file with the new information
-    fid=fopen(fullfile(msdir,'StanModel.m'));
+    fid=fopen(fullfile(msdir,'StanModel.m'),'w');
     for i=1:(length(storefile)-1)
         storefile{i} = strrep(storefile{i},'%','%%');
         storefile{i} = strrep(storefile{i},'\','\\');
