@@ -1,7 +1,7 @@
 # ERA Toolbox
 
 The [ERP Reliability Analysis (ERA) Toolbox](http://www.sciencedirect.com/science/article/pii/S016787601630736X
-) uses generalizability theory as a method for evaluating reliability of ERP data. Dependability estimates (generalizability-theory analog to reliability) can be computed for any number of groups or events. The influence of number of trials on dependability of measurements will also be determined, and a recommended cutoff for inclusion of ERP data will be provided based on the stability of measurement as the number of trials included in a single-subject average for a given group and event increases.
+) uses generalizability theory as a method for evaluating the psychometric reliability of ERP data. Dependability (and some generalizability) estimates (generalizability-theory analog to reliability) can be computed for any number of events, groups, or occasions. The influence of number of trials on dependability of measurements will also be determined, and a recommended cutoff for inclusion of ERP data will be provided based on the stability of measurement as the number of trials included in a single-subject average for a given group and event increases. The Toolbox can also estimate the psychometric internal consistency of difference scores.
 
 See the [User Manual](documentation/UserManual.pdf) or [wiki](https://github.com/peclayson/ERA_Toolbox/wiki) for more information about the ERA Toolbox.
 
