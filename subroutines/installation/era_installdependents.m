@@ -160,7 +160,7 @@ if sys == 1 %mac
     parseout = strsplit(cmdout);
     parseOS = strsplit(parseout{6},'.');
     
-    if isnan(str2double(parseOS{1}))
+    if isnan(str2double(parseOS{1})) || ~contains(char(parseOS{1}),'.')
         parseOS = strsplit(parseout{4},'.');
     end
     
