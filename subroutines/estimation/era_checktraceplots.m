@@ -52,6 +52,9 @@ function era_checktraceplots(REL,varargin)
 %8/8/19 PC
 % added capability to handle retest analyses
 %
+%2/4/22 PC
+% fixed issues with plotting now that new formatting is used for
+%  REL.analysis
 
 %check for era_prefs
 if nargin == 0 || isempty(REL)
@@ -83,7 +86,21 @@ else
     askuser = 0;
 end
 
-if strcmp(REL.analysis,'sing')
+if strcmp(REL.analysis,'ic')
+    
+    %pull number of groups and events
+    if strcmp(REL.events,'none')
+        nevents = 1;
+    else
+        nevents = length(REL.events);
+    end
+    
+    if strcmp(REL.groups,'none')
+        ngroups = 1;
+    else
+        ngroups = length(REL.groups);
+    end
+
     
     %create an x-axis for the number of observations
     x = 1:REL.niter/2;
@@ -125,10 +142,14 @@ if strcmp(REL.analysis,'sing')
                 str = strsplit(REL.out.labels{countgroupevent},'_;_');
                 str = [str{1} ' - ' str{2}];
             else
-                str = REL.out.labels;
+                str = REL.out.labels{countgroupevent};
             end
             
             ylabel(str,'FontSize',fsize);
+            
+            if nrow == 1
+                title('mu');
+            end
             
             printtitles(yplots,nplot,fsize,REL.analysis);
             
@@ -145,6 +166,10 @@ if strcmp(REL.analysis,'sing')
             
             printtitles(yplots,nplot,fsize,REL.analysis);
             
+            if nrow == 1
+                title('sig_u');
+            end
+            
             trackwhichplot = trackwhichplot + 1;
             
         elseif trackwhichplot == 3
@@ -157,6 +182,10 @@ if strcmp(REL.analysis,'sing')
             plot(x,tpdata);
             
             printtitles(yplots,nplot,fsize,REL.analysis);
+            
+            if nrow == 1
+                title('sig_e');
+            end
             
             trackwhichplot = 1;
             nrow = nrow + 1;
