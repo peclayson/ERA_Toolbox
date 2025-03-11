@@ -683,6 +683,8 @@ depcheck = struct;
 [~,cmdout] = system('make -v');
 makematch = strncmp(cmdout,'GNU Make',8);
 
+% makematch = 1;
+
 if makematch == 1
     depcheck.CLT = 1;
     fprintf('Command line tools installed\n');

@@ -43,7 +43,7 @@ function depvers = era_dependentsversions
 %  updated, but I will record if I make changes to the script itself.
 
 depvers = struct;
-depvers.cmdstan = '2.26.1';
+depvers.cmdstan = '2.32.2';
 depvers.matlabstan = '2.15.1.0';
 depvers.matlabprocessmanager = '0.5.1';
 
