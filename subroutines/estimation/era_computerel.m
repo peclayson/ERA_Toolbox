@@ -444,8 +444,8 @@ switch analysis
             'data {'
             '  int<lower=0> NOBS; //number of obs'
             '  int<lower=0> NSUB; //number of subj'
-            '  int<lower=0, upper=NSUB> id[NOBS]; //subject id;'
-            '  real meas[NOBS];'
+            '  array[NOBS] int<lower=0, upper=NSUB> id; //subject id'
+            '  array[NOBS] real meas;'
             '}'
             'parameters {'
             '  real mu;'
@@ -571,13 +571,13 @@ switch analysis
         
         for i=1:ngroup
             stan_in{end+1,1} = ...
-                sprintf('  int<lower=0, upper=JG%d> id_G%d[NG%d]; //subject id g%d;',...
+                sprintf('  array[NG%d] int<lower=0, upper=JG%d> id_G%d; //subject id g%d;',...
                 i,i,i,i);
         end
         
         for i=1:ngroup
             stan_in{end+1,1} = ...
-                sprintf('  real meas_G%d[NG%d];',i,i);
+                sprintf('  array[NG%d] real meas_G%d;',i,i);
         end
         
         stan_in{end+1,1} = '}';
@@ -814,13 +814,13 @@ switch analysis
         
         for i=1:nevent
             stan_in{end+1,1} = ...
-                sprintf('  int<lower=0, upper=JE%d> id_E%d[NE%d]; //subject id E%d;',...
+                sprintf('  array[NE%d] int<lower=0, upper=JE%d> id_E%d; //subject id E%d;',...
                 i,i,i,i);
         end
         
         for i=1:nevent
             stan_in{end+1,1} = ...
-                sprintf('  real meas_E%d[NE%d];',i,i);
+                sprintf('  array[NE%d] real meas_E%d;',i,i);
         end
         
         stan_in{end+1,1} = '}';
@@ -1117,13 +1117,13 @@ switch analysis
             
             for i=1:ngroup
                 stan_in{end+1,1} = ...
-                    sprintf('  int<lower=0, upper=JG%d> id_G%d[NG%d]; //subject id g%d;',...
+                    sprintf('  array[NG%d] int<lower=0, upper=JG%d> id_G%d; //subject id g%d;',...
                     i,i,i,i);
             end
             
             for i=1:ngroup
                 stan_in{end+1,1} = ...
-                    sprintf('  real meas_G%d[NG%d];',i,i);
+                    sprintf('  array[NG%d] real meas_G%d;',i,i);
             end
             
             stan_in{end+1,1} = '}';
@@ -1556,12 +1556,12 @@ switch analysis
                 '  int<lower=1> NTID; // total unique for trial*id'
                 '  int<lower=1> NOID; // total unique for occ*id'
                 '  int<lower=1> NTO; // total unique for trial*occ'
-                '  int<lower=1, upper=NSUB> id[NOBS]; //id variable'
-                '  int<lower=1, upper=NOCC> occ[NOBS]; //occ variable'
-                '  int<lower=1, upper=NTRL> trl[NOBS]; //trl variable'
-                '  int<lower=1, upper=NTID> trlxid[NOBS]; //trlxid variable'
-                '  int<lower=1, upper=NOID> occxid[NOBS]; //occxid variable'
-                '  int<lower=1, upper=NTO> trlxocc[NOBS]; //trlxocc variable'
+                '  array[NOBS] int<lower=1, upper=NSUB> id; //id variable'
+                '  array[NOBS] int<lower=1, upper=NOCC> occ; //occ variable'
+                '  array[NOBS] int<lower=1, upper=NTRL> trl; //trl variable'
+                '  array[NOBS] int<lower=1, upper=NTID> trlxid; //trlxid variable'
+                '  array[NOBS] int<lower=1, upper=NOID> occxid; //occxid variable'
+                '  array[NOBS] int<lower=1, upper=NTO> trlxocc; //trlxocc variable'
                 '  vector[NOBS] meas; //measurements'
                 '}'
                 'parameters {'
@@ -1917,7 +1917,7 @@ switch analysis
                 'data {'
                 'int<lower=1> NOBS;  //number of observations'
                 'int<lower=1> NSUB;  //number of subjects'
-                'int<lower=1> id[NOBS];  //id variable'
+                'array[NOBS] int<lower=1> id;  //id variable'
                 'vector[NOBS] meas;  // response variable'
                 '}'
                 'parameters {'
@@ -2205,9 +2205,9 @@ switch analysis
                 'vector[NOBS] meas;  // response variable'
                 'matrix[NOBS, 2] X;  // population-level design matrix'
                 'int<lower=1> NSUB;  // number of grouping levels'
-                'int<lower=1> ID[NOBS];  // grouping indicator per observation'
+                'array[NOBS] int<lower=1> ID;  // grouping indicator per observation'
                 'int<lower=1> NTRL;  // number of grouping levels'
-                'int<lower=1> TRL[NOBS];  // grouping indicator per observation'
+                'array[NOBS] int<lower=1> TRL;  // grouping indicator per observation'
                 'vector[NOBS] meas1;'
                 'vector[NOBS] meas2;'
                 '}'
