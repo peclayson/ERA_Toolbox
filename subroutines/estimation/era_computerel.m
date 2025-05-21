@@ -137,6 +137,10 @@ function RELout = era_computerel(varargin)
 %
 %9/3/20 PC
 % add capability to estimate internal consistency of difference scores
+%
+%01/12/24 PC
+% add capability to estimate subject-level internal consistency of
+%  difference scores 
 
 %somersault through varargin inputs to check for which inputs were
 %defined and store those values.
@@ -329,8 +333,10 @@ REL.sserrvar = sserrvar;
 
 if sserrvar == 2
     analysis = 6;
-elseif diffest == 2
+elseif diffest == 2 && sserrvar == 1
     analysis = 7;
+elseif diffest == 2 && sserrvar == 2
+    analysis = 8;
 elseif sserrvar == 1 && (ntime == 0)
     if (ngroup == 0) && (nevent == 0)
         analysis = 1;
